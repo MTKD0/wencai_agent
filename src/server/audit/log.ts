@@ -1,0 +1,56 @@
+import { asc, desc } from 'drizzle-orm'
+import { db, schema } from '#/server/db/client'
+import { GENESIS_HASH, hashEntry, verifyChain } from './chain'
+import type { AuditEntry, AuditType, StoredAuditEntry } from './chain'
+import type { AgentContext } from '#/server/agent/context'
+
+// 单进程内串行写入，保证哈希链顺序；多实例部署需换成数据库事务 + 行锁
+let tail: Promise<unknown> = Promise.resolve()
+
+export function audit(ctx: AgentContext, type: AuditType, payload: unknown): Promise<void> {
+  const entry: AuditEntry = {
+    at: Date.now(),
+    userId: ctx.userId,
+    sessionId: ctx.sessionId,
+    channel: ctx.channel,
+    type,
+    // 先归一化为纯 JSON（Date → 字符串、去掉 undefined），保证写入前后哈希一致
+    payload: JSON.parse(JSON.stringify(payload ?? null)),
+  }
+  const write = tail.then(async () => {
+    const [last] = await db
+      .select({ hash: schema.auditLogs.hash })
+      .from(schema.auditLogs)
+      .orderBy(desc(schema.auditLogs.seq))
+      .limit(1)
+    const prevHash = last?.hash ?? GENESIS_HASH
+    await db.insert(schema.auditLogs).values({
+      at: new Date(entry.at),
+      userId: entry.userId,
+      sessionId: entry.sessionId,
+      channel: entry.channel,
+      type: entry.type,
+      payloadJson: JSON.stringify(entry.payload),
+      prevHash,
+      hash: hashEntry(prevHash, entry),
+    })
+  })
+  tail = write.catch(() => {})
+  return write
+}
+
+export async function verifyAuditLog(): Promise<{ ok: boolean; brokenAt: number }> {
+  const rows = await db.select().from(schema.auditLogs).orderBy(asc(schema.auditLogs.seq))
+  const entries: StoredAuditEntry[] = rows.map((r) => ({
+    at: r.at.getTime(),
+    userId: r.userId,
+    sessionId: r.sessionId,
+    channel: r.channel,
+    type: r.type as AuditType,
+    payload: JSON.parse(r.payloadJson),
+    prevHash: r.prevHash,
+    hash: r.hash,
+  }))
+  const brokenAt = verifyChain(entries)
+  return { ok: brokenAt === -1, brokenAt }
+}

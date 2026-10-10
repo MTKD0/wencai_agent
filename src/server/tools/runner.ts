@@ -1,0 +1,53 @@
+import { env } from '#/server/env'
+import { audit } from '#/server/audit/log'
+import { createPending } from '#/server/confirm/pending'
+import { decide } from '#/server/policy/engine'
+import { collectFacts } from '#/server/policy/facts'
+import type { AgentContext } from '#/server/agent/context'
+import type { BankToolDef, ToolOutcome } from './define'
+import { sanitizeToolOutput } from './sanitize'
+
+/**
+ * 所有工具调用的唯一入口：参数校验 → 采集事实 → 策略判定 → 执行或生成待确认动作。
+ * 模型只能走到这里，越过这里的路径（/api/confirm）只对已认证用户开放。
+ */
+export async function runBankTool(
+  def: BankToolDef,
+  rawArgs: unknown,
+  ctx: AgentContext,
+  plan?: { planId: string; nodeId: string },
+): Promise<ToolOutcome> {
+  const parsed = def.inputSchema.safeParse(rawArgs)
+  if (!parsed.success) return { status: 'error', message: `参数无效：${parsed.error.message}` }
+  const args = parsed.data as Record<string, unknown>
+
+  await audit(ctx, 'tool_call', { tool: def.name, args, plan })
+
+  const facts = await collectFacts({ userId: ctx.userId, channel: ctx.channel, ...def.factsHint?.(args) })
+  const decision = decide({ tool: def.name, baseRisk: def.baseRisk, args, facts })
+  await audit(ctx, 'policy_decision', { tool: def.name, decision, facts })
+
+  if (!decision.allowed) return { status: 'denied', reasons: decision.reasons }
+
+  if (decision.level === 'green') {
+    try {
+      const output = await def.execute(args, ctx)
+      return { status: 'done', data: await sanitizeToolOutput(ctx, def.name, output) }
+    } catch (err) {
+      return { status: 'error', message: err instanceof Error ? err.message : String(err) }
+    }
+  }
+
+  const pending = await createPending({ ctx, def, args, decision, plan })
+  if (decision.requiresChannelHandoff) {
+    return {
+      status: 'needs_handoff',
+      actionId: pending.actionId,
+      level: pending.level,
+      reasons: decision.reasons,
+      summary: pending.summary,
+      url: `${env.PUBLIC_BASE_URL}/confirm/${pending.actionId}`,
+    }
+  }
+  return { status: 'needs_confirmation', ...pending, reasons: decision.reasons }
+}
