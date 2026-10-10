@@ -1,0 +1,22 @@
+{
+  "projectName": "wencai_agent",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "pnpm",
+  "includeExamples": true,
+  "tailwind": true,
+  "projectPreset": "default",
+  "addOnOptions": {},
+  "git": true,
+  "install": true,
+  "intent": true,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "ai",
+    "db",
+    "tanstack-query",
+    "store"
+  ]
+}
