@@ -6,6 +6,12 @@
 
 ## 快速开始
 
+Windows 可直接双击根目录的 `start.bat`：自动加载 `.env.local`、检查依赖、启动服务并打开浏览器。启动窗口就是实时日志窗口，日志同时保存在 `.scratch/logs/`；按 `Ctrl+C` 停止服务。默认端口为 3000，端口占用时自动顺延，并使用日志中显示的实际地址。
+
+首次运行会从 `.env.example` 创建本地配置并生成签名密钥；填写 `DEEPSEEK_API_KEY` 后重启即可启用 Agent，默认模型为 `deepseek-flash`。只有数据库文件不存在时才自动建表并播种，已有数据库不会被重新播种。`.env.local`、数据库与日志均不上传 Git。
+
+手动启动方式：
+
 ```powershell
 pnpm install --frozen-lockfile
 Copy-Item .env.example .env.local  # 填入至少 16 位的 CONFIRM_SECRET 和模型配置

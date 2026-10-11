@@ -53,7 +53,7 @@
 |---|---|---|---|
 | 全栈框架 | TanStack Start + React 19 + Tailwind 4 | 1.168 | 前后端同仓，server route 直接承载 API；评委一条命令启动 |
 | LLM 编排 | **Vercel AI SDK** | ai@7 | 成熟的工具循环、UI Message 流、`toolsContext` 隔离服务端状态；与 Chat SDK 同生态 |
-| 主模型 | DeepSeek（`DEEPSEEK_MODEL` 配置） | — | 使用 `@ai-sdk/deepseek`；模型 ID 与输入能力需真实服务联调确认 |
+| 主模型 | DeepSeek（`DEEPSEEK_MODEL` 配置） | — | 使用 `@ai-sdk/deepseek`，默认 `deepseek-flash`；真实文本与账户工具调用已验证，图片输入待联调 |
 | 备用模型 | OpenAI 兼容接口（`FALLBACK_*` 配置） | — | 未配置主模型密钥时使用；运行时错误自动切换尚未实现 |
 | Prompt 审核 | **Qwen3Guard**（自部署，vLLM）+ 规则启发式 | — | 中文能力好、开源可本地部署、客户数据不出域；`GuardProvider` 接口可插拔 Jev（英文场景/对比实验） |
 | 生成式 UI | **json-render** | 0.21 | 组件目录 zod 约束，输出为标准 JSON 可严格校验；动作由应用拦截 |
@@ -263,7 +263,7 @@ scripts/                   飞书机器人、MCP Server 启动脚本
 
 ## 9. 待验证事项
 
-- [ ] DeepSeek V4.1 Flash 正式模型 ID、上下文长度（报道称 32K）、工具调用与图片输入并用的稳定性；`@ai-sdk/deepseek` 当前内置 ID 为 `deepseek-v4-flash` / `deepseek-v4-flash-vision-exp`，通过 `DEEPSEEK_MODEL` 环境变量切换。
+- [ ] DeepSeek V4.1 Flash 的图片输入与工具调用并用的稳定性；2026-10-11 已通过官方 `/models` 确认模型 ID `deepseek-flash`，并验证真实文本回复及账户查询工具循环，使用 `DEEPSEEK_MODEL` 可覆盖配置。
 - [ ] Qwen3Guard 在银行中文注入样本上的召回率；与 Jev 的对比实验。
 - [ ] json-render spec 在 AI SDK 工具调用中的生成成功率；必要时改用 `catalog.prompt()` + SpecStream 流式渲染。
 - [ ] 飞书适配器（0.3.x）交互卡片回调在长连接模式下的行为。

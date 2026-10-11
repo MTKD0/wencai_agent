@@ -4,8 +4,8 @@ import type { LanguageModel } from 'ai'
 import { env } from '#/server/env'
 
 /**
- * 主模型 DeepSeek V4.1 Flash（原生多模态），降级模型为 OpenAI 兼容接口（如 Qwen3）。
- * 模型 ID 通过 DEEPSEEK_MODEL 配置；@ai-sdk/deepseek 内置 ID 尚未包含 4.1，待官方确认后更新默认值。
+ * 主模型 DeepSeek V4.1 Flash，降级模型为 OpenAI 兼容接口（如 Qwen3）。
+ * 官方模型 ID 为 deepseek-flash，可通过 DEEPSEEK_MODEL 配置覆盖。
  */
 export function primaryModel(): LanguageModel {
   if (env.DEEPSEEK_API_KEY) {

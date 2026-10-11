@@ -8,7 +8,9 @@ import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+  // SSR logs must stay on the server: forwarding them in both directions can loop.
+  server: { forwardConsole: false },
+  plugins: [devtools({ consolePiping: { enabled: false } }), tailwindcss(), tanstackStart(), viteReact()],
 })
 
 export default config

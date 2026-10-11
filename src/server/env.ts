@@ -7,7 +7,7 @@ const EnvSchema = z.object({
   CONFIRM_TTL_SECONDS: z.coerce.number().default(300),
 
   DEEPSEEK_API_KEY: z.string().optional(),
-  DEEPSEEK_MODEL: z.string().default('deepseek-v4-flash'),
+  DEEPSEEK_MODEL: z.string().default('deepseek-flash'),
   // 降级模型（OpenAI 兼容接口，如 Qwen3）
   FALLBACK_BASE_URL: z.string().optional(),
   FALLBACK_API_KEY: z.string().optional(),

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { convertToModelMessages, isStepCount, streamText } from 'ai'
 import type { ModelMessage, UIMessage } from 'ai'
 import { audit } from '#/server/audit/log'
@@ -33,6 +34,9 @@ export async function runAgent(params: {
   const messages = isUIMessages(params.messages)
     ? await convertToModelMessages(params.messages, { tools, ignoreIncompleteToolCalls: true })
     : params.messages
+  const runId = randomUUID().slice(0, 8)
+  const startedAt = Date.now()
+  console.info(`[agent:${runId}] 开始模型请求；消息数=${messages.length}；渠道=${ctx.channel}`)
   const result = streamText({
     model: primaryModel(),
     instructions: buildInstructions(ctx),
@@ -41,6 +45,14 @@ export async function runAgent(params: {
     stopWhen: isStepCount(8),
     temperature: 0.2,
     abortSignal: params.abortSignal,
+    onStepEnd: ({ toolCalls, finishReason, usage }) => {
+      console.info(
+        `[agent:${runId}] 步骤完成；工具=${toolCalls.map((call) => call.toolName).join(',') || '无'}；状态=${finishReason}；tokens=${usage.totalTokens ?? '未知'}`,
+      )
+    },
+    onAbort: () => {
+      console.info(`[agent:${runId}] 请求已取消；耗时=${Date.now() - startedAt}ms`)
+    },
     onEnd: async ({ text, steps }) => {
       const evidence = collectEvidence([
         ...params.priorEvidence,
@@ -49,6 +61,9 @@ export async function runAgent(params: {
       const violations = verifyNumbers(text, evidence)
       if (violations.length) await audit(ctx, 'output_verification', { violations })
       params.onVerified?.(violations)
+      console.info(
+        `[agent:${runId}] 回复完成；步骤数=${steps.length}；数字校验提示=${violations.length}；耗时=${Date.now() - startedAt}ms`,
+      )
     },
   })
   return { result, tools }
