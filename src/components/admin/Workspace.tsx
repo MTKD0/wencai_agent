@@ -21,6 +21,7 @@ import {
   Download,
   Loader2,
   Plus,
+  UsersRound,
 } from 'lucide-react'
 import { ActionDialog } from './ActionDialog'
 import type { Action } from './actions'
@@ -59,26 +60,29 @@ const descriptions: Record<Section, string> = {
   audit: '每次业务操作，都有迹可循。',
 }
 
-async function loadData() {
-  const [snapshot, report, anomalies] = await Promise.all([
-    adminApi.snapshot(),
-    adminApi.report(new Date().toISOString().slice(0, 7)),
-    adminApi.anomalies(),
+async function loadData(userId: string) {
+  const [snapshot, anomalies] = await Promise.all([
+    adminApi.snapshot(userId),
+    adminApi.anomalies(userId),
   ])
-  return { s: snapshot, report, anomalies }
+  return { s: snapshot, anomalies }
 }
 
 export function AdminWorkspace({
+  userId,
   section,
   go,
+  home,
 }: {
+  userId: string
   section: Section
   go: (s: Section) => void
+  home: () => void
 }) {
   const client = useQueryClient()
   const query = useQuery({
-    queryKey: ['admin', 'workspace'],
-    queryFn: loadData,
+    queryKey: ['admin', userId, 'workspace'],
+    queryFn: () => loadData(userId),
     refetchInterval: 5000,
   })
   const [action, setAction] = useState<Action | null>(null)
@@ -92,14 +96,14 @@ export function AdminWorkspace({
   const reportPeriod = annual ? period.slice(0, 4) : period
 
   const report = useQuery({
-    queryKey: ['admin', 'report', reportPeriod],
-    queryFn: () => adminApi.report(reportPeriod),
+    queryKey: ['admin', userId, 'report', reportPeriod],
+    queryFn: () => adminApi.report(userId, reportPeriod),
     enabled: !!reportPeriod,
     refetchInterval: 5000,
   })
 
   const mutation = useMutation({
-    mutationFn: (command: Parameters<typeof adminApi.command>[0]) => adminApi.command(command),
+    mutationFn: (command: Parameters<typeof adminApi.command>[1]) => adminApi.command(userId, command),
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ['admin'] })
       setToast('操作成功，账户与业务状态已更新')
@@ -158,6 +162,10 @@ export function AdminWorkspace({
         </a>
         <div className="sidebar-label">ADMIN</div>
         <nav aria-label="主导航">
+          <button onClick={home}>
+            <UsersRound size={18} strokeWidth={1.7} />
+            <span>首页 · 切换账户</span>
+          </button>
           {navigation.map((n) => (
             <button
               key={n.id}
@@ -187,10 +195,10 @@ export function AdminWorkspace({
             </p>
           </div>
           <div className="sidebar-user">
-            <span className="avatar">管</span>
+            <span className="avatar">{s?.user.name.slice(0, 1) ?? '用'}</span>
             <div>
               <strong>{s?.user.name ?? '演示用户'}</strong>
-              <small>管理员 · 演示模式</small>
+              <small>当前管理账户</small>
             </div>
           </div>
         </div>
@@ -213,6 +221,11 @@ export function AdminWorkspace({
             </span>
           </div>
           <div className="topbar-right">
+            <button className="button button-outline button-sm account-switch" onClick={home}>
+              <UsersRound size={14} />
+              <span>{s?.user.name ?? '切换账户'}</span>
+              切换
+            </button>
             <span className="env-badge">
               <i />
               ADMIN

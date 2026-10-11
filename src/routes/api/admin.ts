@@ -11,11 +11,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { db, schema } from '#/server/db/client'
+import { auth as authTables, db, schema } from '#/server/db/client'
 import { DEMO_USER_ID } from '#/server/db/constants'
 import { audit } from '#/server/audit/log'
 import { env } from '#/server/env'
 import { runDueJobs, scoreRisk } from '#/server/tools/jobs'
+import { adminUserExists, listAdminUsers } from '#/server/admin/users'
 
 const disabled = () =>
   Response.json({ error: { code: 'ADMIN_DISABLED', message: '管理后台未启用（设置 ADMIN_ENABLED=true）' } }, { status: 403 })
@@ -35,6 +36,7 @@ async function simNow(): Promise<string> {
 async function getSnapshot(userId: string) {
   const now = await simNow()
   const [user] = await db.select().from(schema.users).where(eq(schema.users.id, userId))
+  const registered = user ? undefined : (await db.select({ name: authTables.baUser.name }).from(authTables.baUser).where(eq(authTables.baUser.id, userId)))[0]
   const accounts = await db.select().from(schema.accounts).where(eq(schema.accounts.userId, userId))
   const contacts = await db.select().from(schema.contacts).where(eq(schema.contacts.userId, userId))
   const cards = await db.select().from(schema.cards).where(eq(schema.cards.userId, userId))
@@ -54,7 +56,9 @@ async function getSnapshot(userId: string) {
     .select()
     .from(schema.birthdayPlans)
     .where(eq(schema.birthdayPlans.userId, userId))
-  const orders = await db.select().from(schema.birthdayOrders)
+  const orders = plans.length
+    ? await db.select().from(schema.birthdayOrders).where(inArray(schema.birthdayOrders.planId, plans.map((plan) => plan.id)))
+    : []
   const accIds = accounts.map((a) => a.id)
   const transactions = accIds.length
     ? await db
@@ -77,7 +81,7 @@ async function getSnapshot(userId: string) {
     now,
     user: {
       id: user?.id ?? userId,
-      name: user?.name ?? '演示用户',
+      name: user?.name ?? registered?.name ?? '演示用户',
       riskLevel: user?.riskRating ?? 'R1',
       riskAssessedAt: user?.riskAssessedAt ?? null,
     },
@@ -672,6 +676,10 @@ export const Route = createFileRoute('/api/admin')({
         const period = url.searchParams.get('period') ?? new Date().toISOString().slice(0, 7)
 
         try {
+          if (action === 'users') return Response.json({ data: await listAdminUsers() })
+          if (!(await adminUserExists(userId))) {
+            return Response.json({ error: { code: 'USER_NOT_FOUND', message: '用户不存在，请返回首页选择账户' } }, { status: 404 })
+          }
           switch (action) {
             case 'snapshot':
               return Response.json({ data: await getSnapshot(userId) })
@@ -701,6 +709,9 @@ export const Route = createFileRoute('/api/admin')({
             )
           }
           const userId = (request.headers.get('x-admin-user') ?? DEMO_USER_ID) as string
+          if (!(await adminUserExists(userId))) {
+            return Response.json({ error: { code: 'USER_NOT_FOUND', message: '用户不存在，请返回首页选择账户' } }, { status: 404 })
+          }
           const ctx = { userId, sessionId: 'admin', channel: 'web' as const }
           try {
             const result = await executeCommand(userId, parsed.data)

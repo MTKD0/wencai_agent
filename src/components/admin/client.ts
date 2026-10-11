@@ -2,6 +2,16 @@
  * 管理后台 API 客户端（对接 /api/admin）
  */
 
+export type AdminUser = {
+  id: string
+  name: string
+  phoneNumber: string | null
+  accountCount: number
+  balanceCents: number
+  riskLevel: string
+  locked: boolean
+}
+
 export type AdminSnapshot = {
   now: string
   user: { id: string; name: string; riskLevel: string; riskAssessedAt: string | null }
@@ -71,10 +81,10 @@ async function get<T>(action: string, params: Record<string, string> = {}): Prom
   return body.data as T
 }
 
-async function post<T>(command: AdminCommand): Promise<T> {
+async function post<T>(userId: string, command: AdminCommand): Promise<T> {
   const res = await fetch(BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-admin-user': userId },
     body: JSON.stringify(command),
   })
   const body = await res.json()
@@ -83,8 +93,9 @@ async function post<T>(command: AdminCommand): Promise<T> {
 }
 
 export const adminApi = {
-  snapshot: () => get<AdminSnapshot>('snapshot'),
-  report: (period: string) => get<AdminReport>('report', { period }),
-  anomalies: () => get<AdminAnomaly[]>('anomalies'),
-  command: (cmd: AdminCommand) => post<unknown>(cmd),
+  users: () => get<AdminUser[]>('users'),
+  snapshot: (userId: string) => get<AdminSnapshot>('snapshot', { userId }),
+  report: (userId: string, period: string) => get<AdminReport>('report', { userId, period }),
+  anomalies: (userId: string) => get<AdminAnomaly[]>('anomalies', { userId }),
+  command: (userId: string, cmd: AdminCommand) => post<unknown>(userId, cmd),
 }

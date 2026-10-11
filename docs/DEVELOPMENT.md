@@ -12,7 +12,7 @@
 | 聊天 API | `src/routes/api/chat.ts` | 认证、输入审核、流式 Agent 调用 |
 | 确认 API / 页面 | `src/routes/api/confirm.ts`、`src/routes/confirm.$actionId.tsx` | 用户确认、强验证、DAG 恢复 |
 | 登录 / 安全设置 / 绑定 | `src/routes/login.tsx`、`settings.tsx`、`bind.tsx` | 手机号验证码、设备、Passkey、飞书绑定 |
-| 银行演示后台 `/admin` | `src/routes/admin.tsx`、`src/components/admin/` | 8 个运营视图、人工操作、仿真时钟 |
+| 银行演示后台 `/admin` | `src/routes/admin.tsx`、`src/components/admin/` | 用户首页、按账户切换、8 个运营视图、人工操作、仿真时钟 |
 | 后台 API | `src/routes/api/admin.ts` | 快照、报表、异常、直接业务命令 |
 | 飞书 | `scripts/lark-bot.ts` → `src/server/channels/lark.tsx` | 绑定身份后的对话与确认卡 |
 | MCP stdio | `scripts/mcp-server.ts` → `src/server/channels/mcp.ts` | 为本地调用方注册只读工具 |
@@ -110,7 +110,9 @@ pnpm exec node --env-file=.env.local ./node_modules/vite/bin/vite.js --port 3000
 
 环境变量已由终端或运行平台注入时，可直接使用 `pnpm dev`、`pnpm db:push` 等快捷命令。现有 `db:reset` 包含 POSIX 的 `mkdir -p`/`rm -f`，不适合直接在 Windows 默认命令环境运行；上述建表与播种步骤适合首次初始化，保留已有数据时不要播种。
 
-页面：`http://localhost:3000/`（用户端）、`/admin`（演示后台）。后台仅检查 `ADMIN_ENABLED`，没有管理员登录；`NODE_ENV=production` 时默认关闭，显式设置可覆盖。飞书、MCP 启动脚本同样要注入所需环境变量。
+页面：`http://localhost:3000/`（用户端）、`/admin`（演示后台用户首页）。首页合并银行用户与已注册用户，选择后进入 `/admin?userId=...&section=overview`；业务 GET 携带 `userId`，POST 携带 `x-admin-user`，TanStack Query 缓存键按用户隔离。用户列表服务在 `server/admin/users.ts`；未知用户读写返回 404。此处「登录账户」仅切换管理对象，不更改 Better Auth 用户端会话。
+
+后台仅检查 `ADMIN_ENABLED`，没有管理员登录；`NODE_ENV=production` 时默认关闭，显式设置可覆盖。飞书、MCP 启动脚本同样要注入所需环境变量。
 
 验证命令：`pnpm typecheck`、`pnpm build`、`pnpm test`。数据库测试依赖已有表结构，应指向独立库；当前 `vitest.config.ts` 禁用文件并行，以避免 SQLite 写冲突。
 
@@ -126,7 +128,7 @@ pnpm test
 Remove-Item Env:DATABASE_URL
 ```
 
-2026-10-11 核验结果：类型检查通过；客户端和服务端生产构建通过（有大于 500 kB 的客户端包体提示）；独立新建库上 **12 个测试文件、105 项测试通过**。未使用真实模型、飞书凭证或移动端 Passkey 完成端到端联调。
+2026-10-11 核验结果：类型检查通过；客户端和服务端生产构建通过（有大于 500 kB 的客户端包体提示）；独立新建库上 **14 个测试文件、111 项测试通过**，含用户列表、账户查询/命令切换及生日订单隔离。浏览器已验证首页、手机号搜索和两个演示账户切换。未使用真实模型、飞书凭证或移动端 Passkey 完成端到端联调。
 
 ## 7. 后续修改从哪里入手
 
