@@ -64,7 +64,7 @@ function markdownTable(node: Node): PresentedTable {
 
 function header(value: string) {
   const key = value.replace(/\s|[（(].*?[）)]/g, '')
-  const groups = [['日期', '交易日期', '时间'], ['对方', '商户', '交易对方', '交易对象'],
+  const groups = [['日期', '交易日期', '时间', '交易时间'], ['对方', '商户', '交易对方', '交易对象', '商户/对方', '商户／对方'],
     ['分类', '类别', '消费类别'], ['金额', '支出', '支出金额', '消费金额']]
   return groups.find((group) => group.includes(key))?.[0] ?? key
 }

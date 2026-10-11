@@ -61,6 +61,7 @@ describe('Agent 文字表格与生成式结果', () => {
       ['￥264.330元', '交通', '10-04', '网约车'], ['281.09', '转账', '10-01', '王建国'],
     ] }
     expect(duplicatesTable(rearranged, table)).toBe(true)
+    expect(duplicatesTable(rearranged, { ...table, headers: ['日期', '商户/对方', '类别', '金额（元）'] })).toBe(true)
     expect(duplicatesTable({ headers: ['金额'], rows: [['¥1,234.50']] }, { headers: ['金额'], rows: [['1234.5']] })).toBe(true)
   })
   it('保留重复行次数，不把金额巧合相同的收入和支出合并', () => {
