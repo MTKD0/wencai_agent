@@ -21,9 +21,26 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { title: '文财 · 银行 AI 智能体' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [{ rel: 'stylesheet', href: appCss }, { rel: 'icon', href: '/favicon.svg' }],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: () => (
+    <div className="mx-auto flex h-dvh max-w-md flex-col items-center justify-center gap-3 bg-[var(--bg-base)] px-4">
+      <p className="m-0 text-lg font-semibold text-[var(--sea-ink)]">页面不存在</p>
+      <a className="text-sm text-[var(--lagoon-deep)] underline" href="/">
+        返回文财
+      </a>
+    </div>
+  ),
+  errorComponent: ({ error }: { error: unknown }) => (
+    <div className="mx-auto flex h-dvh max-w-md flex-col items-center justify-center gap-3 bg-[var(--bg-base)] px-4">
+      <p className="m-0 text-lg font-semibold text-[var(--sea-ink)]">出错了</p>
+      <p className="m-0 text-center text-sm text-[var(--sea-ink-soft)]">{error instanceof Error ? error.message : '未知错误'}</p>
+      <a className="text-sm text-[var(--lagoon-deep)] underline" href="/">
+        返回文财
+      </a>
+    </div>
+  ),
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {

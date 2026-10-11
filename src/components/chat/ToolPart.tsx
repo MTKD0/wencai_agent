@@ -1,18 +1,10 @@
 import { JSONUIProvider, Renderer } from '@json-render/react'
 import { FollowUpContext, registry } from '#/genui/registry'
+import { isRetryableConfirmError, useCancelAction, useConfirmAction } from '#/lib/queries'
+import type { StepUpPayload } from '#/lib/queries'
 import type { ToolOutcome } from '#/server/tools/define'
 import type { PlanState } from '#/server/executor/executor'
 import ConfirmCard from './ConfirmCard'
-import type { ConfirmResponse, StepUpPayload } from './ConfirmCard'
-
-/** 服务端返回的确认失败（含 step_up_failed 等可重试错误码） */
-class ConfirmError extends Error {
-  readonly data: ConfirmResponse
-  constructor(message: string, data: ConfirmResponse) {
-    super(message)
-    this.data = data
-  }
-}
 
 interface ToolUIPart {
   type: `tool-${string}`
@@ -45,25 +37,6 @@ const TOOL_LABEL: Record<string, string> = {
  * 安全关键内容（确认单、余额、回执）全部来自工具输出的结构化数据，不经模型转述。
  */
 export default function ToolPart({ part, onFollowUp }: { part: ToolUIPart; onFollowUp: (text: string) => void }) {
-  // 确认是客户端会话的专属能力：提交到 /api/confirm，由服务端做完整性与一次性校验
-  const confirm = async (actionId: string, stepUp?: StepUpPayload) => {
-    const res = await fetch('/api/confirm', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ actionId, decision: 'confirm', stepUp }),
-    })
-    const data = (await res.json()) as ConfirmResponse
-    if (!data.ok) throw new ConfirmError(data.message ?? data.code ?? '确认失败', data)
-    return data
-  }
-  const cancel = async (actionId: string) => {
-    await fetch('/api/confirm', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ actionId, decision: 'cancel' }),
-    })
-  }
-
   const tool = part.type.slice('tool-'.length)
   const label = TOOL_LABEL[tool] ?? tool
 
@@ -92,47 +65,47 @@ export default function ToolPart({ part, onFollowUp }: { part: ToolUIPart; onFol
     return <PlanView state={out.state} />
   }
 
-  return <Outcome label={label} tool={tool} outcome={part.output as ToolOutcome} confirm={confirm} cancel={cancel} />
+  return <Outcome label={label} tool={tool} outcome={part.output as ToolOutcome} />
 }
 
-function Outcome({
-  label,
-  tool,
-  outcome,
-  confirm,
-  cancel,
-}: {
-  label: string
-  tool: string
-  outcome: ToolOutcome
-  confirm: (actionId: string, stepUp?: StepUpPayload) => Promise<unknown>
-  cancel: (actionId: string) => Promise<void>
-}) {
+/**
+ * 一条待确认操作。确认/取消走 Query mutation：自动管理提交态与错误态，
+ * 服务端仍然做完整性、归属、一次性消费与强验证校验。
+ */
+function PendingControl({ outcome }: { outcome: Extract<ToolOutcome, { status: 'needs_confirmation' }> }) {
+  const confirm = useConfirmAction(outcome.actionId)
+  const cancel = useCancelAction(outcome.actionId)
+
+  // 强验证输错（step_up_failed）允许重试；not_found / tampered / expired 等是终态，
+  // 该操作已无法执行，卡片直接收起到结束态，不再给出按钮
+  const failedForGood = confirm.error !== null && !isRetryableConfirmError(confirm.error)
+
+  return (
+    <ConfirmCard
+      {...outcome}
+      submitting={confirm.isPending}
+      error={failedForGood ? undefined : confirm.error?.message}
+      done={confirm.isSuccess ? '操作已完成' : failedForGood ? confirm.error?.message : undefined}
+      onConfirm={async (stepUp?: StepUpPayload) => {
+        await confirm.mutateAsync(stepUp)
+      }}
+      onCancel={() => cancel.mutate()}
+    />
+  )
+}
+
+function Outcome({ label, tool, outcome }: { label: string; tool: string; outcome: ToolOutcome }) {
   switch (outcome.status) {
     case 'needs_confirmation':
-      return (
-        <ConfirmCard
-          {...outcome}
-          onConfirm={async (stepUp) => {
-            try {
-              await confirm(outcome.actionId, stepUp)
-            } catch (err) {
-              // 交易密码错误可重试，其余错误为终态
-              if (err instanceof ConfirmError && err.data.code !== 'step_up_failed') throw new Error(err.message, { cause: 'terminal' })
-              throw err
-            }
-          }}
-          onSettled={async (r) => {
-            if (r.cancelled) await cancel(outcome.actionId)
-          }}
-        />
-      )
+      return <PendingControl outcome={outcome} />
     case 'needs_handoff':
       return (
         <div className="rounded-2xl border border-red-300 p-4 text-sm">
           <p className="m-0 font-semibold">{outcome.summary.title}</p>
           <p className="m-0 mt-1 text-[var(--sea-ink-soft)]">该操作需要在 App 内完成强验证：</p>
-          <a href={outcome.url} className="mt-2 inline-block font-semibold text-[var(--lagoon-deep)]">前往验证 →</a>
+          <a href={outcome.url} className="mt-2 inline-block font-semibold text-[var(--lagoon-deep)]">
+            前往验证 →
+          </a>
         </div>
       )
     case 'denied':
@@ -150,9 +123,7 @@ function Accounts({ data }: { data: { id: string; name: string; balance: number 
       {data.map((a) => (
         <div key={a.id} className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
           <p className="m-0 text-xs text-[var(--sea-ink-soft)]">{a.name}</p>
-          <p className="m-0 text-lg font-bold text-[var(--sea-ink)]">
-            ¥{a.balance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
-          </p>
+          <p className="m-0 text-lg font-bold text-[var(--sea-ink)]">¥{a.balance.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</p>
         </div>
       ))}
     </div>

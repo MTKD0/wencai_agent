@@ -1,99 +1,101 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { authClient, useSession } from '#/lib/auth-client'
+import { UnauthorizedError, usePasskeyDelete, useSecurityAction, useSettings } from '#/lib/queries'
 import ThemeToggle from '#/components/ThemeToggle'
-
-type Settings = {
-  user: { id: string; name: string }
-  sessions: { id: string; createdAt: string; expiresAt: string; ipAddress: string | null; userAgent: string | null; current: boolean }[]
-  bindings: { id: string; channel: string; boundAt: string }[]
-  passkeys: { id: string; deviceType: string | null; backedUp: boolean; createdAt: string; lastUsedAt: string | null }[]
-  stepUp: { password: boolean; passkey: boolean; larkBound: boolean }
-}
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
 
 function SettingsPage() {
-  const { data: session, isPending } = useSession()
+  const { data: session, isPending: sessionPending } = useSession()
   const navigate = useNavigate()
-  const [data, setData] = useState<Settings | null>(null)
-  const [error, setError] = useState('')
+  const settings = useSettings()
+  const securityAction = useSecurityAction()
+  const deletePasskey = usePasskeyDelete()
   const [password, setPassword] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
-  const load = () => {
-    fetch('/api/settings')
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setData)
-      .catch(() => setError('加载失败'))
-  }
-
-  if (isPending) return <Shell>加载中…</Shell>
-  if (!session) return <Shell>请先登录</Shell>
-  if (!data)
-    return (
-      <Shell>
-        <button
-          className="demo-button"
-          type="button"
-          onClick={() => {
-            load()
-          }}
-        >
-          查看安全设置
-        </button>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-      </Shell>
-    )
-
-  const act = async (body: unknown) => {
-    setBusy(true)
-    setError('')
-    try {
-      const res = await fetch('/api/security', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const out = await res.json()
-      if (!res.ok || !out.ok) setError(out.message ?? '操作失败')
-      load()
-    } finally {
-      setBusy(false)
+  const body = (() => {
+    if (sessionPending) return <Muted>加载中…</Muted>
+    if (!session) return <Muted>请先登录后再查看安全设置。</Muted>
+    if (settings.isPending) return <Muted>加载中…</Muted>
+    if (settings.error) {
+      if (settings.error instanceof UnauthorizedError) return <Muted>登录已过期，请重新登录。</Muted>
+      return <Muted>加载失败：{settings.error.message}</Muted>
     }
-  }
+    return <SettingsBody
+      data={settings.data}
+      currentSessionId={session.session.id}
+      password={password}
+      setPassword={setPassword}
+      error={error}
+      setError={setError}
+      busy={securityAction.isPending || deletePasskey.isPending}
+      onAction={(body) => {
+        setError('')
+        securityAction.mutate(body, { onError: (e) => setError(e.message) })
+      }}
+      onDeletePasskey={(id) => {
+        setError('')
+        deletePasskey.mutate(id, { onError: (e) => setError(e.message) })
+      }}
+      onSignOut={async () => {
+        await authClient.signOut()
+        navigate({ to: '/login' })
+      }}
+    />
+  })()
 
   return (
     <Shell>
+      {body}
+      {error && <p className="m-0 text-sm text-red-600">{error}</p>}
+    </Shell>
+  )
+}
+
+interface BodyProps {
+  data: ReturnType<typeof useSettings>['data']
+  currentSessionId: string
+  password: string
+  setPassword: (v: string) => void
+  error: string
+  setError: (v: string) => void
+  busy: boolean
+  onAction: (body: unknown) => void
+  onDeletePasskey: (id: string) => void
+  onSignOut: () => Promise<void>
+}
+
+function SettingsBody({ data, currentSessionId, password, setPassword, busy, onAction, onDeletePasskey, onSignOut }: BodyProps) {
+  if (!data) return null
+  const { stepUp } = data
+  const methods = [stepUp.password ? '交易密码' : null, stepUp.passkey ? 'Passkey' : null].filter(Boolean)
+
+  return (
+    <>
       <section className="space-y-2">
         <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">账号</h2>
-        <p className="m-0 text-sm demo-muted">
-          {data.user.name} · {data.user.id}
-        </p>
-        <button
-          className="text-xs underline demo-muted"
-          type="button"
-          onClick={async () => {
-            await authClient.signOut()
-            navigate({ to: '/login' })
-          }}
-        >
+        <p className="m-0 text-sm demo-muted">{data.user.name}</p>
+        <button className="text-xs underline demo-muted" type="button" onClick={() => void onSignOut()}>
           退出登录
         </button>
       </section>
 
       <section className="space-y-2">
         <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">登录设备</h2>
+        <p className="m-0 text-xs demo-muted">踢掉其他设备后，那些设备上的会话立即失效。</p>
         {data.sessions.map((s) => (
           <div key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] p-3 text-xs">
             <div className="min-w-0">
-              <p className="m-0 truncate text-[var(--sea-ink)]">{s.current ? '当前设备' : s.userAgent ?? '未知设备'}</p>
+              <p className="m-0 truncate text-[var(--sea-ink)]">{s.id === currentSessionId ? '当前设备' : (s.userAgent ?? '未知设备')}</p>
               <p className="m-0 demo-muted">
                 {s.ipAddress ?? '未知 IP'} · 到期 {new Date(s.expiresAt).toLocaleString('zh-CN')}
               </p>
             </div>
-            {!s.current && (
-              <button className="shrink-0 text-red-600 underline" type="button" disabled={busy} onClick={() => act({ action: 'revoke_session', sessionId: s.id })}>
+            {s.id !== currentSessionId && (
+              <button className="shrink-0 text-red-600 underline" type="button" disabled={busy} onClick={() => onAction({ action: 'revoke_session', sessionId: s.id })}>
                 踢掉
               </button>
             )}
@@ -108,7 +110,7 @@ function SettingsPage() {
         {data.bindings.map((b) => (
           <div key={b.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] p-3 text-xs">
             <span className="text-[var(--sea-ink)]">{b.channel === 'lark' ? '飞书' : b.channel}</span>
-            <button className="shrink-0 text-red-600 underline" type="button" disabled={busy} onClick={() => act({ action: 'revoke_binding', bindingId: b.id })}>
+            <button className="shrink-0 text-red-600 underline" type="button" disabled={busy} onClick={() => onAction({ action: 'revoke_binding', bindingId: b.id })}>
               解绑
             </button>
           </div>
@@ -117,16 +119,12 @@ function SettingsPage() {
 
       <section className="space-y-2">
         <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">强验证方式</h2>
-        <p className="m-0 text-xs demo-muted">
-          当前可用：{data.stepUp.password ? '交易密码' : ''}
-          {data.stepUp.password && data.stepUp.passkey ? ' + ' : ''}
-          {data.stepUp.passkey ? 'Passkey' : ''}
-        </p>
+        <p className="m-0 text-xs demo-muted">当前可用：{methods.length ? methods.join(' + ') : '无（请联系客服）'}</p>
         <form
           className="flex gap-2"
           onSubmit={(e) => {
             e.preventDefault()
-            void act({ action: 'set_tx_password', password })
+            onAction({ action: 'set_tx_password', password })
             setPassword('')
           }}
         >
@@ -145,53 +143,43 @@ function SettingsPage() {
         {data.passkeys.map((p) => (
           <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] p-3 text-xs">
             <span className="text-[var(--sea-ink)]">Passkey{p.backedUp ? '（已同步）' : ''}</span>
-            <button
-              className="shrink-0 text-red-600 underline"
-              type="button"
-              disabled={busy}
-              onClick={async () => {
-                await fetch('/api/passkey/delete', {
-                  method: 'POST',
-                  headers: { 'content-type': 'application/json' },
-                  body: JSON.stringify({ id: p.id }),
-                })
-                load()
-              }}
-            >
+            <button className="shrink-0 text-red-600 underline" type="button" disabled={busy} onClick={() => onDeletePasskey(p.id)}>
               删除
             </button>
           </div>
         ))}
-        <button
-          className="demo-button"
-          type="button"
-          disabled={busy}
-          onClick={async () => {
-            setError('')
-            try {
-              const { startRegistration } = await import('@simplewebauthn/browser')
-              const res = await fetch('/api/passkey/register')
-              const options = await res.json()
-              const credential = await startRegistration({ optionsJSON: options })
-              const done = await fetch('/api/passkey/register', {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ credential }),
-              })
-              const body = await done.json()
-              if (!done.ok || !body.ok) setError(body.message ?? '注册失败')
-              load()
-            } catch (err) {
-              setError(err instanceof Error ? err.message : '注册失败')
-            }
-          }}
-        >
-          注册 Passkey
-        </button>
+        <RegisterPasskeyButton />
       </section>
+    </>
+  )
+}
 
-      {error && <p className="m-0 text-sm text-red-600">{error}</p>}
-    </Shell>
+/** Passkey 注册需要浏览器 API，用 mutation 而非缓存查询 */
+function RegisterPasskeyButton() {
+  const register = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/passkey/register')
+      if (res.status === 401) throw new UnauthorizedError()
+      const options = await res.json()
+      if (!res.ok) throw new Error(options.message ?? '获取注册选项失败')
+      const { startRegistration } = await import('@simplewebauthn/browser')
+      const credential = await startRegistration({ optionsJSON: options })
+      const done = await fetch('/api/passkey/register', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      })
+      const body = await done.json()
+      if (!done.ok || !body.ok) throw new Error(body.message ?? '注册失败')
+    },
+  })
+  return (
+    <>
+      <button className="demo-button" type="button" disabled={register.isPending} onClick={() => register.mutate()}>
+        {register.isPending ? '注册中…' : '注册 Passkey'}
+      </button>
+      {register.error && <p className="m-0 text-xs text-red-600">{register.error.message}</p>}
+    </>
   )
 }
 
@@ -207,4 +195,8 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6">{children}</div>
     </div>
   )
+}
+
+function Muted({ children }: { children: React.ReactNode }) {
+  return <p className="m-0 text-sm demo-muted">{children}</p>
 }

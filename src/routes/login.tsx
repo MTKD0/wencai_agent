@@ -3,12 +3,12 @@ import { useState } from 'react'
 import { authClient } from '#/lib/auth-client'
 import ThemeToggle from '#/components/ThemeToggle'
 
-/** 手机号 + 短信验证码登录（演示环境验证码打在服务端日志） */
+/** 手机号 + 短信验证码登录（演示环境验证码打在控制台） */
 export const Route = createFileRoute('/login')({ component: LoginPage })
 
 type Step = 'phone' | 'code'
 
-export default function LoginPage() {
+function LoginPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')

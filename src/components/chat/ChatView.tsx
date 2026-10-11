@@ -15,7 +15,10 @@ export default function ChatView() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const busy = status === 'submitted' || status === 'streaming'
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages])
+  // 新消息到达时滚到底部；用语句块包裹，避免把 scrollIntoView 的返回值（undefined）当 cleanup
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const send = (text: string) => {
     if (!text.trim() || busy) return
