@@ -10,6 +10,7 @@ import { quarantineForModel } from '#/server/tools/sanitize'
 import type { BankToolDef } from '#/server/tools/define'
 import type { AgentContext } from './context'
 import { getSessionData, putSessionData } from './session'
+import { modelToolSchema } from './tool-schema'
 
 /** 按渠道裁剪工具白名单：MCP 只暴露只读工具 */
 export function availableBankTools(ctx: AgentContext): BankToolDef[] {
@@ -24,7 +25,7 @@ export function buildAgentTools(ctx: AgentContext): ToolSet {
   for (const def of bankTools) {
     tools[def.name] = tool({
       description: `${def.description}${def.kind === 'write' ? '（写操作，系统会按风险等级要求用户确认）' : ''}`,
-      inputSchema: def.inputSchema,
+      inputSchema: modelToolSchema(def.inputSchema),
       execute: async (args) => {
         const outcome = await runBankTool(def, args, ctx)
         if (outcome.status === 'done') putSessionData(ctx.sessionId, def.name, outcome.data)

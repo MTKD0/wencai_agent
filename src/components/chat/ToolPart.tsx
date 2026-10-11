@@ -10,7 +10,7 @@ import { Reveal } from '#/components/ui/motion'
 import { normalizeChartData } from '#/components/ui/charts'
 import { FinancialReport } from '#/components/banking/FinancialReport'
 
-interface ToolUIPart {
+export interface ToolUIPart {
   type: `tool-${string}`
   toolCallId: string
   state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error'
@@ -73,6 +73,7 @@ export default function ToolPart({
       | { status: 'view'; spec: never }
       | { status: 'invalid_view'; errors: string[] }
     if (out.status !== 'view') return <Chip>⚠️ 视图未通过校验</Chip>
+    if (summarized) return <Chip>✓ 结果已整理</Chip>
     return (
       <FollowUpContext.Provider value={onFollowUp}>
         <JSONUIProvider

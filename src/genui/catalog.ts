@@ -58,6 +58,8 @@ export function catalogPrompt(): string {
     'show_view 的 spec 格式：{ root: string, elements: { [key]: { type, props, children?: string[] } } }',
     '可用组件：',
     ...lines,
+    '必需 props：Panel {title, subtitle: string|null}；Metric {label, value: 数据引用, unit: "元"|"%"|"笔"|"天"|null}；BarChart/PieChart {title, data: 数组引用, labelKey, valueKey}；Table {rows: 数组引用, columns: [{key,label}]}；Note {text}；FollowUp {label,prompt}。',
+    '月度分类图示例（先查询 get_spending_report）：{"root":"p","elements":{"p":{"type":"Panel","props":{"title":"本月支出","subtitle":null},"children":["m","c"]},"m":{"type":"Metric","props":{"label":"总支出","value":{"$state":"/get_spending_report/expense"},"unit":"元"}},"c":{"type":"PieChart","props":{"title":"支出分类","data":{"$state":"/get_spending_report/byCategory"},"labelKey":"category","valueKey":"total"}}}}',
     '数据型 props 必须写成 {"$state": "/工具名/字段路径"}，例如 {"$state": "/analyze_spending/result/byCategory"}；',
     '路径只能指向本会话已调用工具的返回结果。禁止在 spec 中写入任何金额数字，禁止提供 state 字段。',
   ].join('\n')

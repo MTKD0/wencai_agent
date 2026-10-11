@@ -1,5 +1,6 @@
 import { catalogPrompt } from '#/genui/catalog'
 import type { AgentContext } from './context'
+import { businessMonth } from '#/lib/dashboard'
 
 /**
  * 系统指令只描述"怎么做好"，不承担安全职责——
@@ -16,6 +17,8 @@ export function buildInstructions(ctx: AgentContext): string {
 - 缺少必要信息（金额、收款人、付款账户等）时，简短追问。
 - 涉及多个步骤、且步骤之间有依赖的任务，调用 plan_task 提交计划，由系统按依赖执行。
 - 需要可视化展示（账单构成、趋势、产品对比）时，先调用相应查询/分析工具，再调用 show_view。
+- 当前业务月份为 ${businessMonth(new Date())}。本月、上月、年度等自然账期使用 get_spending_report，分类数组直接引用 /get_spending_report/byCategory，总支出引用 /get_spending_report/expense；不要用近三十天代替本月。
+- 查询和计算是内部处理步骤，不为中间数据生成图表。收集齐数据后只提交一次最终 show_view；需要多图对比时放进同一 Panel。已有数据足够时不要重复查询或分析。视图校验失败时按错误修正后重试，成功后不重复生成同一结果。
 
 ## 关于确认
 - 写操作的工具结果可能是 needs_confirmation 或 needs_handoff：说明系统已生成确认单，请用户在卡片上核对并确认。

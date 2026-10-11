@@ -7,6 +7,7 @@ import { Streamdown } from 'streamdown'
 import type { WencaiUIMessage } from '#/server/agent/messages'
 import { AgentAvatar } from '#/components/banking/AgentAvatar'
 import ToolPart from './ToolPart'
+import { toolPresentations } from './presentation'
 
 const SUGGESTIONS = [
   { label: '查一下本月支出', prompt: '帮我分析本月支出并用图表展示分类', icon: ReceiptText },
@@ -43,7 +44,7 @@ export default function ChatView({
           ? 'instant'
           : 'smooth',
       })
-  }, [messages, active])
+  }, [messages, active, busy])
   const send = (text: string) => {
     if (!text.trim() || busy) return
     followScroll.current = true
@@ -102,8 +103,8 @@ export default function ChatView({
           aria-live="polite"
           aria-busy={busy}
         >
-          {messages.map((message) => {
-            const visualized = visualizedTools(message.parts)
+          {messages.map((message, messageIndex) => {
+            const presentation = toolPresentations(message.parts, busy && messageIndex === messages.length - 1)
             return (
               <div
                 key={message.id}
@@ -138,12 +139,12 @@ export default function ChatView({
                         </p>
                       )
                     if (part.type.startsWith('tool-'))
-                      return (
+                      return presentation[index] === 'hidden' ? null : (
                         <div className="bank-tool-result" key={key}>
                           <ToolPart
                             part={part as never}
                             onFollowUp={send}
-                            summarized={visualized.has(part.type.slice(5))}
+                            summarized={presentation[index] === 'status'}
                           />
                         </div>
                       )
@@ -218,20 +219,4 @@ export default function ChatView({
       <p className="bank-agent-disclaimer">敏感操作须由你确认，请以银行数据为准</p>
     </>
   )
-}
-
-/** 已有生成式视图引用的数据只展示一次；确认单永远不折叠。 */
-function visualizedTools(parts: WencaiUIMessage['parts']) {
-  const names = new Set<string>()
-  const visit = (value: unknown) => {
-    if (!value || typeof value !== 'object') return
-    if ('$state' in value && typeof value.$state === 'string') names.add(value.$state.split('/')[1])
-    else for (const child of Object.values(value)) visit(child)
-  }
-  for (const part of parts) {
-    if (part.type !== 'tool-show_view' || !('output' in part)) continue
-    const output = part.output as { status?: string; spec?: { elements?: unknown } }
-    if (output?.status === 'view') visit(output.spec?.elements)
-  }
-  return names
 }

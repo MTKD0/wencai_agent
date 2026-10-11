@@ -163,6 +163,9 @@ export const getSpendingReport = defineBankTool({
       net: yuan(income - expense),
       transactionCount: filtered.length,
       categories: Object.fromEntries(Object.entries(byCategory).map(([k, v]) => [k, yuan(v)])),
+      byCategory: Object.entries(byCategory)
+        .sort((a, b) => b[1] - a[1])
+        .map(([category, cents]) => ({ category, total: yuan(cents) })),
     }
   },
 })
