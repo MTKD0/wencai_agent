@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BindRouteImport } from './routes/bind'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ApiAdminRouteImport } from './routes/api/admin'
 import { Route as ApiBindRouteImport } from './routes/api/bind'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiConfirmRouteImport } from './routes/api/confirm'
@@ -29,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BindRoute = BindRouteImport.update({
   id: '/bind',
   path: '/bind',
@@ -42,6 +49,11 @@ const LoginRoute = LoginRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminRoute = ApiAdminRouteImport.update({
+  id: '/api/admin',
+  path: '/api/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBindRoute = ApiBindRouteImport.update({
@@ -97,9 +109,11 @@ const ApiPasskeyRegisterRoute = ApiPasskeyRegisterRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
+  '/api/admin': typeof ApiAdminRoute
   '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
@@ -113,9 +127,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
+  '/api/admin': typeof ApiAdminRoute
   '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
@@ -130,9 +146,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
+  '/api/admin': typeof ApiAdminRoute
   '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
@@ -148,9 +166,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/bind'
     | '/login'
     | '/settings'
+    | '/api/admin'
     | '/api/bind'
     | '/api/chat'
     | '/api/confirm'
@@ -164,9 +184,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/bind'
     | '/login'
     | '/settings'
+    | '/api/admin'
     | '/api/bind'
     | '/api/chat'
     | '/api/confirm'
@@ -180,9 +202,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/bind'
     | '/login'
     | '/settings'
+    | '/api/admin'
     | '/api/bind'
     | '/api/chat'
     | '/api/confirm'
@@ -197,9 +221,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   BindRoute: typeof BindRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
+  ApiAdminRoute: typeof ApiAdminRoute
   ApiBindRoute: typeof ApiBindRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiConfirmRoute: typeof ApiConfirmRoute
@@ -221,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bind': {
       id: '/bind'
       path: '/bind'
@@ -240,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin': {
+      id: '/api/admin'
+      path: '/api/admin'
+      fullPath: '/api/admin'
+      preLoaderRoute: typeof ApiAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/bind': {
@@ -317,9 +357,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   BindRoute: BindRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
+  ApiAdminRoute: ApiAdminRoute,
   ApiBindRoute: ApiBindRoute,
   ApiChatRoute: ApiChatRoute,
   ApiConfirmRoute: ApiConfirmRoute,

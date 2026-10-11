@@ -23,6 +23,9 @@ export const users = sqliteTable('users', {
   // 账户级锁定（强验证连续失败、异常交易触发熔断）
   lockedUntil: integer('locked_until', { mode: 'timestamp_ms' }),
   failedAuthCount: integer('failed_auth_count').notNull().default(0),
+  // 风险测评结果，有效期 365 天；未测评视为 R1
+  riskRating: text('risk_rating', { enum: ['R1', 'R2', 'R3', 'R4', 'R5'] }).notNull().default('R1'),
+  riskAssessedAt: text('risk_assessed_at'),
 })
 
 export const accounts = sqliteTable('accounts', {
@@ -74,6 +77,8 @@ export const subscriptions = sqliteTable('subscriptions', {
   cycle: text('cycle', { enum: ['monthly', 'yearly'] }).notNull(),
   status: text('status', { enum: ['active', 'cancelled'] }).notNull(),
   lastChargedAt: integer('last_charged_at', { mode: 'timestamp_ms' }),
+  /** 扣费前提前提醒天数 */
+  remindDays: integer('remind_days').notNull().default(3),
 })
 
 export const products = sqliteTable('products', {
@@ -115,6 +120,127 @@ export const plans = sqliteTable('plans', {
     enum: ['running', 'suspended', 'completed', 'failed', 'compensated', 'handoff'],
   }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+/**
+ * 仿真时钟：admin 后台可推进时间触发定时任务，key='clock' 存 ISO 时间串。
+ * 未设置时默认使用 Date.now()。
+ */
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+})
+
+/**
+ * 联系人（收款人扩展版）：比 payees 多 note/accountMask 字段，用于后台展示与 AA 分摊。
+ * Agent 工具层同时支持 payees（精确银行账号）与 contacts（别名/备注搜索）两套语义。
+ */
+export const contacts = sqliteTable('contacts', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  name: text('name').notNull(),
+  phone: text('phone').notNull(),
+  /** 搜索关键词，如"爱人 老婆 生日" */
+  note: text('note').notNull().default(''),
+  bank: text('bank').notNull().default(''),
+  /** 脱敏账号，仅展示用 */
+  accountMask: text('account_mask').notNull().default(''),
+})
+
+/**
+ * 理财持仓：申购后写入，赎回后 principal 归零。不计提收益，演示本金。
+ */
+export const holdings = sqliteTable('holdings', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  productId: text('product_id').notNull(),
+  /** 持仓本金（分） */
+  principalCents: integer('principal_cents').notNull(),
+  /** 赎回解锁时间（ISO） */
+  redeemableAt: text('redeemable_at').notNull(),
+  createdAt: text('created_at').notNull(),
+})
+
+/**
+ * 定时任务：定时转账、生日预留、生日订购等到期执行的异步任务。
+ */
+export const scheduledTasks = sqliteTable('scheduled_tasks', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  /** 'transfer' | 'birthdayReserve' | 'birthdayOrder' */
+  kind: text('kind').notNull(),
+  /** 'pending' | 'succeeded' | 'failed' | 'cancelled' */
+  status: text('status').notNull(),
+  /** 触发时间（ISO） */
+  dueAt: text('due_at').notNull(),
+  /** JSON 序列化的任务参数 */
+  payloadJson: text('payload_json').notNull(),
+  /** JSON 序列化的执行结果 */
+  resultJson: text('result_json'),
+  createdAt: text('created_at').notNull(),
+})
+
+/**
+ * AA 分摊：发起人自动包含，shares 是 JSON 数组（每项含 contactId/amount/status）。
+ */
+export const splits = sqliteTable('splits', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  title: text('title').notNull(),
+  /** 总金额（分） */
+  totalCents: integer('total_cents').notNull(),
+  /** JSON: [{contactId, amountCents, status}] */
+  sharesJson: text('shares_json').notNull(),
+  createdAt: text('created_at').notNull(),
+})
+
+/**
+ * 生日计划：预留预算、生日前两天订购鲜花与蛋糕。
+ */
+export const birthdayPlans = sqliteTable('birthday_plans', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  contactId: text('contact_id').notNull(),
+  birthday: text('birthday').notNull(),
+  /** 预算（分） */
+  budgetCents: integer('budget_cents').notNull(),
+  /** 'planned' | 'reserved' | 'ordered' | 'completed' | 'cancelled' */
+  status: text('status').notNull(),
+  createdAt: text('created_at').notNull(),
+})
+
+/**
+ * 生日计划订单：每笔礼品订购记录。
+ */
+export const birthdayOrders = sqliteTable('birthday_orders', {
+  id: text('id').primaryKey(),
+  planId: text('plan_id').notNull(),
+  merchant: text('merchant').notNull(),
+  item: text('item').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  deliveryDate: text('delivery_date').notNull(),
+  /** 'pending' | 'confirmed' | 'delivered' */
+  status: text('status').notNull(),
+})
+
+/**
+ * 两阶段确认令牌：preview_* 签发，commit_* 校验后消费。
+ * 绑定 RESOLVED entity ID 指纹，防止确认后篡改收款人/金额。
+ */
+export const confirmationTokens = sqliteTable('confirmation_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  /** 操作类型，如 'transfer'、'purchase' */
+  operation: text('operation').notNull(),
+  /** stableStringify(resolved params) 的 SHA-256 */
+  paramHash: text('param_hash').notNull(),
+  /** 面向用户的摘要快照（JSON），不经模型转述 */
+  summaryJson: text('summary_json').notNull(),
+  /** 权限层级 */
+  tier: text('tier').notNull(),
+  expiresAt: text('expires_at').notNull(),
+  consumedAt: text('consumed_at'),
+  createdAt: text('created_at').notNull(),
 })
 
 export const auditLogs = sqliteTable('audit_logs', {

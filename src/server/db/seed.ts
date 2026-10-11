@@ -1,5 +1,6 @@
 import { auth as authTables, db, schema } from './client'
 import { DEMO_USER_ID, OTHER_USER_ID } from './constants'
+import { seedExtended } from './seed-extended'
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -120,7 +121,12 @@ async function seed() {
   console.log(`seeded demo bank data (${DEMO_PHONE} / ${OTHER_PHONE})`)
 }
 
-seed().catch((err) => {
+async function main() {
+  await seed()
+  await seedExtended()
+}
+
+main().catch((err) => {
   console.error(err)
   process.exit(1)
 })

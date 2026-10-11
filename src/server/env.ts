@@ -21,6 +21,12 @@ const EnvSchema = z.object({
   // 演示用交易密码；真实系统应走加密键盘 + 服务端哈希校验
   DEMO_TX_PASSWORD: z.string().default('123456'),
   PUBLIC_BASE_URL: z.string().default('http://localhost:3000'),
+
+  // 银行管理后台（/admin、/api/admin）无登录鉴权，仅供本地演示；生产构建默认关闭
+  ADMIN_ENABLED: z
+    .enum(['true', 'false'])
+    .default(process.env.NODE_ENV === 'production' ? 'false' : 'true')
+    .transform((v) => v === 'true'),
 })
 
 export const env = EnvSchema.parse(process.env)

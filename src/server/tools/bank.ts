@@ -397,6 +397,9 @@ export const cancelSubscription = defineBankTool({
   },
 })
 
+import { EXTENDED_TOOLS } from './bank-extended'
+import { PLANNING_TOOLS } from './bank-planning'
+
 export const BANK_TOOLS: BankToolDef[] = [
   getAccounts,
   listTransactions,
@@ -411,6 +414,9 @@ export const BANK_TOOLS: BankToolDef[] = [
   reportCardLost,
   adjustCardLimit,
   cancelSubscription,
+  // --- ai-banking-agent 扩展工具 ---
+  ...EXTENDED_TOOLS,
+  ...PLANNING_TOOLS,
 ]
 
 const byName = new Map<string, BankToolDef>(BANK_TOOLS.map((t) => [t.name, t]))

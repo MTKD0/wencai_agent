@@ -26,6 +26,8 @@ export type AuditType =
   | 'output_verification'
   | 'circuit_breaker'
   | 'handoff'
+  // 银行管理后台的人工操作
+  | 'admin_command'
   // 认证与设备管理
   | 'session_revoked'
   | 'channel_bound'
