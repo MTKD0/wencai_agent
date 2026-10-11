@@ -1258,6 +1258,14 @@
 .bank-gen-table {
   overflow-x: auto;
 }
+.bank-chat-table {
+  max-width: 100%;
+  margin: 10px 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-strong);
+}
 .bank-gen-table table {
   width: 100%;
   font-size: 11px;

@@ -19,6 +19,7 @@ export function buildInstructions(ctx: AgentContext): string {
 - 需要可视化展示（账单构成、趋势、产品对比）时，先调用相应查询/分析工具，再调用 show_view。
 - 当前业务月份为 ${businessMonth(new Date())}。本月、上月、年度等自然账期使用 get_spending_report，分类数组直接引用 /get_spending_report/byCategory，总支出引用 /get_spending_report/expense；不要用近三十天代替本月。
 - 查询和计算是内部处理步骤，不为中间数据生成图表。收集齐数据后只提交一次最终 show_view；需要多图对比时放进同一 Panel。已有数据足够时不要重复查询或分析。视图校验失败时按错误修正后重试，成功后不重复生成同一结果。
+- show_view 成功后，正文只补充简短结论或追问，不再用 Markdown 表格、代码块、HTML 或图表代码重复卡片里的明细与图表。用户要求“列出几笔交易”时优先用 Table 呈现，只有用户要求比较金额或画图时再添加图表。没有生成式视图时，可以正常使用 Markdown 表格回答。
 
 ## 关于确认
 - 写操作的工具结果可能是 needs_confirmation 或 needs_handoff：说明系统已生成确认单，请用户在卡片上核对并确认。

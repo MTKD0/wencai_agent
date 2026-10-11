@@ -3,11 +3,11 @@ import { DefaultChatTransport } from 'ai'
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowUp, Loader2, ReceiptText, Send, Square } from 'lucide-react'
-import { Streamdown } from 'streamdown'
 import type { WencaiUIMessage } from '#/server/agent/messages'
 import { AgentAvatar } from '#/components/banking/AgentAvatar'
 import ToolPart from './ToolPart'
 import { toolPresentations } from './presentation'
+import AssistantText, { presentedTables } from './AssistantText'
 
 const SUGGESTIONS = [
   { label: '查一下本月支出', prompt: '帮我分析本月支出并用图表展示分类', icon: ReceiptText },
@@ -104,7 +104,9 @@ export default function ChatView({
           aria-busy={busy}
         >
           {messages.map((message, messageIndex) => {
-            const presentation = toolPresentations(message.parts, busy && messageIndex === messages.length - 1)
+            const processing = busy && messageIndex === messages.length - 1
+            const presentation = toolPresentations(message.parts, processing)
+            const tables = presentedTables(message.parts, presentation)
             return (
               <div
                 key={message.id}
@@ -120,9 +122,7 @@ export default function ChatView({
                           {part.text}
                         </p>
                       ) : (
-                        <div key={key} className="bank-assistant-text">
-                          <Streamdown>{part.text}</Streamdown>
-                        </div>
+                        <AssistantText key={key} text={part.text} tables={tables} processing={processing} />
                       )
                     if (part.type === 'data-verify')
                       return (
