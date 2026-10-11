@@ -31,6 +31,7 @@ import { AnimatedAmount, Reveal } from '#/components/ui/motion'
 import { AnimatedBarChart, AnimatedDonutChart } from '#/components/ui/charts'
 import { BankCard, BankCardStack } from '#/components/ui/BankCard'
 import { Sheet } from '#/components/ui/Sheet'
+import { DraggableFloatingButton } from '#/components/ui/DraggableFloatingButton'
 import ChatView from '#/components/chat/ChatView'
 import { AgentAvatar } from './AgentAvatar'
 import { FinancialReport } from './FinancialReport'
@@ -132,14 +133,14 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                 onClick={() => setDetail('receive')}
                 aria-label="查看收款账户"
               >
-                <ScanLine size={23} />
+                <ScanLine size={18} />
               </button>
               <button
                 className="bank-icon-button bank-lift bank-bell"
                 onClick={() => setDetail('notifications')}
                 aria-label="消息与提醒"
               >
-                <Bell size={23} />
+                <Bell size={18} />
                 {data?.subscriptions.some((item) => item.status === 'active') && <i />}
               </button>
             </div>
@@ -440,22 +441,21 @@ export default function BankingHome({ user }: { user: { id: string; name: string
               aria-current={tab === id ? 'page' : undefined}
               onClick={() => selectTab(id)}
             >
-              <Icon size={22} strokeWidth={tab === id ? 2.4 : 1.8} />
+              <Icon size={19} strokeWidth={tab === id ? 2.4 : 1.8} />
               <span>{label}</span>
             </button>
           ))}
         </nav>
-        <button
-          className={`bank-agent-fab bank-lift${agentOpen || detail ? ' is-hidden' : ''}`}
-          onClick={() => openAgent()}
-          aria-label="打开文财 Agent"
-          aria-expanded={agentOpen}
-          aria-controls="bank-agent-conversation"
-          inert={agentOpen || !!detail}
+        <DraggableFloatingButton
+          hidden={agentOpen || !!detail}
+          expanded={agentOpen}
+          onActivate={() => openAgent()}
+          label="打开文财 Agent"
+          controls="bank-agent-conversation"
         >
           <span className="bank-fab-label">问文财</span>
-          <AgentAvatar />
-        </button>
+          <AgentAvatar small />
+        </DraggableFloatingButton>
         <Sheet
           open={agentOpen}
           onClose={closeAgent}

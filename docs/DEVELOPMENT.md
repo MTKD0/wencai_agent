@@ -89,6 +89,7 @@ flowchart TD
 | `ui/charts.tsx`、`charts.css` | `AnimatedBarChart` 从底部逐柱展开；`AnimatedDonutChart` 按真实比例顺时针绘制，可选 `pie` 实心饼图 |
 | `banking/FinancialReport.tsx` | 共享支出合计与环图/柱图切换，用于首页和 Agent 固定工具输出 |
 | `ui/Sheet.tsx` | 可开合底部面板、Escape 关闭、焦点约束与归还；关闭时保留对话并设置 `inert` |
+| `ui/DraggableFloatingButton.tsx` | Pointer Events 拖动、点击与拖动区分、页面边界约束；面板关闭后保留位置，窗口缩小时自动调整 |
 
 新增业务图表时直接复用，不要另写一套动画：
 
