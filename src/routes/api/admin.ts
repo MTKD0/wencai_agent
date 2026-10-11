@@ -1,3 +1,4 @@
+import { settleTransfer } from '#/server/payments/service'
 /**
  * 银行管理后台 API：/api/admin/*
  *
@@ -643,24 +644,8 @@ async function doTransfer(
     return { id: taskId, kind: 'transfer', status: 'pending', dueAt: executeAt, payload: { payeeId, amountCents }, result: null }
   }
 
-  if (acc.balanceCents < amountCents) throw new Error('余额不足')
-  const txId = `tx_${Date.now()}`
-  await db.transaction(async (tx) => {
-    await tx
-      .update(schema.accounts)
-      .set({ balanceCents: sql`${schema.accounts.balanceCents} - ${amountCents}` })
-      .where(eq(schema.accounts.id, acc.id))
-    await tx.insert(schema.transactions).values({
-      id: txId,
-      accountId: acc.id,
-      amountCents: -amountCents,
-      counterparty: payee.name,
-      memo: memo ?? null,
-      category: '转账',
-      occurredAt: now,
-    })
-  })
-  return { transactionId: txId, amount: amountCents, payee: payee.name }
+  const result = await settleTransfer({ fromAccountId: accountId, payeeId, amountCents, memo }, { userId, sessionId: 'admin', channel: 'web' }, now)
+  return { ...result, amount: amountCents }
 }
 
 // ── 路由 ───────────────────────────────────────────────────────────────────────

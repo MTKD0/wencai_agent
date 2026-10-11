@@ -8,7 +8,8 @@
  * - bank.ts 的 BANK_TOOLS 合并基础、扩展与规划工具；仿真控制另行导出
  */
 import { createHash, randomUUID } from 'node:crypto'
-import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm'
+import { settleTransfer, reverseTransfer, transferSummary } from '#/server/payments/service'
+import { and, desc, eq, gte, inArray, isNull, lt, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
 import { businessMonth } from '#/lib/dashboard'
@@ -119,10 +120,11 @@ export async function consumeToken(
   if (new Date(row.expiresAt) < new Date()) throw new Error('TOKEN_EXPIRED: 令牌已过期，请重新预览')
   const incoming = paramHash(params)
   if (row.paramHash !== incoming) throw new Error('TOKEN_PARAM_MISMATCH: 参数与预览时不一致，疑似篡改')
-  await db
-    .update(schema.confirmationTokens)
+  const claimed = await db.update(schema.confirmationTokens)
     .set({ consumedAt: new Date().toISOString() })
-    .where(eq(schema.confirmationTokens.id, token))
+    .where(and(eq(schema.confirmationTokens.id, token), isNull(schema.confirmationTokens.consumedAt)))
+    .returning({ id: schema.confirmationTokens.id })
+  if (!claimed.length) throw new Error('TOKEN_CONSUMED: 令牌已被使用，不能重放')
 }
 
 // ── A. 只读查询 ───────────────────────────────────────────────────────────────
@@ -715,63 +717,13 @@ export const commitTransfer = defineBankTool({
     amountCents: z.number().int().positive(),
     memo: z.string().optional(),
   }),
-  summarize: async ({ fromAccountId, payeeId, amountCents }, ctx) => {
-    const [acc, payee] = await Promise.all([
-      ownAccountOrThrow(ctx, fromAccountId),
-      ownPayeeOrThrow(ctx, payeeId),
-    ])
-    return {
-      title: '转账执行中',
-      fields: [
-        { label: '金额', value: fmt(amountCents) },
-        { label: '收款人', value: payee.name },
-        { label: '付款账户', value: acc.name },
-      ],
-    }
+  factsHint: (a) => ({ payeeId: a.payeeId }),
+  summarize: transferSummary,
+  execute: async ({ confirmationToken, ...a }, ctx) => {
+    await consumeToken(ctx, confirmationToken, 'transfer', { fromAccountId: a.fromAccountId, payeeId: a.payeeId, amountCents: a.amountCents, memo: a.memo ?? '' })
+    return settleTransfer(a, ctx)
   },
-  execute: async ({ confirmationToken, fromAccountId, payeeId, amountCents, memo }, ctx) => {
-    await consumeToken(ctx, confirmationToken, 'transfer', { fromAccountId, payeeId, amountCents, memo: memo ?? '' })
-    const [acc, payee] = await Promise.all([
-      ownAccountOrThrow(ctx, fromAccountId),
-      ownPayeeOrThrow(ctx, payeeId),
-    ])
-    if (acc.balanceCents < amountCents) throw new Error('余额不足')
-    const txId = `tx_${randomUUID()}`
-    await db.transaction(async (tx) => {
-      await tx
-        .update(schema.accounts)
-        .set({ balanceCents: sql`${schema.accounts.balanceCents} - ${amountCents}` })
-        .where(eq(schema.accounts.id, acc.id))
-      await tx.insert(schema.transactions).values({
-        id: txId,
-        accountId: acc.id,
-        amountCents: -amountCents,
-        counterparty: payee.name,
-        memo: memo ?? null,
-        category: '转账',
-        occurredAt: new Date(),
-      })
-    })
-    return { transactionId: txId, amount: yuan(amountCents), payee: payee.name, balanceAfter: yuan(acc.balanceCents - amountCents) }
-  },
-  compensate: async ({ fromAccountId, amountCents }, out, ctx) => {
-    await db.transaction(async (tx) => {
-      await tx
-        .update(schema.accounts)
-        .set({ balanceCents: sql`${schema.accounts.balanceCents} + ${amountCents}` })
-        .where(and(eq(schema.accounts.id, fromAccountId), eq(schema.accounts.userId, ctx.userId)))
-      await tx.insert(schema.transactions).values({
-        id: `tx_${randomUUID()}`,
-        accountId: fromAccountId,
-        amountCents,
-        counterparty: (out as any).payee,
-        memo: '冲正',
-        category: '冲正',
-        occurredAt: new Date(),
-        reversalOf: (out as any).transactionId,
-      })
-    })
-  },
+  compensate: (_a, out, ctx) => reverseTransfer(out.transactionId, ctx),
 })
 
 export const commitPurchase = defineBankTool({

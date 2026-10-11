@@ -1,7 +1,8 @@
+import { settleTransfer } from '#/server/payments/service'
 /**
  * 到期任务执行器：admin 后台与 Agent 系统工具（advance_simulation_clock / run_due_jobs）共用。
  */
-import { and, eq, lte, sql } from 'drizzle-orm'
+import { and, eq, lte } from 'drizzle-orm'
 import { db, schema } from '#/server/db/client'
 
 export type JobResult = { id: string; kind: string; status: 'succeeded' | 'failed'; message?: string }
@@ -45,34 +46,11 @@ export async function runDueJobs(userId: string, now: Date): Promise<JobResult[]
     try {
       const payload = JSON.parse(task.payloadJson)
       if (task.kind === 'transfer') {
-        const accs = await db.select().from(schema.accounts).where(eq(schema.accounts.userId, userId))
-        const acc = accs.find((a) => a.id === payload.fromAccountId) ?? accs[0]
-        const [payee] = await db
-          .select()
-          .from(schema.payees)
-          .where(and(eq(schema.payees.id, payload.payeeId), eq(schema.payees.userId, userId)))
-        if (!payee) throw new Error('收款人不存在')
-        if (!acc || acc.balanceCents < payload.amountCents) {
-          await finish(task.id, task.kind, 'failed', { message: '余额不足' })
-          continue
-        }
-        const txId = `tx_${Date.now()}_${task.id}`
-        await db.transaction(async (tx) => {
-          await tx
-            .update(schema.accounts)
-            .set({ balanceCents: sql`${schema.accounts.balanceCents} - ${payload.amountCents}` })
-            .where(eq(schema.accounts.id, acc.id))
-          await tx.insert(schema.transactions).values({
-            id: txId,
-            accountId: acc.id,
-            amountCents: -payload.amountCents,
-            counterparty: payee.name,
-            memo: payload.memo || '定时转账',
-            category: '转账',
-            occurredAt: now,
-          })
-        })
-        await finish(task.id, task.kind, 'succeeded', { transactionId: txId })
+        const [claimed] = await db.update(schema.scheduledTasks).set({ status: 'processing' })
+          .where(and(eq(schema.scheduledTasks.id, task.id), eq(schema.scheduledTasks.status, 'pending'))).returning()
+        if (!claimed) continue
+        const result = await settleTransfer({ fromAccountId: payload.fromAccountId, payeeId: payload.payeeId, amountCents: payload.amountCents, memo: payload.memo || '定时转账' }, { userId, sessionId: 'scheduled', channel: 'web' }, now)
+        await finish(task.id, task.kind, 'succeeded', { transactionId: result.transactionId })
       }
     } catch (e) {
       await finish(task.id, task.kind, 'failed', { message: e instanceof Error ? e.message : String(e) })

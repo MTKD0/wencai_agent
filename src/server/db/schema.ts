@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 // 金额统一以「分」为单位存储，避免浮点误差
 
@@ -57,6 +57,25 @@ export const transactions = sqliteTable('transactions', {
   occurredAt: integer('occurred_at', { mode: 'timestamp_ms' }).notNull(),
   // 冲正关联：补偿动作生成的流水指向原流水
   reversalOf: text('reversal_of'),
+})
+
+// 独立扩展表让已有演示数据库可无损升级。
+export const bankAccountAddresses = sqliteTable('bank_account_addresses', {
+  accountId: text('account_id').primaryKey().references(() => accounts.id, { onDelete: 'cascade' }),
+  accountNo: text('account_no').notNull().unique(),
+})
+
+export const bankPayeeLinks = sqliteTable('bank_payee_links', {
+  payeeId: text('payee_id').primaryKey().references(() => payees.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  targetAccountId: text('target_account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+}, (t) => [uniqueIndex('bank_payee_owner_target').on(t.userId, t.targetAccountId)])
+
+export const bankTransferLinks = sqliteTable('bank_transfer_links', {
+  debitTransactionId: text('debit_transaction_id').primaryKey().references(() => transactions.id, { onDelete: 'cascade' }),
+  targetAccountId: text('target_account_id'),
+  creditTransactionId: text('credit_transaction_id').unique(),
+  reversedAt: integer('reversed_at', { mode: 'timestamp_ms' }),
 })
 
 export const cards = sqliteTable('cards', {
@@ -169,7 +188,7 @@ export const scheduledTasks = sqliteTable('scheduled_tasks', {
   userId: text('user_id').notNull(),
   /** 'transfer' | 'birthdayReserve' | 'birthdayOrder' */
   kind: text('kind').notNull(),
-  /** 'pending' | 'succeeded' | 'failed' | 'cancelled' */
+  /** 'pending' | 'processing' | 'succeeded' | 'failed' | 'cancelled' */
   status: text('status').notNull(),
   /** 触发时间（ISO） */
   dueAt: text('due_at').notNull(),

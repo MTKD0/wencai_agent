@@ -37,7 +37,7 @@ export function Sheet({
     const focusable = () =>
       [
         ...(panel?.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), [tabindex="0"]',
+          'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]',
         ) ?? []),
       ].filter((element) => element.getClientRects().length > 0)
     const frame = requestAnimationFrame(() =>

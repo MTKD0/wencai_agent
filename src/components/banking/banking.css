@@ -1386,6 +1386,55 @@
   .bank-section-heading { margin-top: 15px; }
   .bank-transaction-row { min-height: 60px; }
 }
+.bank-payment-sheet { height: calc(100% - max(12px, env(safe-area-inset-top))); }
+.bank-payment-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px max(24px, env(safe-area-inset-bottom)); }
+.bank-payment-caption { display: flex; align-items: center; gap: 6px; color: #7384a9; font-size: 11px; margin: 0 0 16px; }
+.bank-payment-tabs, .bank-payment-switch { display: flex; gap: 4px; padding: 4px; background: #ecf3ff; border-radius: 14px; margin-bottom: 20px; }
+.bank-payment-tabs button, .bank-payment-switch button { display: flex; justify-content: center; align-items: center; gap: 5px; flex: 1; border: 0; border-radius: 10px; background: transparent; padding: 10px 4px; font-size: 12px; color: #64779f; cursor: pointer; }
+.bank-payment-tabs .is-active, .bank-payment-switch .is-active { background: #fff; color: #0864ff; box-shadow: 0 3px 10px #1769ee12; font-weight: 650; }
+.bank-payment-form { display: grid; gap: 16px; }
+.bank-payment-form h2, .bank-payment-scroll h2 { font-size: 20px; margin: 0 0 8px; }
+.bank-payment-form .bank-payment-switch { margin: 0; }
+.bank-payment-form > label { display: grid; gap: 8px; font-size: 13px; font-weight: 550; color: #273866; }
+.bank-payment-form input:not([type=radio]), .bank-payment-form select { width: 100%; min-width: 0; border: 1px solid #dce7fa; border-radius: 12px; padding: 13px 12px; background: #f8fbff; color: #10234e; font-family: inherit; font-size: 16px; outline: none; transition: border-color .2s, box-shadow .2s, background .2s; }
+.bank-payment-form input:focus, .bank-payment-form select:focus { border-color: #2675ff; background: #fff; box-shadow: 0 0 0 3px #2675ff17; }
+.bank-payment-form small, .bank-payment-balance { color: #7384a9; font-size: 12px; font-weight: 400; }
+.bank-payment-balance { margin-top: -9px; }
+.bank-payment-amount > div { display: flex; align-items: center; border-bottom: 1px solid #dce7fa; gap: 10px; padding: 8px 0; }
+.bank-payment-amount > div > span { font-size: 30px; color: #1168ff; }
+.bank-payment-form .bank-payment-amount input { background: transparent; border: 0; font-size: 36px; font-weight: 650; padding: 5px; box-shadow: none; }
+.bank-payment-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #dbe7fc; border-radius: 13px; background: #f4f8ff; color: #1865e4; padding: 12px 15px; cursor: pointer; font-size: 13px; }
+.bank-payment-scroll button:disabled { opacity: .5; cursor: default; }
+.bank-payment-entry { display: flex; gap: 10px; margin: 16px 0; }
+.bank-payment-entry > button { flex: 1; font-size: 12px; padding: 12px 8px; }
+.bank-payment-candidates { border: 0; padding: 0; margin: 0; display: grid; gap: 9px; min-width: 0; }
+.bank-payment-candidates legend { color: #7080a0; font-size: 12px; margin-bottom: 10px; }
+.bank-payment-candidate { display: flex; align-items: center; gap: 9px; border: 1px solid #e1eafa; padding: 14px 10px; border-radius: 13px; background: #fff; cursor: pointer; }
+.bank-payment-candidate.is-selected { border-color: #287aff; background: #f2f7ff; }
+.bank-payment-candidate span { flex: 1; min-width: 0; }
+.bank-payment-candidate strong { font-size: 13px; }
+.bank-payment-candidate small { display: block; margin-top: 5px; }
+.bank-payment-payees { display: grid; gap: 10px; }
+.bank-payment-payee { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid #e6edfa; border-radius: 15px; background: #fff; color: #152450; padding: 14px 11px; cursor: pointer; }
+.bank-payment-payee > span:nth-child(2) { flex: 1; min-width: 0; }
+.bank-payment-payee strong { font-size: 14px; }
+.bank-payment-payee small { color: #7889ab; font-size: 11px; font-weight: 400; }
+.bank-payment-payee > span > small { display: block; margin-top: 5px; }
+.bank-payment-payee > svg { color: #287aff; flex-shrink: 0; }
+.bank-payment-address { background: linear-gradient(130deg, #f5faff, #e2efff); border: 1px solid #dceaff; border-radius: 20px; padding: 20px; margin: 16px 0; }
+.bank-payment-address > span { display: flex; justify-content: space-between; font-size: 14px; }
+.bank-payment-address small { font-size: 12px; color: #7188b4; }
+.bank-payment-address > strong { display: block; font-size: clamp(17px, 4.8vw, 23px); letter-spacing: .8px; padding-top: 25px; user-select: text; }
+.bank-payment-address p { color: #6079a8; font-size: 13px; }
+.bank-payment-receipt { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 24px 0; }
+.bank-payment-receipt > svg { color: #1cb79b; margin-bottom: 10px; }
+.bank-payment-receipt > strong { font-size: 34px; }
+.bank-payment-receipt p { margin: 0; color: #6d80a6; font-size: 14px; }
+.bank-payment-receipt > small { color: #90a0be; font-size: 10px; overflow-wrap: anywhere; }
+.bank-payment-approval { --sea-ink: #142653; --sea-ink-soft: #7184a9; --surface-strong: #fff; --line: #dae5fa; }
+.bank-payment-approval > div { background: #f8fbff; border-color: #aacaff; }
+.bank-payment-approval.is-red > div { background: #fff8f7; border-color: #f2b2ad; }
+.bank-payment-approval input { background: #fff; color: #142653; font-size: 16px; }
 @media (prefers-reduced-motion: reduce) {
   .bank-shell *,
   .bank-shell *::before,

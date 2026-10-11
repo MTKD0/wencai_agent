@@ -1,5 +1,6 @@
-import { randomUUID } from 'node:crypto'
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm'
+import { settleTransfer, reverseTransfer, transferSummary } from '#/server/payments/service'
+import { PAYMENT_TOOLS } from './payments'
+import { and, desc, eq, gte, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
 import { runInSandbox } from '#/server/sandbox/quickjs'
@@ -10,24 +11,6 @@ import type { BankToolDef } from './define'
 const yuan = (cents: number) => Math.round(cents) / 100
 const fmt = (cents: number) => `¥${yuan(cents).toFixed(2)}`
 const DAY = 24 * 60 * 60 * 1000
-
-async function ownAccount(ctx: AgentContext, accountId: string) {
-  const [acc] = await db
-    .select()
-    .from(schema.accounts)
-    .where(and(eq(schema.accounts.id, accountId), eq(schema.accounts.userId, ctx.userId)))
-  if (!acc) throw new Error('账户不存在')
-  return acc
-}
-
-async function ownPayee(ctx: AgentContext, payeeId: string) {
-  const [p] = await db
-    .select()
-    .from(schema.payees)
-    .where(and(eq(schema.payees.id, payeeId), eq(schema.payees.userId, ctx.userId)))
-  if (!p) throw new Error('收款人不存在')
-  return p
-}
 
 async function ownCard(ctx: AgentContext, cardId: string) {
   const [c] = await db
@@ -231,62 +214,9 @@ export const transfer = defineBankTool({
     memo: z.string().max(50).optional(),
   }),
   factsHint: (a) => ({ payeeId: a.payeeId }),
-  summarize: async (a, ctx) => {
-    const [acc, payee] = await Promise.all([ownAccount(ctx, a.fromAccountId), ownPayee(ctx, a.payeeId)])
-    return {
-      title: '确认转账',
-      fields: [
-        { label: '金额', value: fmt(a.amount * 100) },
-        { label: '收款人', value: `${payee.name}${payee.alias ? `（${payee.alias}）` : ''}` },
-        { label: '收款账户', value: `${payee.bank} ${maskAccount(payee.accountNo)}` },
-        { label: '付款账户', value: `${acc.name}（余额 ${fmt(acc.balanceCents)}）` },
-        ...(a.memo ? [{ label: '附言', value: a.memo }] : []),
-      ],
-    }
-  },
-  execute: async (a, ctx) => {
-    const cents = Math.round(a.amount * 100)
-    const acc = await ownAccount(ctx, a.fromAccountId)
-    const payee = await ownPayee(ctx, a.payeeId)
-    if (acc.balanceCents < cents) throw new Error('余额不足')
-    const txId = `tx_${randomUUID()}`
-    await db.transaction(async (tx) => {
-      await tx
-        .update(schema.accounts)
-        .set({ balanceCents: sql`${schema.accounts.balanceCents} - ${cents}` })
-        .where(eq(schema.accounts.id, acc.id))
-      await tx.insert(schema.transactions).values({
-        id: txId,
-        accountId: acc.id,
-        amountCents: -cents,
-        counterparty: payee.name,
-        memo: a.memo ?? null,
-        category: '转账',
-        occurredAt: new Date(),
-      })
-    })
-    return { transactionId: txId, amount: a.amount, payee: payee.name, balanceAfter: yuan(acc.balanceCents - cents) }
-  },
-  compensate: async (a, out, ctx) => {
-    // 冲正：生成一笔反向流水并退回余额
-    const cents = Math.round(a.amount * 100)
-    await db.transaction(async (tx) => {
-      await tx
-        .update(schema.accounts)
-        .set({ balanceCents: sql`${schema.accounts.balanceCents} + ${cents}` })
-        .where(and(eq(schema.accounts.id, a.fromAccountId), eq(schema.accounts.userId, ctx.userId)))
-      await tx.insert(schema.transactions).values({
-        id: `tx_${randomUUID()}`,
-        accountId: a.fromAccountId,
-        amountCents: cents,
-        counterparty: out.payee,
-        memo: '冲正',
-        category: '冲正',
-        occurredAt: new Date(),
-        reversalOf: out.transactionId,
-      })
-    })
-  },
+  summarize: (a, ctx) => transferSummary({ ...a, amountCents: Math.round(a.amount * 100) }, ctx),
+  execute: (a, ctx) => settleTransfer({ ...a, amountCents: Math.round(a.amount * 100) }, ctx),
+  compensate: (_a, out, ctx) => reverseTransfer(out.transactionId, ctx),
 })
 
 const setCardStatus = async (ctx: AgentContext, cardId: string, status: 'active' | 'locked' | 'lost') => {
@@ -417,6 +347,7 @@ export const BANK_TOOLS: BankToolDef[] = [
   // --- ai-banking-agent 扩展工具 ---
   ...EXTENDED_TOOLS,
   ...PLANNING_TOOLS,
+  ...PAYMENT_TOOLS,
 ]
 
 const byName = new Map<string, BankToolDef>(BANK_TOOLS.map((t) => [t.name, t]))

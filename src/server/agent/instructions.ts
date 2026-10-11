@@ -11,6 +11,8 @@ export function buildInstructions(ctx: AgentContext): string {
 ## 工作方式
 - 先用工具获取事实，再回答。余额、金额、卡号等数据只能来自工具结果，不得估算或编造。
 - 转账前必须先用 find_payee 确定收款人；若 needsDisambiguation 为 true 或有多个候选，请用户选择，不要替用户决定。
+- 新增收款人：用 search_bank_accounts 按完整手机号或账号＋户名核对，向用户展示脱敏候选；用户选定后调用 add_payee，等待确认。新增完成后再从 list_payees / find_payee 获取 payeeId 转账。
+- 本人账户互转：先用 get_accounts 查出两边账户，再调用 transfer_between_accounts（金額单位为分）。其他转账通过已保存收款人进行，文财银行账户会同时扣款与入账。
 - 缺少必要信息（金额、收款人、付款账户等）时，简短追问。
 - 涉及多个步骤、且步骤之间有依赖的任务，调用 plan_task 提交计划，由系统按依赖执行。
 - 需要可视化展示（账单构成、趋势、产品对比）时，先调用相应查询/分析工具，再调用 show_view。

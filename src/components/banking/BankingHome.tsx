@@ -35,6 +35,8 @@ import { DraggableFloatingButton } from '#/components/ui/DraggableFloatingButton
 import ChatView from '#/components/chat/ChatView'
 import { AgentAvatar } from './AgentAvatar'
 import { FinancialReport } from './FinancialReport'
+import PaymentCenter from './PaymentCenter'
+import type { PaymentView } from './PaymentCenter'
 import './banking.css'
 
 type Tab = 'home' | 'accounts' | 'life' | 'profile'
@@ -65,16 +67,20 @@ export default function BankingHome({ user }: { user: { id: string; name: string
   const [tab, setTab] = useState<Tab>('home')
   const [hidden, setHidden] = useState(false)
   const [agentOpen, setAgentOpen] = useState(false)
+  const [paymentView, setPaymentView] = useState<PaymentView | null>(null)
   const [request, setRequest] = useState<{ id: number; text: string }>()
   const [detail, setDetail] = useState<Detail>(null)
   const [signingOut, setSigningOut] = useState(false)
   const [profileError, setProfileError] = useState('')
   const data = query.data
   const openAgent = (text?: string) => {
+    setPaymentView(null)
     setDetail(null)
     if (text) setRequest((previous) => ({ id: (previous?.id ?? 0) + 1, text }))
     setAgentOpen(true)
   }
+  const openPayment = (view: PaymentView) => { setDetail(null); setAgentOpen(false); setPaymentView(view) }
+  const closePayment = () => { setPaymentView(null); void queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] }) }
   const closeAgent = () => {
     setAgentOpen(false)
     void queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] })
@@ -114,7 +120,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
   return (
     <div className="bank-stage">
       <div className="bank-shell">
-        <div className="bank-home-scroll" ref={pageScroll} inert={agentOpen || !!detail}>
+        <div className="bank-home-scroll" ref={pageScroll} inert={agentOpen || !!detail || !!paymentView}>
           <header className="bank-home-header">
             <button
               className="bank-profile bank-lift"
@@ -130,7 +136,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
             <div className="bank-header-actions">
               <button
                 className="bank-icon-button bank-lift"
-                onClick={() => setDetail('receive')}
+                onClick={() => openPayment('receive')}
                 aria-label="查看收款账户"
               >
                 <ScanLine size={18} />
@@ -203,9 +209,9 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                         {
                           label: '转账',
                           icon: ArrowUpRight,
-                          action: () => openAgent('我想转账，请帮我查一下收款人和可用账户'),
+                          action: () => openPayment('transfer'),
                         },
-                        { label: '收款', icon: ArrowDownLeft, action: () => setDetail('receive') },
+                        { label: '收款', icon: ArrowDownLeft, action: () => openPayment('receive') },
                         { label: '银行卡', icon: CreditCard, action: () => selectTab('accounts') },
                         { label: '更多', icon: Grid2X2, action: () => selectTab('life') },
                       ].map(({ label, icon: Icon, action }) => (
@@ -297,6 +303,10 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                       <span>{data.cards.length} 张银行卡</span>
                     </div>
                     <p className="bank-page-note">每一笔资产，都清晰可见。</p>
+                    <div className="bank-payment-entry">
+                      <button type="button" className="bank-primary bank-lift" onClick={() => openPayment('transfer')}><ArrowUpRight size={17} /> 转账 / 本人互转</button>
+                      <button type="button" className="bank-payment-secondary bank-lift" onClick={() => openPayment('payees')}><UsersRound size={17} /> 收款人</button>
+                    </div>
                     <div className="bank-card-list">
                       {data.cards.map((card, index) => (
                         <BankCard
@@ -433,7 +443,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           )}
           <p className="bank-service-note">文财银行 · 模拟银行服务</p>
         </div>
-        <nav className="bank-bottom-nav" aria-label="底部导航" inert={agentOpen || !!detail}>
+        <nav className="bank-bottom-nav" aria-label="底部导航" inert={agentOpen || !!detail || !!paymentView}>
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -447,7 +457,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           ))}
         </nav>
         <DraggableFloatingButton
-          hidden={agentOpen || !!detail}
+          hidden={agentOpen || !!detail || !!paymentView}
           expanded={agentOpen}
           onActivate={() => openAgent()}
           label="打开文财 Agent"
@@ -475,6 +485,9 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           <div id="bank-agent-conversation" className="bank-agent-conversation">
             <ChatView request={request} active={agentOpen} />
           </div>
+        </Sheet>
+        <Sheet open={!!paymentView} onClose={closePayment} title="转账与收款" className="bank-payment-sheet">
+          {paymentView && <PaymentCenter userId={user.id} initialView={paymentView} />}
         </Sheet>
         <Sheet
           open={!!detail}

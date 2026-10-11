@@ -132,6 +132,9 @@ export default function ConfirmCard(props: ConfirmCardProps) {
               {method === 'password' && (
                 <input
                   type="password"
+                  aria-label="交易密码"
+                  autoComplete="off"
+                  disabled={props.submitting}
                   inputMode="numeric"
                   maxLength={6}
                   value={password}

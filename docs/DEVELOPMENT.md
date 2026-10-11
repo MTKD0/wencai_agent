@@ -10,6 +10,7 @@
 |---|---|---|
 | 用户首页 `/` | `src/routes/index.tsx`、`src/components/banking/BankingHome.tsx` | 资产、收支、卡片、最近交易、底部导航和悬浮 Agent |
 | 用户首页 API | `src/routes/api/dashboard.ts` → `src/server/dashboard.ts` | 从登录会话读取身份，汇总本人数据；金额返回元，禁止共享缓存 |
+| 转账与收款人 | `src/components/banking/PaymentCenter.tsx`、`src/routes/api/payments.ts` → `src/server/payments/service.ts` | 手机号/账号户名查找、确认添加、双边转账、本人互转与收款账号 |
 | Agent 面板 | `src/components/chat/ChatView.tsx`、`ToolPart.tsx` | 流式消息、固定回执、生成式视图和交易确认 |
 | 聊天 API | `src/routes/api/chat.ts` | 认证、输入审核、流式 Agent 调用 |
 | 确认 API / 页面 | `src/routes/api/confirm.ts`、`src/routes/confirm.$actionId.tsx` | 用户确认、强验证、DAG 恢复 |
@@ -48,7 +49,7 @@ flowchart TD
 
 ## 3. 工具体系与两类令牌
 
-当前 `BANK_TOOLS` **50 个**：基础 13 个 + `EXTENDED_TOOLS` 22 个 + `PLANNING_TOOLS` 15 个，其中 32 个 read、18 个 write，工具名称无重复。Web/飞书还注册 `plan_task`、`show_view`；MCP 只注册 read 工具。
+当前 `BANK_TOOLS` **54 个**：基础 13 个 + `EXTENDED_TOOLS` 22 个 + `PLANNING_TOOLS` 15 个 + `PAYMENT_TOOLS` 4 个，其中 34 个 read、20 个 write，工具名称无重复。Web/飞书还注册 `plan_task`、`show_view`；MCP 只注册 read 工具。
 
 | 文件 | 负责内容 |
 |---|---|
@@ -65,7 +66,7 @@ flowchart TD
 
 典型扩展转账：`resolve_recipient` → `check_transfer_limit` → `preview_transfer` → `commit_transfer` → 待确认 → 用户确认 → 校验/消费业务令牌 → 转账。
 
-现有基础工具 `transfer` 与扩展 `commit_transfer` 同时存在，金额和风险规则尚未统一，详见第 8 节。
+基础 `transfer`、扩展 `commit_transfer`、本人 `transfer_between_accounts` 和后台/到期任务共用 `payments/service.ts` 结算。转账策略同时识别元和分；新增收款人转账需要红色强验证。
 
 `SYSTEM_TOOLS` 包含 `advance_simulation_clock`、`run_due_jobs`，没有合入 `BANK_TOOLS`，不暴露给模型。预览工具虽标为 read，仍会写入技术性的预览令牌记录；这里的 read 指不执行资金/账户业务变更。
 
@@ -178,10 +179,10 @@ Remove-Item Env:DATABASE_URL
 
 ## 8. 当前实现边界与优先事项
 
-以下来自代码阅读，属于后续开发事项，本次梳理未修改这些业务行为：
+以下为当前仍需继续开发的边界：
 
-1. **统一转账风控与金额。** `policy/rules.ts` 的转账规则仅匹配工具名 `transfer`，金额读取 `args.amount`（元）；`commit_transfer`、`commit_scheduled_transfer` 使用不同名称与 `amountCents`。它们虽会要求黄色确认，但不会自动命中原转账的大额、新收款人、夜间和频率升级规则。`commit_card_change` 也统一声明黄色，需对照基础解锁/挂失/调额的红色规则补齐分级。
-2. **令牌、资金和任务的并发幂等。** 待确认动作有条件更新的原子消费；业务预览令牌仍是先查后无条件更新。余额校验发生在扣减事务之前，任务也缺少原子抢占；要用事务与条件更新覆盖并发重复提交、超扣和重复执行。
+1. **卡片扩展操作风险分级。** 转账风控已统一覆盖基础、扩展、定时提交及本人互转。`commit_card_change` 仍统一声明黄色，需对照基础解锁/挂失/调额的红色规则补齐分级。
+2. **其他资金路径与任务恢复。** 转账现已使用条件扣款与双边事务，预览令牌有原子消费，到期转账有原子抢占。理财/AA 等其他路径仍需分别加固；定时任务执行中断后的 processing 状态需要人工核查与恢复，不能直接重跑以免重复扣款。
 3. **确认时重查关键事实。** `confirmPending` 校验已有动作后直接执行，没有完整重跑创建时的风险策略。还需明确令牌已消费但业务失败后的恢复方式。
 4. **后台与 Agent 业务收敛。** 后台直接操作数据库，绕过策略和确认令牌，GET 可按查询参数选择用户，POST 可按 `x-admin-user` 选择用户。未来正式使用需要管理员鉴权/授权，并将共用业务规则下沉到服务层。
 5. **身份与配置收紧。** 当前 OTP 打印到日志、认证 CSRF 检查及全局限流关闭、确认密钥有开发默认值；这都是演示配置。Better Auth 的 `updateAge` 表示会话刷新间隔，不能据此认定已经实现“空闲 15 分钟强制退出”；需单独实现并测试所需会话策略。
@@ -191,3 +192,14 @@ Remove-Item Env:DATABASE_URL
 9. **派生金额的数字出处。** 真实模型查询多个账户后自行相加的合计，可能被严格数字校验提示「尚未核实」，即使计算正确；当前原始工具返回只有各账户金额。需要让合计来自服务端或沙箱计算结果，不能放宽数字校验来隐藏提示。
 
 先覆盖真实工具调用路径的安全与并发测试，再扩展业务场景，可避免只有规则单测通过而新工具未接入规则的情况。
+
+## 转账与收款人（2026-10-11）
+
+- 首页“转账”、账户页“转账 / 本人互转”、收款人入口打开 `PaymentCenter`；“收款”显示本人的完整文财账号，可复制账号与户名。
+- `GET /api/payments` 仅返回会话本人账户与收款人；POST 只允许指定的四个工具，用户身份来自会话。写操作经同一策略引擎生成确认单，仍由 `/api/confirm` 执行。
+- 按完整 11 位手机号或完整 16 位文财账号＋户名查找。多账户候选必须由用户选择，不返回他人余额；签名候选绑定发起者、账号、户名及 15 分钟有效期。
+- 新增文财收款人绑定真实账户 ID。确认转账后 A 扣款、B 入账，写两条关联流水；本人互转仅允许本人不同账户。原有外部银行卡收款人保留模拟转出，不接真实银行。
+- 三张扩展表存储稳定账号、收款人关联、双边流水与冲正状态；首次使用自动 `CREATE TABLE IF NOT EXISTS` 升级，保留已有数据库余额与历史。
+- 本地 SQLite 客户端请求排队避免连接池在事务 await 期间争锁；事务回调必须只使用 tx，不能调用外层 db。数据库条件扣款与唯一约束是最终保障；不同服务进程仍需避免同时写同一库。
+- 收款账号是文财模拟系统的独立 16 位账号，不是旧银行卡装饰尾号。手机号查找仅支持已注册并有人民币账户的文财用户；注册后没有银行账户时无候选。
+- 自动测试：17 个文件、132 项通过；含手机号/账号户名、候选签名隔离、确认与密码、并发、双边流水与冲正、扩展令牌重放、并发定时任务和精确金额输入。
