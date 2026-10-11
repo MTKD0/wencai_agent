@@ -26,6 +26,15 @@ export type AuditType =
   | 'output_verification'
   | 'circuit_breaker'
   | 'handoff'
+  // 认证与设备管理
+  | 'session_revoked'
+  | 'channel_bound'
+  | 'channel_unbound'
+  | 'bind_rejected'
+  | 'tx_password_set'
+  | 'passkey_registered'
+  | 'passkey_deleted'
+  | 'login_failed'
 
 export function hashEntry(prevHash: string, entry: AuditEntry): string {
   return createHash('sha256').update(prevHash).update(stableStringify(entry)).digest('hex')

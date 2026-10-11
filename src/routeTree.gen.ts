@@ -10,13 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BindRouteImport } from './routes/bind'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ApiBindRouteImport } from './routes/api/bind'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiConfirmRouteImport } from './routes/api/confirm'
+import { Route as ApiSecurityRouteImport } from './routes/api/security'
+import { Route as ApiSettingsRouteImport } from './routes/api/settings'
 import { Route as ConfirmActionIdRouteImport } from './routes/confirm.$actionId'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiPasskeyDeleteRouteImport } from './routes/api/passkey/delete'
+import { Route as ApiPasskeyOptionsRouteImport } from './routes/api/passkey/options'
+import { Route as ApiPasskeyRegisterRouteImport } from './routes/api/passkey/register'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BindRoute = BindRouteImport.update({
+  id: '/bind',
+  path: '/bind',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBindRoute = ApiBindRouteImport.update({
+  id: '/api/bind',
+  path: '/api/bind',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -29,44 +59,157 @@ const ApiConfirmRoute = ApiConfirmRouteImport.update({
   path: '/api/confirm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSecurityRoute = ApiSecurityRouteImport.update({
+  id: '/api/security',
+  path: '/api/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSettingsRoute = ApiSettingsRouteImport.update({
+  id: '/api/settings',
+  path: '/api/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfirmActionIdRoute = ConfirmActionIdRouteImport.update({
   id: '/confirm/$actionId',
   path: '/confirm/$actionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPasskeyDeleteRoute = ApiPasskeyDeleteRouteImport.update({
+  id: '/api/passkey/delete',
+  path: '/api/passkey/delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPasskeyOptionsRoute = ApiPasskeyOptionsRouteImport.update({
+  id: '/api/passkey/options',
+  path: '/api/passkey/options',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPasskeyRegisterRoute = ApiPasskeyRegisterRouteImport.update({
+  id: '/api/passkey/register',
+  path: '/api/passkey/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/bind': typeof BindRoute
+  '/login': typeof LoginRoute
+  '/settings': typeof SettingsRoute
+  '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
+  '/api/security': typeof ApiSecurityRoute
+  '/api/settings': typeof ApiSettingsRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/passkey/delete': typeof ApiPasskeyDeleteRoute
+  '/api/passkey/options': typeof ApiPasskeyOptionsRoute
+  '/api/passkey/register': typeof ApiPasskeyRegisterRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/bind': typeof BindRoute
+  '/login': typeof LoginRoute
+  '/settings': typeof SettingsRoute
+  '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
+  '/api/security': typeof ApiSecurityRoute
+  '/api/settings': typeof ApiSettingsRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/passkey/delete': typeof ApiPasskeyDeleteRoute
+  '/api/passkey/options': typeof ApiPasskeyOptionsRoute
+  '/api/passkey/register': typeof ApiPasskeyRegisterRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/bind': typeof BindRoute
+  '/login': typeof LoginRoute
+  '/settings': typeof SettingsRoute
+  '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
+  '/api/security': typeof ApiSecurityRoute
+  '/api/settings': typeof ApiSettingsRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/passkey/delete': typeof ApiPasskeyDeleteRoute
+  '/api/passkey/options': typeof ApiPasskeyOptionsRoute
+  '/api/passkey/register': typeof ApiPasskeyRegisterRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat' | '/api/confirm' | '/confirm/$actionId'
+  fullPaths:
+    | '/'
+    | '/bind'
+    | '/login'
+    | '/settings'
+    | '/api/bind'
+    | '/api/chat'
+    | '/api/confirm'
+    | '/api/security'
+    | '/api/settings'
+    | '/confirm/$actionId'
+    | '/api/auth/$'
+    | '/api/passkey/delete'
+    | '/api/passkey/options'
+    | '/api/passkey/register'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat' | '/api/confirm' | '/confirm/$actionId'
-  id: '__root__' | '/' | '/api/chat' | '/api/confirm' | '/confirm/$actionId'
+  to:
+    | '/'
+    | '/bind'
+    | '/login'
+    | '/settings'
+    | '/api/bind'
+    | '/api/chat'
+    | '/api/confirm'
+    | '/api/security'
+    | '/api/settings'
+    | '/confirm/$actionId'
+    | '/api/auth/$'
+    | '/api/passkey/delete'
+    | '/api/passkey/options'
+    | '/api/passkey/register'
+  id:
+    | '__root__'
+    | '/'
+    | '/bind'
+    | '/login'
+    | '/settings'
+    | '/api/bind'
+    | '/api/chat'
+    | '/api/confirm'
+    | '/api/security'
+    | '/api/settings'
+    | '/confirm/$actionId'
+    | '/api/auth/$'
+    | '/api/passkey/delete'
+    | '/api/passkey/options'
+    | '/api/passkey/register'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BindRoute: typeof BindRoute
+  LoginRoute: typeof LoginRoute
+  SettingsRoute: typeof SettingsRoute
+  ApiBindRoute: typeof ApiBindRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiConfirmRoute: typeof ApiConfirmRoute
+  ApiSecurityRoute: typeof ApiSecurityRoute
+  ApiSettingsRoute: typeof ApiSettingsRoute
   ConfirmActionIdRoute: typeof ConfirmActionIdRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiPasskeyDeleteRoute: typeof ApiPasskeyDeleteRoute
+  ApiPasskeyOptionsRoute: typeof ApiPasskeyOptionsRoute
+  ApiPasskeyRegisterRoute: typeof ApiPasskeyRegisterRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +219,34 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bind': {
+      id: '/bind'
+      path: '/bind'
+      fullPath: '/bind'
+      preLoaderRoute: typeof BindRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/bind': {
+      id: '/api/bind'
+      path: '/api/bind'
+      fullPath: '/api/bind'
+      preLoaderRoute: typeof ApiBindRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -92,6 +263,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConfirmRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/security': {
+      id: '/api/security'
+      path: '/api/security'
+      fullPath: '/api/security'
+      preLoaderRoute: typeof ApiSecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/settings': {
+      id: '/api/settings'
+      path: '/api/settings'
+      fullPath: '/api/settings'
+      preLoaderRoute: typeof ApiSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/confirm/$actionId': {
       id: '/confirm/$actionId'
       path: '/confirm/$actionId'
@@ -99,14 +284,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmActionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkey/delete': {
+      id: '/api/passkey/delete'
+      path: '/api/passkey/delete'
+      fullPath: '/api/passkey/delete'
+      preLoaderRoute: typeof ApiPasskeyDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkey/options': {
+      id: '/api/passkey/options'
+      path: '/api/passkey/options'
+      fullPath: '/api/passkey/options'
+      preLoaderRoute: typeof ApiPasskeyOptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/passkey/register': {
+      id: '/api/passkey/register'
+      path: '/api/passkey/register'
+      fullPath: '/api/passkey/register'
+      preLoaderRoute: typeof ApiPasskeyRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BindRoute: BindRoute,
+  LoginRoute: LoginRoute,
+  SettingsRoute: SettingsRoute,
+  ApiBindRoute: ApiBindRoute,
   ApiChatRoute: ApiChatRoute,
   ApiConfirmRoute: ApiConfirmRoute,
+  ApiSecurityRoute: ApiSecurityRoute,
+  ApiSettingsRoute: ApiSettingsRoute,
   ConfirmActionIdRoute: ConfirmActionIdRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiPasskeyDeleteRoute: ApiPasskeyDeleteRoute,
+  ApiPasskeyOptionsRoute: ApiPasskeyOptionsRoute,
+  ApiPasskeyRegisterRoute: ApiPasskeyRegisterRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

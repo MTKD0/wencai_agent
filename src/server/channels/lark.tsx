@@ -6,7 +6,9 @@ import type { ModelMessage } from 'ai'
 import { BLOCKED_REPLY, runAgent, screenInput } from '#/server/agent/run'
 import type { AgentContext } from '#/server/agent/context'
 import { cancelPending, confirmPending } from '#/server/confirm/pending'
-import { DEMO_USER_ID } from '#/server/db/constants'
+import { resolveChannelUser } from '#/server/session'
+import { audit } from '#/server/audit/log'
+import { bindLink, createBindCode } from '#/server/auth/bind'
 import { resolveTool } from '#/server/tools/bank'
 import type { ToolOutcome } from '#/server/tools/define'
 
@@ -15,9 +17,11 @@ import type { ToolOutcome } from '#/server/tools/define'
  * 🔴 操作由策略引擎标记 requiresChannelHandoff，返回 H5 链接完成强验证。
  */
 
-/** TODO: 飞书账号与银行用户的绑定（OAuth + 一次性绑定码）。未绑定用户不得访问任何数据。 */
-function bankUserFor(_larkUserId: string): string | null {
-  return DEMO_USER_ID
+/** 渠道身份只能来自绑定表：未绑定的飞书账号查不到任何账户数据 */
+async function bankUserFor(larkUserId: string): Promise<string | null> {
+  const userId = await resolveChannelUser('lark', larkUserId)
+  if (!userId) await audit({ userId: 'anonymous', sessionId: `lark:unbound:${larkUserId}`, channel: 'lark' }, 'bind_rejected', { reason: 'unbound_channel_user' })
+  return userId
 }
 
 // 骨架阶段：每个会话线程的模型消息历史保存在内存
@@ -31,9 +35,10 @@ export function createLarkBot() {
   })
 
   const handle = async (thread: Parameters<Parameters<typeof bot.onDirectMessage>[0]>[0], message: { text: string; author: { userId: string } }) => {
-    const userId = bankUserFor(message.author.userId)
+    const userId = await bankUserFor(message.author.userId)
     if (!userId) {
-      await thread.post('请先在文财 App 中绑定飞书账号。')
+      const code = await createBindCode('lark', message.author.userId)
+      await thread.post(`请先绑定文财账号：${bindLink(code)}`)
       return
     }
     const ctx: AgentContext = { userId, sessionId: `lark:${thread.id}`, channel: 'lark' }
@@ -65,8 +70,9 @@ export function createLarkBot() {
   bot.onSubscribedMessage(handle)
 
   bot.onAction(['confirm', 'cancel'], async (event) => {
-    const userId = bankUserFor(event.user.userId)
+    const userId = await bankUserFor(event.user.userId)
     if (!userId || !event.value || !event.thread) return
+    // 操作必须属于该绑定的银行用户，否则拒绝（confirmPending 会再次校验归属）
     const ctx: AgentContext = { userId, sessionId: `lark:${event.threadId}`, channel: 'lark' }
     if (event.actionId === 'cancel') {
       await cancelPending(ctx, event.value)

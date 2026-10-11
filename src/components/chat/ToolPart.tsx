@@ -3,6 +3,16 @@ import { FollowUpContext, registry } from '#/genui/registry'
 import type { ToolOutcome } from '#/server/tools/define'
 import type { PlanState } from '#/server/executor/executor'
 import ConfirmCard from './ConfirmCard'
+import type { ConfirmResponse, StepUpPayload } from './ConfirmCard'
+
+/** 服务端返回的确认失败（含 step_up_failed 等可重试错误码） */
+class ConfirmError extends Error {
+  readonly data: ConfirmResponse
+  constructor(message: string, data: ConfirmResponse) {
+    super(message)
+    this.data = data
+  }
+}
 
 interface ToolUIPart {
   type: `tool-${string}`
@@ -35,6 +45,25 @@ const TOOL_LABEL: Record<string, string> = {
  * 安全关键内容（确认单、余额、回执）全部来自工具输出的结构化数据，不经模型转述。
  */
 export default function ToolPart({ part, onFollowUp }: { part: ToolUIPart; onFollowUp: (text: string) => void }) {
+  // 确认是客户端会话的专属能力：提交到 /api/confirm，由服务端做完整性与一次性校验
+  const confirm = async (actionId: string, stepUp?: StepUpPayload) => {
+    const res = await fetch('/api/confirm', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ actionId, decision: 'confirm', stepUp }),
+    })
+    const data = (await res.json()) as ConfirmResponse
+    if (!data.ok) throw new ConfirmError(data.message ?? data.code ?? '确认失败', data)
+    return data
+  }
+  const cancel = async (actionId: string) => {
+    await fetch('/api/confirm', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ actionId, decision: 'cancel' }),
+    })
+  }
+
   const tool = part.type.slice('tool-'.length)
   const label = TOOL_LABEL[tool] ?? tool
 
@@ -63,13 +92,41 @@ export default function ToolPart({ part, onFollowUp }: { part: ToolUIPart; onFol
     return <PlanView state={out.state} />
   }
 
-  return <Outcome label={label} tool={tool} outcome={part.output as ToolOutcome} />
+  return <Outcome label={label} tool={tool} outcome={part.output as ToolOutcome} confirm={confirm} cancel={cancel} />
 }
 
-function Outcome({ label, tool, outcome }: { label: string; tool: string; outcome: ToolOutcome }) {
+function Outcome({
+  label,
+  tool,
+  outcome,
+  confirm,
+  cancel,
+}: {
+  label: string
+  tool: string
+  outcome: ToolOutcome
+  confirm: (actionId: string, stepUp?: StepUpPayload) => Promise<unknown>
+  cancel: (actionId: string) => Promise<void>
+}) {
   switch (outcome.status) {
     case 'needs_confirmation':
-      return <ConfirmCard {...outcome} />
+      return (
+        <ConfirmCard
+          {...outcome}
+          onConfirm={async (stepUp) => {
+            try {
+              await confirm(outcome.actionId, stepUp)
+            } catch (err) {
+              // 交易密码错误可重试，其余错误为终态
+              if (err instanceof ConfirmError && err.data.code !== 'step_up_failed') throw new Error(err.message, { cause: 'terminal' })
+              throw err
+            }
+          }}
+          onSettled={async (r) => {
+            if (r.cancelled) await cancel(outcome.actionId)
+          }}
+        />
+      )
     case 'needs_handoff':
       return (
         <div className="rounded-2xl border border-red-300 p-4 text-sm">
@@ -123,11 +180,6 @@ function PlanView({ state }: { state: PlanState }) {
           </li>
         ))}
       </ol>
-      {state.plan.nodes.map((n) => {
-        const ns = state.nodes[n.id]
-        const outcome = ns.output as ToolOutcome | undefined
-        return ns.status === 'suspended' && outcome?.status === 'needs_confirmation' ? <ConfirmCard key={n.id} {...outcome} /> : null
-      })}
       {/* TODO: 确认后用 /api/confirm 返回的新计划状态刷新本视图 */}
     </div>
   )

@@ -5,18 +5,25 @@ import { BLOCKED_REPLY, runAgent, screenInput } from '#/server/agent/run'
 import { historyEvidence, lastUserText } from '#/server/agent/messages'
 import type { WencaiUIMessage } from '#/server/agent/messages'
 import type { AgentContext } from '#/server/agent/context'
-import { getUserId } from '#/server/auth'
+import { requireSession } from '#/server/session'
 
-const BodySchema = z.object({ id: z.string().min(1).max(100), messages: z.array(z.any()) })
+// 会话标识由认证会话决定，客户端传来的 id 仅用于兼容 ChatSDK 的传输协议
+const BodySchema = z.looseObject({ messages: z.array(z.any()) })
 
 export const Route = createFileRoute('/api/chat')({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        let session
+        try {
+          session = await requireSession(request)
+        } catch {
+          return Response.json({ error: 'unauthorized' }, { status: 401 })
+        }
         const body = BodySchema.safeParse(await request.json())
         if (!body.success) return new Response('bad request', { status: 400 })
         const messages = body.data.messages as WencaiUIMessage[]
-        const ctx: AgentContext = { userId: getUserId(request), sessionId: body.data.id, channel: 'web' }
+        const ctx: AgentContext = { userId: session.userId, sessionId: session.sessionId, channel: 'web' }
 
         const verdict = await screenInput(ctx, lastUserText(messages))
 

@@ -59,9 +59,10 @@
 | IM 渠道 | **Vercel Chat SDK** + `@larksuite/vercel-chat-adapter` | chat@4 | 飞书官方适配器，WebSocket 长连接免公网；支持交互卡片与流式 |
 | 开放协议 | MCP（`@modelcontextprotocol/sdk`） | 1.32 | 银行只读能力以 MCP 暴露，可被 OpenClaw / Claude 等通用智能体调用 |
 | 数据库 | SQLite（`@libsql/client`）+ Drizzle ORM | — | 单文件零运维，免原生编译；演示与测试方便 |
-| 强验证 | 交易密码 + 模拟 OTP + WebAuthn Passkey（`@simplewebauthn`） | 14 | Passkey 以 Face ID / 指纹模拟"人脸核验" |
+| 认证与会话 | **Better Auth**（drizzle 适配器 + phone-number 插件） | 1.7 | 官方支持 TanStack Start；手机号验证码登录、会话管理、失败锁定开箱可用，不用自己实现密码学与 Cookie 策略 |
+| 强验证 | 交易密码（scrypt）+ WebAuthn Passkey（`@simplewebauthn`） | 14 | Passkey 以 Face ID / 指纹模拟"人脸核验"；密码用 scrypt + 常数时间比较 |
 | 代码沙箱 | quickjs-emscripten | 0.32 | WASM 隔离：无文件系统、无网络、限时、限内存 |
-| 测试 | Vitest | 5 | 策略、令牌、审计、执行器、输出校验、注入用例 |
+| 测试 | Vitest | 5 | 策略、令牌、审计、执行器、输出校验、注入用例、越权用例 |
 
 ## 3. 权限分级机制
 
@@ -105,6 +106,81 @@ LLM 调用 transfer(args)
 ```
 
 LLM 侧没有任何"确认"工具，也拿不到用户会话——即使模型被完全劫持，最坏结果是生成一张用户不会点的确认卡。
+
+### 3.4 用户、会话与渠道绑定
+
+用户管理要回答四个问题：**你是谁**、**会话怎么维持**、**外部渠道怎么对应到银行用户**、**敏感操作时如何再证明是本人**。四者都遵循同一条原则：身份只能由服务端认定。
+
+#### 身份来源
+
+```
+请求 → Cookie → session 表 → bank user id
+```
+
+- `userId` 只从 `getSession(request)` 取得，写进 `AgentContext`。
+- 工具参数、URL 查询串、渠道回调里的用户标识都不能直接成为 `userId`。
+- 模型无法指定"帮张三查余额"——工具根本没有 userId 参数。
+
+#### 登录与会话
+
+| 项 | 实现 |
+|---|---|
+| 登录方式 | 手机号 + 短信验证码（better-auth phone-number 插件，演示环境验证码打印在服务端日志） |
+| 会话存储 | 数据库（stateful），登出与踢人立即生效 |
+| Cookie | httpOnly + Secure（https 下）+ SameSite=Lax |
+| 空闲超时 | `updateAge` 15 分钟无活动即过期 |
+| 绝对有效期 | `expiresIn` 12 小时 |
+| 未登录 | `/api/chat`、`/api/confirm`、`/api/settings` 一律 401 |
+
+#### 渠道身份绑定（飞书）
+
+飞书的 open_id 与银行用户是两套体系，中间必须显式绑定：
+
+```
+未绑定用户在飞书发消息
+  → 机器人回一次性绑定链接 /bind?code=<HMAC(channel|externalId|exp|nonce)>
+  → 用户在 H5 登录，并完成一次强验证
+  → POST /api/bind {code, stepUp} → 写入 channel_bindings
+  → 之后飞书消息通过 open_id 查到 userId
+```
+
+- 未绑定时只回绑定链接，不调用任何账户工具。
+- 链接 10 分钟有效、一次性（存 `verification` 表，用后即删）。
+- 一个飞书账号只能绑定一个银行用户；被占用则拒绝并提示。
+- 可解绑，解绑立即生效。
+- **绑定只解决"你是谁"，不提升权限**——飞书渠道仍是 🟡 上限，🔴 照旧跳转 H5。
+
+#### step-up（与登录分离）
+
+| 等级 | 身份要求 |
+|---|---|
+| 🟢 | 已登录 |
+| 🟡 | 已登录，并在本次会话中点确认 |
+| 🔴 | 每笔单独验证：交易密码（scrypt + 常数时间比较）或 Passkey（WebAuthn 签名 + 计数器防重放） |
+
+关键点：**刚登录过不能免除 🔴 的 step-up**。登录证明的是"你会用这台设备"，而 🔴 证明的是"这一笔是你本人同意的"。
+
+失败 5 次触发熔断：账户锁定 30 分钟，写入审计。
+
+#### 设备与渠道管理
+
+`/settings` 提供（全部记审计、全部要求已登录）：
+
+- 登录设备列表（IP / UA / 到期时间），可踢掉非当前会话。
+- 渠道绑定列表，可解绑。
+- 交易密码可重设；Passkey 可注册 / 删除。
+
+#### 越权防护
+
+所有读取都带 `userId` 过滤，包括：
+
+| 数据 | 归属校验 |
+|---|---|
+| 待确认操作 | `pendingActions.userId = ctx.userId` |
+| 渠道绑定 | `channelBindings.userId = ctx.userId`（解绑时同样校验） |
+| 收款人 / 账户 / 卡片 / 流水 / 订阅 | 查询一律带 userId |
+
+`tests/authorization.test.ts` 对以上每一条都有用例，包括"A 的会话查 B 的 pending action""乙解绑甲的渠道""同一飞书账号绑定到第二个用户"。
 
 ## 4. 安全机制
 
@@ -160,7 +236,10 @@ n1 查询纪念日(🟢) ─▶ n2 推荐礼物预算(🟢) ─▶ n3 锁定 100
 src/
   server/
     env.ts                 环境变量（zod 校验）
-    db/                    Drizzle schema、客户端、种子数据
+    auth.ts                better-auth 实例（手机号登录、会话策略）
+    session.ts             会话解析、渠道绑定、设备管理（身份的唯一来源）
+    auth/                  交易密码（scrypt）、Passkey（WebAuthn）、绑定链接
+    db/                    Drizzle schema、认证表、客户端、种子数据
     policy/                风险等级、规则、策略引擎（纯函数）
     confirm/               待确认动作：HMAC 完整性、一次性消费、强验证
     audit/                 哈希链审计日志
@@ -175,8 +254,9 @@ src/
     channels/              飞书（Chat SDK）、MCP Server
   genui/                   json-render 组件目录与注册表
   components/chat/         聊天界面、确认卡、生成式 UI 容器
-  routes/                  页面与 /api/chat、/api/confirm
-tests/                     单元测试与红队用例
+  routes/                  页面与 API：/api/chat、/api/confirm、/api/auth/*、
+                           /api/bind、/api/settings、/api/security、/api/passkey/*
+tests/                     单元测试与红队用例（含越权）
 scripts/                   飞书机器人、MCP Server 启动脚本
 ```
 
@@ -186,12 +266,15 @@ scripts/                   飞书机器人、MCP Server 启动脚本
 - [ ] Qwen3Guard 在银行中文注入样本上的召回率；与 Jev 的对比实验。
 - [ ] json-render spec 在 AI SDK 工具调用中的生成成功率；必要时改用 `catalog.prompt()` + SpecStream 流式渲染。
 - [ ] 飞书适配器（0.3.x）交互卡片回调在长连接模式下的行为。
+- [ ] Passkey 在 iOS Safari / Android Chrome 上的实机注册与签名（目前只在桌面浏览器与 API 层验证过）；部署到域名下需同步改 `PUBLIC_BASE_URL`，因为 RP ID 取自主机名。
 
 ## 10. 实现备注
 
 - **json-render 的 props 校验不可单独依赖**：实测 `catalog.validate` 会放行写在对象型 prop（`{ $state }`）位置上的数字字面量，因此 `server/genui/validate.ts` 额外做了「spec 中禁止任何数字字面量」的显式检查（纵深防御），并补齐模型常省略的 `children`。
 - **审计载荷先归一化为 JSON 再计算哈希**：否则 `Date` 等对象在写库前后序列化结果不同，会导致整链校验误报。
 - **Guard 采用 fail-to-heuristic**：审核模型超时/不可用时退化为启发式规则，不阻断业务；越权由策略引擎兜底。
+- **身份与授权严格分层**：better-auth 只回答"你是谁"，风险等级与渠道能力由策略引擎独立计算。绑定飞书账号不会提升该渠道的能力上限；刚登录过也不能免除 🔴 操作的单笔强验证。
+- **绑定链接用 `verification` 表实现一次性**：签发时写入、校验签名与过期、用后即删，复用同一套 HMAC 完整性代码。
 
 ## 11. 骨架完成度
 
@@ -199,5 +282,18 @@ scripts/                   飞书机器人、MCP Server 启动脚本
 |---|---|
 | 策略引擎、确认令牌、审计哈希链、DAG 执行器、Guard、数字校验、沙箱、生成式 UI 校验 | ✅ 已实现并有单测 |
 | 银行工具（13 个）、`/api/chat`、`/api/confirm`、确认卡、H5 强验证页 | ✅ 已实现 |
+| 用户登录（手机号验证码）、会话管理、设备踢出、渠道绑定、交易密码（scrypt）、Passkey 强验证、越权用例 | ✅ 已实现并有单测 |
 | 飞书机器人、MCP Server | 🟡 代码就绪，待真实凭证联调 |
-| Passkey 强验证、用户登录与渠道账号绑定、语音/图片输入、计划确认后视图刷新、拼音模糊匹配、模型运行时降级 | ⬜ TODO（代码中已标注） |
+| MCP 渠道的 OAuth 授权码、语音/图片输入、计划确认后视图刷新、拼音模糊匹配、模型运行时降级 | ⬜ TODO（代码中已标注） |
+
+### 用户管理落地清单
+
+| 项 | 实现 |
+|---|---|
+| 登录 | better-auth + phone-number 插件，会话存库 |
+| 会话 | `updateAge` 15 分钟、`expiresIn` 12 小时、httpOnly Cookie |
+| 未登录 | `/api/chat`、`/api/confirm`、`/api/settings`、`/api/security` 一律 401 |
+| 渠道绑定 | `channel_bindings` 表 + HMAC 一次性绑定链接 + 强验证门槛 |
+| 强验证 | 交易密码（scrypt，常数时间比较）/ Passkey（WebAuthn，计数器防重放） |
+| 熔断 | 强验证失败 5 次 → 锁定 30 分钟 → 审计 |
+| 设备管理 | `/settings` + `/api/security`：踢会话、解绑渠道、重设密码、注册 Passkey |

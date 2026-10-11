@@ -2,6 +2,21 @@ import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 // 金额统一以「分」为单位存储，避免浮点误差
 
+/**
+ * 渠道身份绑定。一行 = 一个外部账号被授权代表某个银行用户操作。
+ * 飞书 open_id、MCP OAuth client 等都走这张表；未绑定的渠道账号查不到任何数据。
+ */
+export const channelBindings = sqliteTable('channel_bindings', {
+  id: text('id').primaryKey(),
+  channel: text('channel', { enum: ['lark', 'mcp'] }).notNull(),
+  /** 渠道内的用户标识，如飞书 open_id */
+  externalId: text('external_id').notNull(),
+  userId: text('user_id').notNull(),
+  boundAt: integer('bound_at', { mode: 'timestamp_ms' }).notNull(),
+  boundBySessionId: text('bound_by_session_id').notNull(),
+  revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
+})
+
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),

@@ -5,7 +5,7 @@ import { cancelPending, confirmPending, getPendingForUser } from '#/server/confi
 import { db, schema } from '#/server/db/client'
 import { rejectPlanNode, resumePlan } from '#/server/executor/service'
 import { resolveTool } from '#/server/tools/bank'
-import { getUserId } from '#/server/auth'
+import { requireSession } from '#/server/session'
 import type { AgentContext } from '#/server/agent/context'
 
 const BodySchema = z.object({
@@ -29,7 +29,12 @@ export const Route = createFileRoute('/api/confirm')({
       GET: async ({ request }) => {
         const actionId = new URL(request.url).searchParams.get('actionId')
         if (!actionId) return Response.json({ error: 'missing actionId' }, { status: 400 })
-        const ctx = await contextFor(request, actionId)
+        let ctx
+        try {
+          ctx = await contextFor(request, actionId)
+        } catch {
+          return Response.json({ error: 'unauthorized' }, { status: 401 })
+        }
         const pending = ctx && (await getPendingForUser(ctx, actionId))
         return pending ? Response.json(pending) : Response.json({ error: 'not found' }, { status: 404 })
       },
@@ -37,7 +42,12 @@ export const Route = createFileRoute('/api/confirm')({
         const body = BodySchema.safeParse(await request.json())
         if (!body.success) return Response.json({ error: 'bad request' }, { status: 400 })
         const { actionId, decision, stepUp } = body.data
-        const ctx = await contextFor(request, actionId)
+        let ctx
+        try {
+          ctx = await contextFor(request, actionId)
+        } catch {
+          return Response.json({ ok: false, code: 'not_found', message: '请先登录' }, { status: 401 })
+        }
         if (!ctx) return Response.json({ ok: false, code: 'not_found', message: '待确认操作不存在' }, { status: 404 })
 
         const [row] = await db.select().from(schema.pendingActions).where(eq(schema.pendingActions.id, actionId))
@@ -57,10 +67,10 @@ export const Route = createFileRoute('/api/confirm')({
   },
 })
 
-/** 会话归属于发起该操作时的会话；用户身份始终来自认证 */
+/** 会话归属于发起该操作时的会话；用户身份始终来自已认证会话 */
 async function contextFor(request: Request, actionId: string): Promise<AgentContext | null> {
-  const userId = getUserId(request)
+  const session = await requireSession(request)
   const [row] = await db.select().from(schema.pendingActions).where(eq(schema.pendingActions.id, actionId))
-  if (!row || row.userId !== userId) return null
-  return { userId, sessionId: row.sessionId, channel: 'web' }
+  if (!row || row.userId !== session.userId) return null
+  return { userId: session.userId, sessionId: row.sessionId, channel: 'web' }
 }

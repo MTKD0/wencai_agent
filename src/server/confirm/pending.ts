@@ -7,6 +7,8 @@ import type { AgentContext } from '#/server/agent/context'
 import type { BankToolDef, ConfirmSummary } from '#/server/tools/define'
 import type { PolicyDecision } from '#/server/policy/types'
 import { hashParams, signIntegrity, verifyIntegrity } from './integrity'
+import { verifyTxPassword } from '#/server/auth/tx-password'
+import { verifyPasskeyAssertion } from '#/server/auth/passkey'
 
 const MAX_FAILED_AUTH = 5
 const LOCK_MINUTES = 30
@@ -107,7 +109,7 @@ export async function confirmPending(params: {
       return fail('locked', '账户已临时锁定，请联系人工客服')
     }
     if (!stepUp) return fail('step_up_required', '该操作需要强验证')
-    if (!(await verifyStepUp(stepUp))) {
+    if (!(await verifyStepUp(stepUp, ctx.userId))) {
       const failed = (user?.failedAuthCount ?? 0) + 1
       const lock = failed >= MAX_FAILED_AUTH
       await db
@@ -177,8 +179,12 @@ export async function cancelPending(ctx: AgentContext, actionId: string): Promis
   await audit(ctx, 'confirm_attempt', { actionId, cancelled: true })
 }
 
-async function verifyStepUp(stepUp: StepUp): Promise<boolean> {
-  if (stepUp.method === 'password') return stepUp.password === env.DEMO_TX_PASSWORD
-  // TODO: 接入 @simplewebauthn/server 的 verifyAuthenticationResponse，用 Passkey 模拟人脸核验
+/**
+ * 强验证：交易密码走 scrypt 常数时间比较，Passkey 走 WebAuthn 签名校验。
+ * 失败计数与锁定见 confirmPending。
+ */
+async function verifyStepUp(stepUp: StepUp, userId: string): Promise<boolean> {
+  if (stepUp.method === 'password') return verifyTxPassword(userId, stepUp.password)
+  if (stepUp.method === 'passkey') return verifyPasskeyAssertion(userId, stepUp.response)
   return false
 }
