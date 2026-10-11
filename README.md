@@ -37,6 +37,12 @@ pnpm exec node --env-file=.env.local ./node_modules/vite/bin/vite.js --port 3000
 | `pnpm bot:lark` | 启动飞书机器人（需 `LARK_APP_ID` / `LARK_APP_SECRET`） |
 | `pnpm mcp` | 以 stdio 启动 MCP Server（仅只读工具） |
 
+## 用户首页与可复用动效
+
+登录后进入蓝白色银行首页：真实资产、收支、银行卡、最近交易，以及账户、生活、我的四个栏目。悬浮的「问文财」打开 Agent 底部面板，保留原有流式对话、工具查询和交易确认流程。
+
+首页、Agent 工具结果和生成式视图共用 `src/components/ui/` 中的银行卡、纵向柱图、环形图、入场和金额组件：卡片前推、柱形逐条上升、圆环顺时针展开，支持悬停、点击、键盘聚焦与系统减少动态效果设置。复用方式见 [开发导读](docs/DEVELOPMENT.md#用户界面与动效复用)。
+
 ## 银行管理后台
 
 `http://localhost:3000/admin` 首页展示全部银行用户与注册用户，支持按姓名、手机号或用户 ID 搜索，并显示账户数、总余额和风险等级。点击「登录账户」进入指定用户的管理界面，右上角或侧栏可返回首页切换账户。
@@ -61,7 +67,7 @@ resolve_recipient → check_transfer_limit → preview_transfer（签发令牌�
 
 ## 用户与权限
 
-- **身份**：手机号 + 验证码登录（better-auth + phone-number 插件），会话存库。未登录调用 `/api/chat`、`/api/confirm` 一律 401。
+- **身份**：手机号 + 验证码登录（better-auth + phone-number 插件），会话存库。未登录调用 `/api/dashboard`、`/api/chat`、`/api/confirm` 一律 401。
 - **强验证**：红色操作用交易密码（scrypt）或 Passkey（WebAuthn）。5 次失败锁定 30 分钟。
 - **渠道绑定**：飞书账号需在 `/bind` 完成一次强验证后才可代办业务，未绑定账号查不到任何数据。
 - **设备管理**：`/settings` 可查看并踢掉其他登录会话、解绑渠道、注册 Passkey。

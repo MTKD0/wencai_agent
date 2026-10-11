@@ -21,11 +21,11 @@ export const catalog = defineCatalog(schema, {
     },
     BarChart: {
       props: z.object({ title: z.string().max(30), data: DataRef, labelKey: z.string(), valueKey: z.string() }),
-      description: '条形图；data 指向对象数组，labelKey/valueKey 指定字段名',
+      description: '纵向柱状图（逐柱向上展开）；data 指向对象数组，labelKey/valueKey 指定字段名',
     },
     PieChart: {
       props: z.object({ title: z.string().max(30), data: DataRef, labelKey: z.string(), valueKey: z.string() }),
-      description: '占比图；适合消费类别构成',
+      description: '环形占比图（顺时针逐段展开）；适合消费类别构成',
     },
     Table: {
       props: z.object({

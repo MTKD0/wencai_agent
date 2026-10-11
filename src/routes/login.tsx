@@ -10,6 +10,7 @@ type Step = 'phone' | 'code'
 
 function LoginPage() {
   const navigate = useNavigate()
+  const { refetch } = authClient.useSession()
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
@@ -37,10 +38,14 @@ function LoginPage() {
     setBusy(true)
     try {
       const res = await authClient.phoneNumber.verify({ phoneNumber: phone, code }, {
-        onSuccess: () => navigate({ to: '/' }),
         onError: (ctx) => setError(ctx.error.message),
       })
       if (res?.error) setError(res.error.message ?? '验证失败')
+      else {
+        // 等会话缓存更新后再进入首页，避免首页用旧的未登录状态跳回登录页。
+        await refetch()
+        await navigate({ to: '/' })
+      }
     } finally {
       setBusy(false)
     }

@@ -1,53 +1,68 @@
 import { defineRegistry } from '@json-render/react'
 import { createContext, useContext } from 'react'
+import { AnimatedBarChart, AnimatedDonutChart, normalizeChartData } from '#/components/ui/charts'
+import { AnimatedAmount, Reveal } from '#/components/ui/motion'
 import { catalog } from './catalog'
 
-/** FollowUp 点击后以用户身份发送消息 */
+/** FollowUp 点击后以用户身份发送消息。数值仍只能由已验证的 state 引用传入。 */
 export const FollowUpContext = createContext<(prompt: string) => void>(() => {})
-
 type Row = Record<string, unknown>
-const asRows = (v: unknown): Row[] => (Array.isArray(v) ? (v as Row[]) : [])
-const num = (v: unknown) => (typeof v === 'number' ? v : Number(v) || 0)
-const money = (v: unknown) => num(v).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const asRows = (value: unknown): Row[] =>
+  Array.isArray(value) ? value.filter((row) => row !== null && typeof row === 'object') : []
+const num = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0)
 
-/**
- * 展示类组件实现。props 中的 $state 引用已由 json-render 解析为服务端注入的数据。
- * TODO: 图表换成正式图表库（如 Recharts），并统一配色。
- */
+/** 首页、固定工具回执与生成式视图使用同一套图表和入场组件。 */
 export const { registry } = defineRegistry(catalog, {
   components: {
     Panel: ({ props, children }) => (
-      <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-        <p className="m-0 font-semibold text-[var(--sea-ink)]">{props.title}</p>
-        {props.subtitle && <p className="m-0 text-xs text-[var(--sea-ink-soft)]">{props.subtitle}</p>}
-        <div className="mt-3 space-y-3">{children}</div>
-      </section>
+      <Reveal>
+        <section className="bank-gen-panel">
+          <h3>{props.title}</h3>
+          {props.subtitle && <p>{props.subtitle}</p>}
+          <div className="bank-gen-children">{children}</div>
+        </section>
+      </Reveal>
     ),
     Metric: ({ props }) => (
-      <div>
-        <p className="m-0 text-xs text-[var(--sea-ink-soft)]">{props.label}</p>
-        <p className="m-0 text-2xl font-bold text-[var(--sea-ink)]">
-          {props.unit === '元' ? `¥${money(props.value)}` : `${num(props.value)}${props.unit ?? ''}`}
-        </p>
+      <div className="bank-gen-metric">
+        <span>{props.label}</span>
+        {props.unit === '元' ? (
+          <AnimatedAmount value={num(props.value)} prefix="¥ " />
+        ) : (
+          <span>
+            {num(props.value)}
+            {props.unit ?? ''}
+          </span>
+        )}
       </div>
     ),
-    BarChart: ({ props }) => <Bars title={props.title} rows={asRows(props.data)} labelKey={props.labelKey} valueKey={props.valueKey} />,
-    PieChart: ({ props }) => <Bars title={props.title} rows={asRows(props.data)} labelKey={props.labelKey} valueKey={props.valueKey} share />,
+    BarChart: ({ props }) => (
+      <AnimatedBarChart
+        title={props.title}
+        data={normalizeChartData(props.data, props.labelKey, props.valueKey)}
+      />
+    ),
+    PieChart: ({ props }) => (
+      <AnimatedDonutChart
+        title={props.title}
+        data={normalizeChartData(props.data, props.labelKey, props.valueKey)}
+      />
+    ),
     Table: ({ props }) => (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="bank-gen-table">
+        <table>
           <thead>
             <tr>
-              {props.columns.map((c) => (
-                <th key={c.key} className="py-1 text-left text-xs font-medium text-[var(--sea-ink-soft)]">{c.label}</th>
+              {props.columns.map((column) => (
+                <th key={column.key}>{column.label}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {asRows(props.rows).map((r, i) => (
-              <tr key={i} className="border-t border-[var(--line)]">
-                {props.columns.map((c) => (
-                  <td key={c.key} className="py-1.5">{String(r[c.key] ?? '')}</td>
+            {asRows(props.rows).map((row, index) => (
+              <tr key={index} style={{ animationDelay: `${Math.min(index, 10) * 50}ms` }}>
+                {props.columns.map((column) => (
+                  <td key={column.key}>{String(row[column.key] ?? '')}</td>
                 ))}
               </tr>
             ))}
@@ -55,42 +70,16 @@ export const { registry } = defineRegistry(catalog, {
         </table>
       </div>
     ),
-    Note: ({ props }) => <p className="m-0 text-sm text-[var(--sea-ink-soft)]">{props.text}</p>,
+    Note: ({ props }) => <p className="bank-gen-note">{props.text}</p>,
     FollowUp: ({ props }) => <FollowUpButton label={props.label} prompt={props.prompt} />,
   },
 })
 
-function FollowUpButton(p: { label: string; prompt: string }) {
+function FollowUpButton({ label, prompt }: { label: string; prompt: string }) {
   const send = useContext(FollowUpContext)
   return (
-    <button onClick={() => send(p.prompt)} className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1 text-sm">
-      {p.label}
+    <button onClick={() => send(prompt)} className="bank-follow-up bank-lift">
+      {label}
     </button>
-  )
-}
-
-function Bars(p: { title: string; rows: Row[]; labelKey: string; valueKey: string; share?: boolean }) {
-  const total = p.rows.reduce((s, r) => s + num(r[p.valueKey]), 0)
-  const max = Math.max(...p.rows.map((r) => num(r[p.valueKey])), 1)
-  return (
-    <div>
-      <p className="m-0 mb-2 text-sm font-medium text-[var(--sea-ink)]">{p.title}</p>
-      <div className="space-y-1.5">
-        {p.rows.map((r, i) => {
-          const v = num(r[p.valueKey])
-          return (
-            <div key={i} className="text-xs">
-              <div className="flex justify-between">
-                <span>{String(r[p.labelKey])}</span>
-                <span>{p.share && total ? `${((v / total) * 100).toFixed(1)}%` : `¥${money(v)}`}</span>
-              </div>
-              <div className="h-2 rounded-full bg-[var(--line)]">
-                <div className="h-2 rounded-full bg-[var(--lagoon)]" style={{ width: `${(v / max) * 100}%` }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
   )
 }

@@ -11,6 +11,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
+import { businessMonth } from '#/lib/dashboard'
 import { defineBankTool } from './define'
 import type { AgentContext } from '#/server/agent/context'
 import { runDueJobs, simNow } from './jobs'
@@ -145,8 +146,7 @@ export const getSpendingReport = defineBankTool({
       .where(inArray(schema.transactions.accountId, accs.map((a) => a.id)))
     const prefix = period
     const filtered = rows.filter((t) => {
-      const d = t.occurredAt instanceof Date ? t.occurredAt.toISOString() : String(t.occurredAt)
-      return d.startsWith(prefix)
+      return businessMonth(t.occurredAt).startsWith(prefix)
     })
     const income = filtered.filter((t) => t.amountCents > 0).reduce((s, t) => s + t.amountCents, 0)
     const expense = filtered.filter((t) => t.amountCents < 0).reduce((s, t) => s + (-t.amountCents), 0)

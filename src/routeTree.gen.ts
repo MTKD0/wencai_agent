@@ -18,6 +18,7 @@ import { Route as ApiAdminRouteImport } from './routes/api/admin'
 import { Route as ApiBindRouteImport } from './routes/api/bind'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiConfirmRouteImport } from './routes/api/confirm'
+import { Route as ApiDashboardRouteImport } from './routes/api/dashboard'
 import { Route as ApiSecurityRouteImport } from './routes/api/security'
 import { Route as ApiSettingsRouteImport } from './routes/api/settings'
 import { Route as ConfirmActionIdRouteImport } from './routes/confirm.$actionId'
@@ -71,6 +72,11 @@ const ApiConfirmRoute = ApiConfirmRouteImport.update({
   path: '/api/confirm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDashboardRoute = ApiDashboardRouteImport.update({
+  id: '/api/dashboard',
+  path: '/api/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSecurityRoute = ApiSecurityRouteImport.update({
   id: '/api/security',
   path: '/api/security',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
+  '/api/dashboard': typeof ApiDashboardRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
+  '/api/dashboard': typeof ApiDashboardRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/api/bind': typeof ApiBindRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
+  '/api/dashboard': typeof ApiDashboardRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/api/bind'
     | '/api/chat'
     | '/api/confirm'
+    | '/api/dashboard'
     | '/api/security'
     | '/api/settings'
     | '/confirm/$actionId'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/api/bind'
     | '/api/chat'
     | '/api/confirm'
+    | '/api/dashboard'
     | '/api/security'
     | '/api/settings'
     | '/confirm/$actionId'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/api/bind'
     | '/api/chat'
     | '/api/confirm'
+    | '/api/dashboard'
     | '/api/security'
     | '/api/settings'
     | '/confirm/$actionId'
@@ -229,6 +241,7 @@ export interface RootRouteChildren {
   ApiBindRoute: typeof ApiBindRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiConfirmRoute: typeof ApiConfirmRoute
+  ApiDashboardRoute: typeof ApiDashboardRoute
   ApiSecurityRoute: typeof ApiSecurityRoute
   ApiSettingsRoute: typeof ApiSettingsRoute
   ConfirmActionIdRoute: typeof ConfirmActionIdRoute
@@ -303,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConfirmRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/dashboard': {
+      id: '/api/dashboard'
+      path: '/api/dashboard'
+      fullPath: '/api/dashboard'
+      preLoaderRoute: typeof ApiDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/security': {
       id: '/api/security'
       path: '/api/security'
@@ -365,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBindRoute: ApiBindRoute,
   ApiChatRoute: ApiChatRoute,
   ApiConfirmRoute: ApiConfirmRoute,
+  ApiDashboardRoute: ApiDashboardRoute,
   ApiSecurityRoute: ApiSecurityRoute,
   ApiSettingsRoute: ApiSettingsRoute,
   ConfirmActionIdRoute: ConfirmActionIdRoute,

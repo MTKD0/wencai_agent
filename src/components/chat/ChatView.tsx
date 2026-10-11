@@ -1,105 +1,237 @@
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import { useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { ArrowUp, Loader2, ReceiptText, Send, Square } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 import type { WencaiUIMessage } from '#/server/agent/messages'
+import { AgentAvatar } from '#/components/banking/AgentAvatar'
 import ToolPart from './ToolPart'
 
-const SUGGESTIONS = ['我的余额有多少？', '给妈妈转 200 元', '分析一下我这个月的消费', '帮我看看有哪些订阅在扣费']
+const SUGGESTIONS = [
+  { label: '查一下本月支出', prompt: '帮我分析本月支出并用图表展示分类', icon: ReceiptText },
+  { label: '给妈妈转 200 元', prompt: '给妈妈转200元', icon: Send },
+]
 
-export default function ChatView() {
-  const { messages, sendMessage, status } = useChat<WencaiUIMessage>({
+export default function ChatView({
+  request,
+  active = true,
+}: {
+  request?: { id: number; text: string }
+  active?: boolean
+}) {
+  const client = useQueryClient()
+  const { messages, sendMessage, status, error, stop } = useChat<WencaiUIMessage>({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
+    onFinish: () => {
+      void client.invalidateQueries({ queryKey: ['dashboard'] })
+    },
   })
   const [input, setInput] = useState('')
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const [sendError, setSendError] = useState('')
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const followScroll = useRef(true)
+  const handledRequest = useRef<number | undefined>(undefined)
   const busy = status === 'submitted' || status === 'streaming'
 
-  // 新消息到达时滚到底部；用语句块包裹，避免把 scrollIntoView 的返回值（undefined）当 cleanup
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
+    const scroll = scrollRef.current
+    if (active && followScroll.current && scroll)
+      scroll.scrollTo({
+        top: scroll.scrollHeight,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'instant'
+          : 'smooth',
+      })
+  }, [messages, active])
   const send = (text: string) => {
     if (!text.trim() || busy) return
-    sendMessage({ text })
+    followScroll.current = true
+    setSendError('')
+    void sendMessage({ text }).catch(() => setSendError('消息发送失败，请稍后重试'))
     setInput('')
   }
+  useEffect(() => {
+    if (!request || handledRequest.current === request.id || busy) return
+    handledRequest.current = request.id
+    followScroll.current = true
+    void sendMessage({ text: request.text }).catch(() => setSendError('消息发送失败，请稍后重试'))
+  }, [request, busy, sendMessage])
 
   return (
     <>
-      <main className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        {messages.length === 0 && (
-          <div className="space-y-3 pt-8 text-center">
-            <p className="text-base font-semibold text-[var(--sea-ink)]">说句话就能办业务</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button key={s} onClick={() => send(s)} className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1.5 text-sm text-[var(--sea-ink)]">
-                  {s}
-                </button>
-              ))}
+      <div
+        className="bank-chat-scroll"
+        ref={scrollRef}
+        onWheel={(event) => {
+          if (event.deltaY < 0) followScroll.current = false
+        }}
+        onPointerDown={() => {
+          followScroll.current = false
+        }}
+        onKeyDown={(event) => {
+          if (['ArrowUp', 'PageUp', 'Home'].includes(event.key)) followScroll.current = false
+        }}
+        onScroll={() => {
+          const el = scrollRef.current
+          if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 40)
+            followScroll.current = true
+        }}
+      >
+        <div className="bank-agent-welcome">
+          <span className="bank-agent-eyebrow">你的专属银行助手</span>
+          <h2>说句话，就能办业务</h2>
+          <p>查账户、转账、看账单，我来帮你</p>
+          <div className="bank-agent-suggestions">
+            {SUGGESTIONS.map(({ label, prompt, icon: Icon }) => (
+              <button
+                key={label}
+                className="bank-lift"
+                disabled={busy}
+                onClick={() => send(prompt)}
+              >
+                <Icon size={17} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div
+          className="bank-chat-messages"
+          aria-label="对话记录"
+          aria-live="polite"
+          aria-busy={busy}
+        >
+          {messages.map((message) => {
+            const visualized = visualizedTools(message.parts)
+            return (
+              <div
+                key={message.id}
+                className={`bank-message ${message.role === 'user' ? 'is-user' : 'is-assistant'}`}
+              >
+                {message.role !== 'user' && <AgentAvatar small />}
+                <div className="bank-message-content">
+                  {message.parts.map((part, index) => {
+                    const key = `${message.id}-${index}`
+                    if (part.type === 'text')
+                      return message.role === 'user' ? (
+                        <p key={key} className="bank-user-bubble">
+                          {part.text}
+                        </p>
+                      ) : (
+                        <div key={key} className="bank-assistant-text">
+                          <Streamdown>{part.text}</Streamdown>
+                        </div>
+                      )
+                    if (part.type === 'data-verify')
+                      return (
+                        <p key={key} className="bank-verification-note">
+                          ⚠ 以下数字尚未核实：
+                          {part.data.violations.map((violation) => violation.text).join('、')}
+                          。请以数据卡片为准。
+                        </p>
+                      )
+                    if (part.type === 'data-blocked')
+                      return (
+                        <p key={key} className="bank-verification-note">
+                          安全审核已拦截：{part.data.categories.join('、')}
+                        </p>
+                      )
+                    if (part.type.startsWith('tool-'))
+                      return (
+                        <div className="bank-tool-result" key={key}>
+                          <ToolPart
+                            part={part as never}
+                            onFollowUp={send}
+                            summarized={visualized.has(part.type.slice(5))}
+                          />
+                        </div>
+                      )
+                    return null
+                  })}
+                </div>
+              </div>
+            )
+          })}
+          {status === 'submitted' && (
+            <div className="bank-thinking">
+              <AgentAvatar small />
+              <span>
+                文财正在思考
+                <i />
+                <i />
+                <i />
+              </span>
             </div>
+          )}
+        </div>
+        {(error || sendError) && (
+          <div className="bank-chat-error" role="alert">
+            {sendError || '暂时无法连接文财，请稍后重新发送。'}
+            <small>你也可以先在首页查看账户和账单。</small>
           </div>
         )}
-
-        {messages.map((m) => (
-          <div key={m.id} className={m.role === 'user' ? 'flex justify-end' : 'space-y-2'}>
-            {m.parts.map((part, i) => {
-              const key = `${m.id}-${i}`
-              if (part.type === 'text') {
-                return m.role === 'user' ? (
-                  <p key={key} className="m-0 max-w-[80%] rounded-2xl rounded-br-sm bg-[var(--lagoon-deep)] px-3 py-2 text-sm text-white">
-                    {part.text}
-                  </p>
-                ) : (
-                  <div key={key} className="prose prose-sm max-w-none text-[var(--sea-ink)] dark:prose-invert">
-                    <Streamdown>{part.text}</Streamdown>
-                  </div>
-                )
-              }
-              if (part.type === 'data-verify') {
-                return (
-                  <p key={key} className="m-0 rounded-lg bg-amber-100 px-3 py-2 text-xs text-amber-900">
-                    ⚠️ 以上回复中的 {part.data.violations.map((v) => `「${v.text}」`).join('、')} 未能在系统数据中核实，请以卡片中的数据为准。
-                  </p>
-                )
-              }
-              if (part.type === 'data-blocked') {
-                return (
-                  <p key={key} className="m-0 text-xs text-[var(--sea-ink-soft)]">
-                    🛡️ 安全审核已拦截（{part.data.categories.join('、')}）
-                  </p>
-                )
-              }
-              if (part.type.startsWith('tool-')) {
-                return <ToolPart key={key} part={part as never} onFollowUp={send} />
-              }
-              return null
-            })}
-          </div>
-        ))}
-        {status === 'submitted' && <p className="text-sm text-[var(--sea-ink-soft)]">文财正在思考…</p>}
-        <div ref={bottomRef} />
-      </main>
-
+      </div>
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
+        className="bank-chat-composer"
+        onSubmit={(event) => {
+          event.preventDefault()
           send(input)
         }}
-        className="flex gap-2 border-t border-[var(--line)] bg-[var(--header-bg)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
-        {/* TODO: 语音输入（ASR）与图片上传（DeepSeek V4.1 多模态） */}
+        <span className="bank-composer-mark" aria-hidden="true">
+          <ReceiptText size={20} />
+        </span>
         <input
+          data-autofocus
+          aria-label="发送给文财的消息"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="想办点什么？"
-          className="flex-1 rounded-full border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-2 text-sm outline-none"
+          onChange={(event) => setInput(event.target.value)}
+          placeholder="想办什么业务？"
+          autoComplete="off"
+          maxLength={4000}
         />
-        <button type="submit" disabled={busy} className="rounded-full bg-[var(--lagoon-deep)] px-4 text-sm font-semibold text-white disabled:opacity-50">
-          发送
-        </button>
+        {busy ? (
+          <button
+            className="bank-send bank-lift"
+            type="button"
+            aria-label="停止回答"
+            onClick={() => void stop()}
+          >
+            {status === 'submitted' ? (
+              <Loader2 size={20} className="bank-spin" />
+            ) : (
+              <Square size={18} />
+            )}
+          </button>
+        ) : (
+          <button
+            type="submit"
+            aria-label="发送消息"
+            className="bank-send bank-lift"
+            disabled={!input.trim()}
+          >
+            <ArrowUp size={24} />
+          </button>
+        )}
       </form>
+      <p className="bank-agent-disclaimer">敏感操作须由你确认，请以银行数据为准</p>
     </>
   )
+}
+
+/** 已有生成式视图引用的数据只展示一次；确认单永远不折叠。 */
+function visualizedTools(parts: WencaiUIMessage['parts']) {
+  const names = new Set<string>()
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== 'object') return
+    if ('$state' in value && typeof value.$state === 'string') names.add(value.$state.split('/')[1])
+    else for (const child of Object.values(value)) visit(child)
+  }
+  for (const part of parts) {
+    if (part.type !== 'tool-show_view' || !('output' in part)) continue
+    const output = part.output as { status?: string; spec?: { elements?: unknown } }
+    if (output?.status === 'view') visit(output.spec?.elements)
+  }
+  return names
 }

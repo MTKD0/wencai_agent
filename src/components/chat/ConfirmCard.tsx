@@ -117,14 +117,14 @@ export default function ConfirmCard(props: ConfirmCardProps) {
                 <button
                   type="button"
                   onClick={() => setMethod('password')}
-                  className={`flex-1 rounded-full border py-1 ${method === 'password' ? 'border-[var(--lagoon-deep)] text-[var(--sea-ink)]' : 'border-[var(--line)] text-[var(--sea-ink-soft)]'}`}
+                  className={`bank-lift flex-1 rounded-full border py-1 ${method === 'password' ? 'border-[var(--lagoon-deep)] text-[var(--sea-ink)]' : 'border-[var(--line)] text-[var(--sea-ink-soft)]'}`}
                 >
                   交易密码
                 </button>
                 <button
                   type="button"
                   onClick={() => setMethod('passkey')}
-                  className={`flex-1 rounded-full border py-1 ${method === 'passkey' ? 'border-[var(--lagoon-deep)] text-[var(--sea-ink)]' : 'border-[var(--line)] text-[var(--sea-ink-soft)]'}`}
+                  className={`bank-lift flex-1 rounded-full border py-1 ${method === 'passkey' ? 'border-[var(--lagoon-deep)] text-[var(--sea-ink)]' : 'border-[var(--line)] text-[var(--sea-ink-soft)]'}`}
                 >
                   Passkey
                 </button>
@@ -143,13 +143,13 @@ export default function ConfirmCard(props: ConfirmCardProps) {
             </>
           )}
           <div className="flex gap-2">
-            <button onClick={() => props.onCancel?.()} disabled={props.submitting} className="flex-1 rounded-full border border-[var(--line)] py-2 text-sm">
+            <button onClick={() => props.onCancel?.()} disabled={props.submitting} className="bank-lift flex-1 rounded-full border border-[var(--line)] py-2 text-sm">
               取消
             </button>
             <button
               onClick={() => void confirm()}
               disabled={props.submitting || !props.onConfirm || (red && method === 'password' && password.length !== 6)}
-              className="flex-1 rounded-full bg-[var(--lagoon-deep)] py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="bank-lift flex-1 rounded-full bg-[var(--lagoon-deep)] py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               {props.submitting ? '处理中…' : '确认'}
             </button>

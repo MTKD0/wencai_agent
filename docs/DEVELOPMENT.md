@@ -8,7 +8,9 @@
 
 | 入口 | 代码 | 作用 |
 |---|---|---|
-| 用户聊天 `/` | `src/routes/index.tsx`、`src/components/chat/ChatView.tsx` | 登录后对话，流式消息与工具结果 |
+| 用户首页 `/` | `src/routes/index.tsx`、`src/components/banking/BankingHome.tsx` | 资产、收支、卡片、最近交易、底部导航和悬浮 Agent |
+| 用户首页 API | `src/routes/api/dashboard.ts` → `src/server/dashboard.ts` | 从登录会话读取身份，汇总本人数据；金额返回元，禁止共享缓存 |
+| Agent 面板 | `src/components/chat/ChatView.tsx`、`ToolPart.tsx` | 流式消息、固定回执、生成式视图和交易确认 |
 | 聊天 API | `src/routes/api/chat.ts` | 认证、输入审核、流式 Agent 调用 |
 | 确认 API / 页面 | `src/routes/api/confirm.ts`、`src/routes/confirm.$actionId.tsx` | 用户确认、强验证、DAG 恢复 |
 | 登录 / 安全设置 / 绑定 | `src/routes/login.tsx`、`settings.tsx`、`bind.tsx` | 手机号验证码、设备、Passkey、飞书绑定 |
@@ -76,6 +78,30 @@ flowchart TD
 - `genui/catalog.ts` 与 `genui/registry.tsx` 定义展示组件。`server/genui/validate.ts` 校验组件、数据路径和数字出处，丢弃模型自带 state，再注入服务端工具结果。
 - `agent/session.ts` 的工具结果快照是进程内 Map；Web 消息历史由客户端随请求提交，飞书历史保存在进程内 Map。
 
+### 用户界面与动效复用
+
+用户端采用蓝白配色，样式限定在 `components/banking/banking.css`，不改变演示管理后台。首页数据以整数分汇总后转为元，资产为活期余额与理财本金之和；首页月度/近六个月统计和 `get_spending_report` 使用 UTC+8 账期。`analyze_spending` 仍按最近若干天计算，两者标题明确区分。
+
+| 共用组件 | 用途与动效 |
+|---|---|
+| `ui/motion.tsx`、`motion.css` | `Reveal` 首次进入可视区域时入场；`AnimatedAmount` 金额过渡；`.bank-lift` 悬停、聚焦和按压反馈 |
+| `ui/BankCard.tsx` | `BankCard` 立体前推与掠光；`BankCardStack` 分层入场与悬停前推 |
+| `ui/charts.tsx`、`charts.css` | `AnimatedBarChart` 从底部逐柱展开；`AnimatedDonutChart` 按真实比例顺时针绘制，可选 `pie` 实心饼图 |
+| `banking/FinancialReport.tsx` | 共享支出合计与环图/柱图切换，用于首页和 Agent 固定工具输出 |
+| `ui/Sheet.tsx` | 可开合底部面板、Escape 关闭、焦点约束与归还；关闭时保留对话并设置 `inert` |
+
+新增业务图表时直接复用，不要另写一套动画：
+
+```tsx
+import { AnimatedBarChart, AnimatedDonutChart } from '#/components/ui/charts'
+// data 来自服务端工具结果或 /api/dashboard，value 单位为元。
+const data = categories.map(({ category, total }) => ({ label: category, value: total }))
+<AnimatedBarChart title="分类支出" data={data} />
+<AnimatedDonutChart title="支出占比" data={data} />
+```
+
+图表首次可见时播放，数据内容变化才重新播放，同一份数据的流式刷新不会重播。标签、金额和占比支持键盘聚焦读取，空数据展示空状态；系统设置 `prefers-reduced-motion: reduce` 时直接显示最终图形与金额。`genui/registry.tsx` 的 `BarChart`、`PieChart` 也使用这些组件，仍须经过服务端 `$state` 与数字出处校验。已有生成式视图引用的工具数据折叠为完成提示，避免重复呈现同一张分析图；交易确认单始终保留。Agent 完成、交易确认成功和面板关闭都会刷新首页数据。
+
 ## 5. 数据与金额约定
 
 | 数据组 | 表 |
@@ -128,7 +154,7 @@ pnpm test
 Remove-Item Env:DATABASE_URL
 ```
 
-2026-10-11 核验结果：类型检查通过；客户端和服务端生产构建通过（有大于 500 kB 的客户端包体提示）；独立新建库上 **14 个测试文件、111 项测试通过**，含用户列表、账户查询/命令切换及生日订单隔离。浏览器已验证首页、手机号搜索和两个演示账户切换。未使用真实模型、飞书凭证或移动端 Passkey 完成端到端联调。
+2026-10-11 核验结果：类型检查通过；客户端和服务端生产构建通过（有大于 500 kB 的客户端包体提示）；独立库上 **16 个测试文件、120 项测试通过**，含后台用户切换、首页数据归属、UTC+8 跨月/跨年统计、生成式图表数据解析和固定工具视图。浏览器验证了手机/桌面布局、资产隐藏、卡片、账单图表切换、逐柱/逐弧动画、减少动态效果、面板开合和键盘关闭；Agent 联调使用独立本地模型协议夹具调用真实工具及生成式视图，不替换产品认证或业务数据。未使用真实模型、飞书凭证或移动端 Passkey 完成端到端联调。
 
 ## 7. 后续修改从哪里入手
 
@@ -138,6 +164,7 @@ Remove-Item Env:DATABASE_URL
 | 新风控规则 | `policy/types.ts`、`facts.ts`、`rules.ts` | 为每条实际工具路径覆盖升级/拒绝，不只测纯策略函数 |
 | 新后台功能 | `routes/api/admin.ts`、`components/admin/client.ts`、`actions.ts`、`views/` | 金额单位、操作审计、错误与刷新 |
 | 新展示组件 | `genui/catalog.ts`、`registry.tsx`、服务端校验 | 只能引用服务端数据，不能执行写操作 |
+| 新用户端数据卡/图表 | `components/ui/`、`banking/`、`server/dashboard.ts` | 复用动效；校验数据归属、金额单位、空状态与减少动态效果 |
 | 新渠道 | `channels/`、服务端身份解析、工具白名单 | 渠道绑定、能力上限、确认后恢复 |
 | 新数据库字段 | schema、seed、相关查询 | 独立库同步结构，更新测试；未来引入版本化迁移 |
 | 调整模型/提示词 | `llm/models.ts`、`agent/instructions.ts` | 配置模型 ID 后验证真实服务、工具调用、流式协议 |

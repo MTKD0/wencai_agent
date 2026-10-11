@@ -136,6 +136,7 @@ export function isRetryableConfirmError(error: unknown): boolean {
 }
 
 export function useConfirmAction(actionId: string) {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: async (stepUp: StepUpPayload | undefined) => {
       const res = await fetch('/api/confirm', {
@@ -148,6 +149,7 @@ export function useConfirmAction(actionId: string) {
       if (!data.ok) throw new ConfirmError(data.message ?? data.code ?? '确认失败', data)
       return data
     },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['dashboard'] }),
   })
 }
 
@@ -160,7 +162,9 @@ export function useCancelAction(actionId: string) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ actionId, decision: 'cancel' }),
       })
-      return (await res.json()) as ConfirmResponse
+      const data = (await res.json()) as ConfirmResponse
+      if (!data.ok) throw new ConfirmError(data.message ?? data.code ?? '取消失败', data)
+      return data
     },
   })
 }
