@@ -2,7 +2,7 @@
 setlocal
 chcp 65001 >nul
 cd /d "%~dp0"
-title Wencai Agent - Live Logs
+title Wencai Agent Shadcn - Live Logs
 where node >nul 2>nul
 if errorlevel 1 (
   echo Node.js 22 or newer is required. Install Node.js and run this file again.
