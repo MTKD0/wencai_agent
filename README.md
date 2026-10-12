@@ -6,7 +6,7 @@
 
 ## 快速开始
 
-Windows 可直接双击根目录的 `start.bat`：自动加载 `.env.local`、检查依赖、启动服务并打开浏览器。启动窗口就是实时日志窗口，日志同时保存在 `.scratch/logs/`；按 `Ctrl+C` 停止服务。默认端口为 3000，端口占用时自动顺延，并使用日志中显示的实际地址。
+macOS / Linux 可执行 `./start.sh`，Windows 可直接双击根目录的 `start.bat`（或直接运行 `pnpm dev`）：自动加载 `.env.local`、检查依赖与数据库、同时启动全栈 Web 服务与 Worker 后台任务，并打开浏览器。启动窗口就是实时日志窗口，日志同时保存在 `.scratch/logs/`；按 `Ctrl+C` 立即停止全部服务。默认端口为 3000，端口占用时自动顺延，并使用日志中显示的实际地址。
 
 首次运行会从 `.env.example` 创建本地配置并生成签名密钥；填写 `DEEPSEEK_API_KEY` 后重启即可启用 Agent，默认模型为 `deepseek-flash`。只有数据库文件不存在时才自动建表并播种，已有数据库不会被重新播种。`.env.local`、数据库与日志均不上传 Git。
 
@@ -36,7 +36,8 @@ pnpm exec node --env-file=.env.local ./node_modules/vite/bin/vite.js --port 3000
 
 | 命令 | 说明 |
 |---|---|
-| `pnpm dev` | 启动 Web/H5 |
+| `pnpm dev` | 一键启动全栈服务（Web API + 后台任务 Worker） |
+| `pnpm dev:web` | 仅启动 Web/H5（不启动后台 Worker） |
 | `pnpm test` | 单元测试与红队用例（策略、令牌、审计链、执行器、注入、沙箱、生成式 UI、越权） |
 | `pnpm typecheck` | 类型检查 |
 | `pnpm db:reset` | POSIX shell 下重建数据库并写入演示数据；Windows 见上方步骤 |

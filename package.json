@@ -6,7 +6,8 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "node scripts/start-local.mjs",
+    "dev:web": "vite dev --port 3000",
     "worker": "node --import=tsx scripts/worker.ts",
     "generate-routes": "tsr generate",
     "build": "vite build",
