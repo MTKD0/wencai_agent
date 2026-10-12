@@ -1,4 +1,5 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { notifyConfirmation } from './confirmation-notices'
 
 /*
  * 客户端查询层。
@@ -111,6 +112,8 @@ export interface ConfirmResponse {
   message?: string
   output?: unknown
   plan?: unknown
+  actionId?: string
+  userId?: string
 }
 
 /** 服务端的确认失败。code 让 UI 判断能否重试（step_up_failed 可重试）。 */
@@ -129,7 +132,7 @@ export type StepUpPayload = { method: 'password'; password: string } | { method:
  * 其余（not_found / forbidden / tampered / expired / already_used / locked）都是终态：
  * 该操作已经不能被执行，重试只会再次被拒，UI 应该直接收起到结束态。
  */
-const RETRYABLE_CODES = new Set(['step_up_required', 'step_up_failed', 'execution_failed'])
+const RETRYABLE_CODES = new Set(['step_up_required', 'step_up_failed'])
 
 export function isRetryableConfirmError(error: unknown): boolean {
   return error instanceof ConfirmError && RETRYABLE_CODES.has(error.data.code ?? '')
@@ -146,10 +149,13 @@ export function useConfirmAction(actionId: string) {
         body: JSON.stringify({ actionId, decision: 'confirm', stepUp }),
       })
       const data = (await res.json()) as ConfirmResponse
-      if (!data.ok) throw new ConfirmError(data.message ?? data.code ?? '确认失败', data)
+      if (!res.ok || !data.ok) throw new ConfirmError(data.message ?? data.code ?? '确认失败', data)
       return data
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['dashboard'] }),
+    onSuccess: (data) => {
+      void qc.invalidateQueries({ queryKey: ['dashboard'] })
+      if (data.actionId === actionId && data.userId) notifyConfirmation({ actionId, userId: data.userId })
+    },
   })
 }
 

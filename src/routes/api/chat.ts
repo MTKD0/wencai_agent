@@ -8,7 +8,7 @@ import type { AgentContext } from '#/server/agent/context'
 import { requireSession } from '#/server/session'
 
 // 会话标识由认证会话决定，客户端传来的 id 仅用于兼容 ChatSDK 的传输协议
-const BodySchema = z.looseObject({ messages: z.array(z.any()) })
+const BodySchema = z.looseObject({ messages: z.array(z.any()), confirmedActionId: z.string().min(1).max(100).optional() })
 
 export const Route = createFileRoute('/api/chat')({
   server: {
@@ -39,16 +39,21 @@ export const Route = createFileRoute('/api/chat')({
               return
             }
 
-            const { result, tools } = await runAgent({
+            const { result, tools, confirmation } = await runAgent({
               ctx,
               messages,
               priorEvidence: historyEvidence(messages),
               abortSignal: request.signal,
+              confirmedActionId: body.data.confirmedActionId,
               onVerified: (violations) => {
                 if (violations.length) writer.write({ type: 'data-verify', data: { violations } })
               },
             })
-            writer.merge(toUIMessageStream({ stream: result.stream, tools }))
+            if (confirmation) {
+              writer.write({ type: 'start' })
+              writer.write({ type: 'data-confirmation', data: confirmation })
+            }
+            writer.merge(toUIMessageStream({ stream: result.stream, tools, sendStart: !confirmation }))
           },
           // 详细错误只记服务端日志，不向客户端泄露
           onError: (error) => {

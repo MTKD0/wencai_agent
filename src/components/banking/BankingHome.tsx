@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowDownLeft,
@@ -29,7 +29,7 @@ import type { DashboardData } from '#/lib/dashboard'
 import { formatAmount } from '#/lib/dashboard'
 import { AnimatedAmount, Reveal } from '#/components/ui/motion'
 import { AnimatedBarChart, AnimatedDonutChart } from '#/components/ui/charts'
-import { BankCard, BankCardStack } from '#/components/ui/BankCard'
+import { BankCardStack } from '#/components/ui/BankCard'
 import { Sheet } from '#/components/ui/Sheet'
 import { DraggableFloatingButton } from '#/components/ui/DraggableFloatingButton'
 import ChatView from '#/components/chat/ChatView'
@@ -37,6 +37,8 @@ import { AgentAvatar } from './AgentAvatar'
 import { FinancialReport } from './FinancialReport'
 import PaymentCenter from './PaymentCenter'
 import type { PaymentView } from './PaymentCenter'
+import { AccountCarousel, accountSlides } from './AccountCarousel'
+import { subscribeConfirmations } from '#/lib/confirmation-notices'
 import './banking.css'
 
 type Tab = 'home' | 'accounts' | 'life' | 'profile'
@@ -72,13 +74,20 @@ export default function BankingHome({ user }: { user: { id: string; name: string
   const [detail, setDetail] = useState<Detail>(null)
   const [signingOut, setSigningOut] = useState(false)
   const [profileError, setProfileError] = useState('')
+  const [selectedCardId, setSelectedCardId] = useState<string>()
   const data = query.data
+  const selectedCard = data && (accountSlides(data).find((card) => card.id === selectedCardId) ?? accountSlides(data)[0])
+  const selectedAccount = data?.accounts.find((account) => account.id === selectedCard?.accountId)
+  const activity = selectedAccount && data?.accountActivity[selectedAccount.id]
   const openAgent = (text?: string) => {
     setPaymentView(null)
     setDetail(null)
     if (text) setRequest((previous) => ({ id: (previous?.id ?? 0) + 1, text }))
     setAgentOpen(true)
   }
+  useEffect(() => subscribeConfirmations((notice) => {
+    if (notice.userId === user.id) { setPaymentView(null); setDetail(null); setAgentOpen(true) }
+  }), [user.id])
   const openPayment = (view: PaymentView) => { setDetail(null); setAgentOpen(false); setPaymentView(view) }
   const closePayment = () => { setPaymentView(null); void queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] }) }
   const closeAgent = () => {
@@ -302,23 +311,28 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                       <h1>我的账户</h1>
                       <span>{data.cards.length} 张银行卡</span>
                     </div>
-                    <p className="bank-page-note">每一笔资产，都清晰可见。</p>
+                    <p className="bank-page-note">左右滑动切换卡片，查看对应账户的账单。</p>
                     <div className="bank-payment-entry">
                       <button type="button" className="bank-primary bank-lift" onClick={() => openPayment('transfer')}><ArrowUpRight size={17} /> 转账 / 本人互转</button>
                       <button type="button" className="bank-payment-secondary bank-lift" onClick={() => openPayment('payees')}><UsersRound size={17} /> 收款人</button>
                     </div>
-                    <div className="bank-card-list">
-                      {data.cards.map((card, index) => (
-                        <BankCard
-                          key={card.id}
-                          name={card.accountName}
-                          last4={card.last4}
-                          kind={card.kind}
-                          status={card.status}
-                          index={index}
-                        />
-                      ))}
-                    </div>
+                    <AccountCarousel data={data} selectedId={selectedCard?.id} onSelect={setSelectedCardId} hidden={hidden} />
+                    {selectedAccount && activity && (
+                      <div key={selectedAccount.id} className="bank-account-activity" aria-label={`${selectedAccount.name}账单`}>
+                        <Reveal>
+                          <div className="bank-section-heading">
+                            <h2>{selectedAccount.name}账单</h2>
+                            <span>{activity.monthly.period.replace('-', ' / ')}</span>
+                          </div>
+                          <div className="bank-account-summary">
+                            <div><span>本月收入</span><strong className="is-income">{hidden ? '••••••' : `+${formatAmount(activity.monthly.income)}`}</strong></div>
+                            <div><span>本月支出</span><strong>{hidden ? '••••••' : `−${formatAmount(activity.monthly.expense)}`}</strong></div>
+                          </div>
+                          <div className="bank-section-heading"><h3>交易明细</h3><span>最近 {activity.transactions.length} 笔</span></div>
+                          <TransactionList transactions={activity.transactions} hidden={hidden} />
+                        </Reveal>
+                      </div>
+                    )}
                     <div className="bank-section-heading">
                       <h2>资金账户</h2>
                       <button
@@ -329,7 +343,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                         <ChevronRight size={14} />
                       </button>
                     </div>
-                    {data.accounts.map((account, index) => (
+                    {data.accounts.filter((account) => account.id === selectedAccount?.id).map((account, index) => (
                       <Reveal key={account.id} delay={index * 70}>
                         <div className="bank-cash-account bank-lift">
                           <span className="bank-transaction-icon">
@@ -483,7 +497,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           }
         >
           <div id="bank-agent-conversation" className="bank-agent-conversation">
-            <ChatView request={request} active={agentOpen} />
+            <ChatView request={request} active={agentOpen} userId={user.id} />
           </div>
         </Sheet>
         <Sheet open={!!paymentView} onClose={closePayment} title="转账与收款" className="bank-payment-sheet">

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { UnauthorizedError } from '#/lib/queries'
 import type { ConfirmSummary } from '#/server/tools/define'
+import './confirm-card.css'
 
 export interface ConfirmCardProps {
   actionId: string
@@ -20,6 +21,7 @@ export interface ConfirmCardProps {
   onCancel?: () => void
   /** 已完成的展示态（外部在成功后置 true） */
   done?: string
+  doneState?: 'success' | 'cancelled' | 'failed'
 }
 
 export type StepUpPayload = { method: 'password'; password: string } | { method: 'passkey'; response: unknown }
@@ -34,7 +36,11 @@ export default function ConfirmCard(props: ConfirmCardProps) {
   const [password, setPassword] = useState('')
   const [method, setMethod] = useState<Method>('password')
   const [message, setMessage] = useState<string>()
+  const confirming = useRef(false)
+  const [verifying, setVerifying] = useState(false)
   const red = props.level === 'red'
+  const submitting = props.submitting || verifying
+  const state = props.done ? (props.doneState ?? 'success') : 'pending'
 
   // 已注册 Passkey 时默认走 Passkey，否则退回交易密码。
   // Query 未命中就说明没有可用 Passkey，保持密码方式即可，无需再发一次请求。
@@ -67,6 +73,9 @@ export default function ConfirmCard(props: ConfirmCardProps) {
   }
 
   async function confirm() {
+    if (confirming.current || submitting || props.done) return
+    confirming.current = true
+    setVerifying(true)
     setMessage(undefined)
     try {
       // 强验证的 stepUp 只在红色操作时构造；Passkey 用浏览器 API 现取 challenge
@@ -77,18 +86,22 @@ export default function ConfirmCard(props: ConfirmCardProps) {
             ? { method: 'passkey', response: await passkeyAssert() }
             : { method: 'password', password }
       await props.onConfirm?.(stepUp)
+      setPassword('')
     } catch (err) {
       // 错误由 props.error 展示；这里不再自行维护错误态
       setMessage(err instanceof Error ? err.message : '验证失败')
+    } finally {
+      confirming.current = false
+      setVerifying(false)
     }
   }
 
   return (
-    <div className={`rounded-2xl border p-4 ${red ? 'border-red-300 bg-red-50/80 dark:bg-red-950/30' : 'border-amber-300 bg-amber-50/80 dark:bg-amber-950/30'}`}>
+    <div className={`bank-confirm-card is-${state}${red ? ' is-strong' : ''}`}>
       <div className="mb-3 flex items-center justify-between">
         <p className="m-0 font-semibold text-[var(--sea-ink)]">{props.summary.title}</p>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${red ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'}`}>
-          {red ? '强验证' : '需确认'}
+        <span className="bank-confirm-badge">
+          {props.done ? ({ success: '已完成', cancelled: '已取消', failed: '未完成' }[state as 'success' | 'cancelled' | 'failed']) : red ? '强验证' : '需确认'}
         </span>
       </div>
       <dl className="m-0 space-y-1.5 text-sm">
@@ -108,7 +121,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
       )}
 
       {props.done ? (
-        <p className="mt-3 mb-0 text-center text-sm font-semibold text-[var(--palm)]">✓ {props.done}</p>
+        <p className="bank-confirm-status" role="status">{state === 'success' ? '✓ ' : ''}{props.done}</p>
       ) : (
         <div className="mt-4 space-y-2">
           {red && (
@@ -116,6 +129,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
               <div className="flex gap-2 text-xs">
                 <button
                   type="button"
+                  disabled={submitting}
                   onClick={() => setMethod('password')}
                   className={`bank-lift flex-1 rounded-full border py-1 ${method === 'password' ? 'border-[var(--lagoon-deep)] text-[var(--sea-ink)]' : 'border-[var(--line)] text-[var(--sea-ink-soft)]'}`}
                 >
@@ -123,6 +137,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
                 </button>
                 <button
                   type="button"
+                  disabled={submitting}
                   onClick={() => setMethod('passkey')}
                   className={`bank-lift flex-1 rounded-full border py-1 ${method === 'passkey' ? 'border-[var(--lagoon-deep)] text-[var(--sea-ink)]' : 'border-[var(--line)] text-[var(--sea-ink-soft)]'}`}
                 >
@@ -134,27 +149,28 @@ export default function ConfirmCard(props: ConfirmCardProps) {
                   type="password"
                   aria-label="交易密码"
                   autoComplete="off"
-                  disabled={props.submitting}
+                  disabled={submitting}
                   inputMode="numeric"
                   maxLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="请输入 6 位交易密码"
-                  className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center tracking-[0.5em] dark:bg-black/30"
+                  className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center tracking-[0.5em]"
                 />
               )}
             </>
           )}
           <div className="flex gap-2">
-            <button onClick={() => props.onCancel?.()} disabled={props.submitting} className="bank-lift flex-1 rounded-full border border-[var(--line)] py-2 text-sm">
+            <button type="button" onClick={() => props.onCancel?.()} disabled={submitting} className="bank-confirm-cancel bank-lift flex-1 rounded-full border border-[var(--line)] py-2 text-sm">
               取消
             </button>
             <button
               onClick={() => void confirm()}
-              disabled={props.submitting || !props.onConfirm || (red && method === 'password' && password.length !== 6)}
-              className="bank-lift flex-1 rounded-full bg-[var(--lagoon-deep)] py-2 text-sm font-semibold text-white disabled:opacity-50"
+              type="button"
+              disabled={submitting || !props.onConfirm || (red && method === 'password' && password.length !== 6)}
+              className="bank-confirm-submit bank-lift flex-1 rounded-full py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {props.submitting ? '处理中…' : '确认'}
+              {submitting ? '处理中…' : '确认'}
             </button>
           </div>
           {(message ?? props.error) && <p className="m-0 text-center text-xs text-red-600">{message ?? props.error}</p>}

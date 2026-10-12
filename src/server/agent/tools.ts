@@ -18,8 +18,8 @@ export function availableBankTools(ctx: AgentContext): BankToolDef[] {
 }
 
 /** 构建本次请求的 AI SDK 工具集。ctx 通过闭包注入，模型无法篡改身份。 */
-export function buildAgentTools(ctx: AgentContext): ToolSet {
-  const bankTools = availableBankTools(ctx)
+export function buildAgentTools(ctx: AgentContext, options: { readOnly?: boolean } = {}): ToolSet {
+  const bankTools = availableBankTools(ctx).filter((tool) => !options.readOnly || tool.kind === 'read')
   const tools: ToolSet = {}
 
   for (const def of bankTools) {
@@ -37,7 +37,7 @@ export function buildAgentTools(ctx: AgentContext): ToolSet {
 
   if (ctx.channel !== 'mcp') {
     const allowed = new Set(bankTools.map((t) => t.name))
-    tools.plan_task = tool({
+    if (!options.readOnly) tools.plan_task = tool({
       description:
         '提交多步骤任务计划（DAG）。系统会校验并按依赖执行，遇到需确认的步骤会挂起等待用户确认，失败时自动回滚已完成的写操作。' +
         '需要人工介入时使用 kind="handoff" 节点。',

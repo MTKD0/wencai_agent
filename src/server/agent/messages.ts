@@ -1,5 +1,6 @@
 import type { UIMessage } from 'ai'
 import type { NumberViolation } from '#/server/verify/numbers'
+import type { getConfirmationResult } from '#/server/confirm/result'
 
 /** UI 消息上的自定义数据部件 */
 export type WencaiUIMessage = UIMessage<
@@ -7,6 +8,7 @@ export type WencaiUIMessage = UIMessage<
   {
     verify: { violations: NumberViolation[] }
     blocked: { categories: string[] }
+    confirmation: Awaited<ReturnType<typeof getConfirmationResult>>
   }
 >
 
@@ -27,6 +29,7 @@ export function historyEvidence(messages: UIMessage[]): unknown[] {
     for (const p of m.parts) {
       if (p.type === 'text' && m.role === 'user') out.push(p.text)
       else if (p.type.startsWith('tool-') && 'output' in p) out.push(p.output)
+      else if (p.type === 'data-confirmation' && 'data' in p) out.push(p.data)
     }
   }
   return out

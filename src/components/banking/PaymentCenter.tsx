@@ -719,6 +719,7 @@ function PaymentApproval({
         submitting={confirm.isPending || cancel.isPending}
         error={error?.message}
         done={terminal ? '本次操作未完成，请返回重新发起' : undefined}
+        doneState="failed"
         onConfirm={async (stepUp) => {
           const result = await confirm.mutateAsync(stepUp)
           onComplete(result.output)

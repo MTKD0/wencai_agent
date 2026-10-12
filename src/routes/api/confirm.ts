@@ -61,7 +61,7 @@ export const Route = createFileRoute('/api/confirm')({
         const result = await confirmPending({ ctx, actionId, stepUp, resolveTool })
         if (!result.ok) return Response.json(result, { status: 400 })
         const plan = result.planId && result.nodeId ? await resumePlan(ctx, result.planId, result.nodeId, result.output) : undefined
-        return Response.json({ ...result, plan })
+        return Response.json({ ...result, plan, actionId, userId: ctx.userId })
       },
     },
   },

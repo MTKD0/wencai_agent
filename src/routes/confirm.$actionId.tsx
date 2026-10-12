@@ -42,6 +42,7 @@ function ConfirmPage() {
           submitting={confirm.isPending || cancel.isPending}
           error={settled ? undefined : confirm.error?.message}
           done={confirm.isSuccess ? '操作已完成' : cancel.isSuccess ? '已取消' : undefined}
+          doneState={confirm.isSuccess ? 'success' : 'cancelled'}
           onConfirm={async (stepUp?: StepUpPayload) => {
             await confirm.mutateAsync(stepUp)
           }}

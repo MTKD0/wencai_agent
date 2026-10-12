@@ -24,6 +24,7 @@ export function BankCard({
   kind = 'debit',
   status = 'active',
   balance,
+  hidden = false,
   index = 0,
 }: {
   name: string
@@ -31,6 +32,7 @@ export function BankCard({
   kind?: string
   status?: string
   balance?: number
+  hidden?: boolean
   index?: number
 }) {
   return (
@@ -62,7 +64,7 @@ export function BankCard({
               : `${kind === 'credit' ? '信用卡' : '借记卡'} · ${status === 'active' ? '正常' : status === 'locked' ? '已锁定' : '已挂失'}`}
           </small>
         </span>
-        {balance !== undefined && <strong>¥ {formatAmount(balance)}</strong>}
+        {balance !== undefined && <strong>{hidden ? '••••••' : `¥ ${formatAmount(balance)}`}</strong>}
       </div>
     </article>
   )

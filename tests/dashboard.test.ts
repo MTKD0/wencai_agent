@@ -160,8 +160,32 @@ describe('用户首页数据', () => {
     expect(data.totalAssets).toBe(0)
     expect(data.accounts).toEqual([])
     expect(data.transactions).toEqual([])
+    expect(data.accountActivity).toEqual({})
     expect(data.monthly.categories).toEqual([])
     expect(data.trend.every((item) => item.value === 0)).toBe(true)
+  })
+  it('卡片关联到真实账户，各账户账单独立统计且不混入其他账户或用户', async () => {
+    const data = await getDashboard(A)
+    expect(data.cards[0].accountId).toBe('dashboard_a1')
+    expect(data.accountActivity.dashboard_a1.monthly).toMatchObject({ income: 1000, expense: 5.01 })
+    expect(data.accountActivity.dashboard_a2.monthly).toMatchObject({ income: 0, expense: 2.02 })
+    expect(data.accountActivity.dashboard_a2.transactions.map((row) => row.id)).toEqual(['dashboard_food'])
+    expect(data.accountActivity.dashboard_a1.transactions.some((row) => ['dashboard_food', 'dashboard_other'].includes(row.id))).toBe(false)
+    expect(Object.keys(data.accountActivity)).toEqual(['dashboard_a1', 'dashboard_a2'])
+  })
+  it('首页明细截断后仍保留其他卡片的账单，汇总不会只算最近 50 笔', async () => {
+    const ids = Array.from({ length: 55 }, (_, index) => `dashboard_extra_${index}`)
+    try {
+      await db.insert(schema.transactions).values(ids.map((id) => ({ id, accountId: 'dashboard_a1', amountCents: -1, counterparty: '测试交易', category: '其他', occurredAt: new Date('2026-01-10T00:00:00Z') })))
+      const data = await getDashboard(A)
+      expect(data.transactions).toHaveLength(50)
+      expect(data.transactions.some((row) => row.id === 'dashboard_food')).toBe(false)
+      expect(data.accountActivity.dashboard_a2.transactions[0].id).toBe('dashboard_food')
+      expect(data.accountActivity.dashboard_a1.monthly.expense).toBe(5.56)
+      expect(data.accountActivity.dashboard_a1.transactions).toHaveLength(50)
+    } finally {
+      await db.delete(schema.transactions).where(inArray(schema.transactions.id, ids))
+    }
   })
   it('Agent 月度报表与首页遵循相同账期，跨年边界不会少计支出', async () => {
     const report = (await getSpendingReport.execute(

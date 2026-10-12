@@ -128,6 +128,7 @@ function PendingControl({
               ? confirm.error?.message
               : undefined
       }
+      doneState={confirm.isSuccess ? 'success' : cancel.isSuccess ? 'cancelled' : 'failed'}
       onConfirm={async (stepUp?: StepUpPayload) => {
         await confirm.mutateAsync(stepUp)
       }}

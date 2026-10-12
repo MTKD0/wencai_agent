@@ -29,6 +29,35 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
         .orderBy(desc(schema.transactions.occurredAt))
     : []
   const period = businessMonth(now)
+  const transactionData = (items: typeof rows) => items.slice(0, 50).map((row) => ({
+    id: row.id,
+    amount: row.amountCents / 100,
+    counterparty: row.counterparty,
+    category: row.category,
+    occurredAt: row.occurredAt.toISOString(),
+  }))
+  // 每个账户独立统计完整账期，再截取明细；不从首页的 50 条记录里筛选。
+  const accountActivity = Object.fromEntries(accounts.map((account) => {
+    const own = rows.filter((row) => row.accountId === account.id)
+    const current = own.filter((row) => businessMonth(row.occurredAt) === period)
+    const categories = new Map<string, number>()
+    let income = 0
+    let expense = 0
+    for (const row of current) {
+      if (row.amountCents >= 0) income += row.amountCents
+      else {
+        expense -= row.amountCents
+        categories.set(row.category, (categories.get(row.category) ?? 0) - row.amountCents)
+      }
+    }
+    return [account.id, {
+      monthly: {
+        period, income: income / 100, expense: expense / 100,
+        categories: [...categories].map(([label, value]) => ({ label, value: value / 100 })).sort((a, b) => b.value - a.value),
+      },
+      transactions: transactionData(own),
+    }]
+  }))
   const current = rows.filter((row) => businessMonth(row.occurredAt) === period)
   const categories = new Map<string, number>()
   let incomeCents = 0
@@ -64,20 +93,14 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     })),
     cards: cards.map((card) => ({
       id: card.id,
+      accountId: card.accountId,
       last4: card.last4,
       kind: card.kind,
       status: card.status,
       accountName: accounts.find((account) => account.id === card.accountId)?.name ?? '银行卡',
     })),
-    transactions: rows
-      .slice(0, 50)
-      .map((row) => ({
-        id: row.id,
-        amount: row.amountCents / 100,
-        counterparty: row.counterparty,
-        category: row.category,
-        occurredAt: row.occurredAt.toISOString(),
-      })),
+    transactions: transactionData(rows),
+    accountActivity,
     subscriptions: subscriptions.map((item) => ({
       id: item.id,
       merchant: item.merchant,
