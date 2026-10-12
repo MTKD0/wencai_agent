@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { authClient, useSession } from '#/lib/auth-client'
@@ -6,7 +6,17 @@ import { UnauthorizedError, usePasskeyDelete, useSecurityAction, useSettings } f
 import ThemeToggle from '#/components/ThemeToggle'
 import { useStrongVerification } from '#/components/ui/StrongVerification'
 
-export const Route = createFileRoute('/settings')({ component: SettingsPage })
+export const Route = createFileRoute('/settings')({
+  component: SettingsPage,
+  /**
+   * `pwTicket` 由 Agent 的 `request_password_change` 确认后签发：
+   * 它证明该用户刚为这次修改完成过红色强验证，用户在此页只需输入新密码，
+   * 不必重复一次 Passkey / 短信。密码本身从不经过模型，也不进入本页 URL。
+   */
+  validateSearch: (s: Record<string, unknown>) => ({
+    pwTicket: typeof s.pwTicket === 'string' ? s.pwTicket : '',
+  }),
+})
 
 function SettingsPage() {
   const { data: session, isPending: sessionPending } = useSession()
@@ -14,6 +24,7 @@ function SettingsPage() {
   const settings = useSettings()
   const securityAction = useSecurityAction()
   const deletePasskey = usePasskeyDelete()
+  const { pwTicket } = useSearch({ from: '/settings' })
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
@@ -30,6 +41,7 @@ function SettingsPage() {
       currentSessionId={session.session.id}
       password={password}
       setPassword={setPassword}
+      pwTicket={pwTicket}
       error={error}
       setError={setError}
       busy={securityAction.isPending || deletePasskey.isPending}
@@ -61,6 +73,8 @@ interface BodyProps {
   currentSessionId: string
   password: string
   setPassword: (v: string) => void
+  /** 来自 Agent 确认单的一次性凭证；有值时无需再次强验证 */
+  pwTicket: string
   error: string
   setError: (v: string) => void
   busy: boolean
@@ -69,7 +83,7 @@ interface BodyProps {
   onSignOut: () => Promise<void>
 }
 
-function SettingsBody({ data, currentSessionId, password, setPassword, setError, busy, onAction, onDeletePasskey, onSignOut }: BodyProps) {
+function SettingsBody({ data, currentSessionId, password, setPassword, pwTicket, setError, busy, onAction, onDeletePasskey, onSignOut }: BodyProps) {
   const verification = useStrongVerification({ purpose: 'set_tx_password', password }, busy)
   if (!data) return null
   const { stepUp } = data
@@ -121,14 +135,29 @@ function SettingsBody({ data, currentSessionId, password, setPassword, setError,
 
       <section className="space-y-2">
         <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">强验证方式</h2>
-        <p className="m-0 text-xs demo-muted">当前可用：{methods.length ? methods.join(' + ') : '无（请联系客服）'}</p>
+        {pwTicket ? (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs">
+            <p className="m-0 font-semibold text-[var(--sea-ink)]">已在对话中完成强验证</p>
+            <p className="m-0 mt-1 demo-muted">
+              凭证 5 分钟内有效、仅可使用一次。在此输入新密码即可，不会再要求一次 Passkey / 短信。
+              新密码只提交给服务端，不会进入对话记录。
+            </p>
+          </div>
+        ) : (
+          <p className="m-0 text-xs demo-muted">当前可用：{methods.length ? methods.join(' + ') : '无（请联系客服）'}</p>
+        )}
         <form
           className="grid gap-2"
           onSubmit={async (e) => {
             e.preventDefault()
             try {
-              const stepUp = await verification.getProof()
-              onAction({ action: 'set_tx_password', password, stepUp })
+              if (pwTicket) {
+                // 凭证路径：确认单里已经做过红色强验证，这里不再重复
+                onAction({ action: 'set_tx_password', password, ticket: pwTicket })
+              } else {
+                const stepUp = await verification.getProof()
+                onAction({ action: 'set_tx_password', password, stepUp })
+              }
               setPassword('')
             } catch (error) { setError(error instanceof Error ? error.message : '验证失败') }
           }}
@@ -142,8 +171,12 @@ function SettingsBody({ data, currentSessionId, password, setPassword, setError,
             disabled={busy || verification.verifying}
             onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
-          {verification.controls}
-          <button className="demo-button shrink-0" type="submit" disabled={busy || password.length !== 6 || !verification.ready}>
+          {!pwTicket && verification.controls}
+          <button
+            className="demo-button shrink-0"
+            type="submit"
+            disabled={busy || password.length !== 6 || (!pwTicket && !verification.ready)}
+          >
             保存
           </button>
         </form>
