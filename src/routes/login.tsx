@@ -5,6 +5,7 @@ import ThemeToggle from '#/components/ThemeToggle'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PhoneInput, resolvePhoneNumber, type PhoneInputValue } from '@/components/ui/phone-input'
 import { Landmark, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 
 /** 手机号 + 短信验证码登录（演示环境验证码打在控制台） */
@@ -16,7 +17,8 @@ function LoginPage() {
   const navigate = useNavigate()
   const { refetch } = authClient.useSession()
   const [step, setStep] = useState<Step>('phone')
-  const [phone, setPhone] = useState('')
+  const [nationalPhone, setNationalPhone] = useState('')
+  const [phoneMeta, setPhoneMeta] = useState<PhoneInputValue>(() => resolvePhoneNumber(''))
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -25,8 +27,9 @@ function LoginPage() {
     setError('')
     setBusy(true)
     try {
-      // 未注册手机号同样发码：服务端配了 signUpOnVerification，验证通过即自动开户
-      const res = await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
+      // 提交给服务端的号码（中国大陆为 11 位，国际号为 E.164 规范）
+      const targetPhone = phoneMeta.submissionNumber || nationalPhone
+      const res = await authClient.phoneNumber.sendOtp({ phoneNumber: targetPhone })
       if (res.error) {
         setError(res.error.message ?? '发送失败')
         return
@@ -41,7 +44,8 @@ function LoginPage() {
     setError('')
     setBusy(true)
     try {
-      const res = await authClient.phoneNumber.verify({ phoneNumber: phone, code }, {
+      const targetPhone = phoneMeta.submissionNumber || nationalPhone
+      const res = await authClient.phoneNumber.verify({ phoneNumber: targetPhone, code }, {
         onError: (ctx) => setError(ctx.error.message),
       })
       if (res?.error) setError(res.error.message ?? '验证失败')
@@ -68,7 +72,9 @@ function LoginPage() {
           </div>
           <CardTitle className="text-xl font-bold tracking-tight">文财 AI 银行</CardTitle>
           <CardDescription className="text-xs">
-            {step === 'phone' ? '登录后即可查询账户、办理业务与呼唤智能助理' : `验证码已发送至 ${phone}`}
+            {step === 'phone'
+              ? '支持中国大陆及全球国际手机号，智能识别区号'
+              : `验证码已发送至 ${phoneMeta.formatted || nationalPhone}`}
           </CardDescription>
         </CardHeader>
 
@@ -78,8 +84,8 @@ function LoginPage() {
               className="space-y-3.5"
               onSubmit={(e) => {
                 e.preventDefault()
-                if (!/^1\d{10}$/.test(phone)) {
-                  setError('请输入 11 位手机号')
+                if (!phoneMeta.isValid && nationalPhone.length < 5) {
+                  setError('请输入有效的手机号码')
                   return
                 }
                 void sendCode()
@@ -89,20 +95,24 @@ function LoginPage() {
                 <label className="text-xs font-semibold text-foreground" htmlFor="phone">
                   手机号码
                 </label>
-                <Input
+                <PhoneInput
                   id="phone"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  placeholder="13800000000"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                  className="font-mono text-sm tracking-wide"
+                  value={nationalPhone}
+                  onChange={(val, meta) => {
+                    setError('')
+                    setNationalPhone(val)
+                    setPhoneMeta(meta)
+                  }}
                   disabled={busy}
                   autoFocus
                 />
               </div>
 
-              <Button className="w-full font-medium" type="submit" disabled={busy || phone.length !== 11}>
+              <Button
+                className="w-full font-medium"
+                type="submit"
+                disabled={busy || (!phoneMeta.isValid && nationalPhone.length < 5)}
+              >
                 {busy ? (
                   <>
                     <Loader2 className="size-4 animate-spin mr-1.5" />
@@ -182,7 +192,7 @@ function LoginPage() {
         </CardContent>
 
         <CardFooter className="justify-center border-t border-border/40 py-3 text-[11px] text-muted-foreground">
-          身份由服务端安全会话认定 · 模拟银行环境
+          智能兼容国际区号 · 身份由服务端安全会话认定
         </CardFooter>
       </Card>
     </div>
