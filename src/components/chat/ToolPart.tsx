@@ -52,6 +52,7 @@ const TOOL_LABEL: Record<string, string> = {
   report_card_lost: '挂失',
   adjust_card_limit: '调整限额',
   cancel_subscription: '取消订阅',
+  request_password_change: '修改交易密码',
   plan_task: '任务规划',
   show_view: '生成视图',
 }
@@ -208,6 +209,23 @@ function Accounts({ data }: { data: { id: string; name: string; remark?: string;
 }
 
 function CompletedResult({ label, tool, data }: { label: string; tool: string; data: unknown }) {
+  if (tool === 'request_password_change' && data && typeof data === 'object') {
+    const out = data as { status?: string; url?: string; message?: string; expiresAt?: number }
+    if (out.status !== 'password_change_authorized' || !out.url) return <Chip>✓ {label}</Chip>
+    return (
+      <Reveal>
+        <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 text-sm">
+          <p className="m-0 font-semibold text-[var(--sea-ink)]">强验证已通过，请设置新密码</p>
+          <p className="m-0 mt-1 text-xs text-[var(--sea-ink-soft)]">
+            {out.message ?? '请在有效期内到安全设置页设置新密码。'}
+          </p>
+          <a href={out.url} className="mt-3 inline-block font-semibold text-[var(--lagoon-deep)]">
+            前往安全设置设置新密码 →
+          </a>
+        </div>
+      </Reveal>
+    )
+  }
   if (tool === 'get_accounts' && Array.isArray(data)) return <Accounts data={data} />
   if (tool === 'list_cards' && Array.isArray(data))
     return (

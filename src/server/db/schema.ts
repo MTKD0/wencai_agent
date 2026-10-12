@@ -322,3 +322,34 @@ export const auditLogs = sqliteTable('audit_logs', {
   prevHash: text('prev_hash').notNull(),
   hash: text('hash').notNull(),
 })
+
+/**
+ * 安全内核演示用的篡改备份。
+ *
+ * 只服务于本地答辩演示：`tamperAuditLog` 故意改写一条审计记录的载荷（不动 hash 列），
+ * 原值存到这里以便 `restoreAuditLog` 无损还原。**不是审计链的一部分**——
+ * 它不参与哈希计算，因此篡改演示本身不会污染整链校验的结果。
+ */
+export const bankAuditTamperBackup = sqliteTable('bank_audit_tamper_backup', {
+  seq: integer('seq').primaryKey(),
+  payloadJson: text('payload_json').notNull(),
+  hash: text('hash').notNull(),
+  tamperedAt: integer('tampered_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+/**
+ * 由 Agent 发起的交易密码修改凭证。
+ *
+ * 只存凭证本身，**不存密码**：工具 `request_password_change` 在用户完成红色强验证后签发，
+ * 用户带着它到安全设置页亲自输入新密码，再由 `/api/security` 校验并单次消费。
+ * 这样新密码永远不会出现在模型上下文、pending_actions 参数快照与审计日志中。
+ */
+export const bankPasswordChangeGrants = sqliteTable('bank_password_change_grants', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  /** 签发它的待确认操作编号，用于追溯"哪一笔确认授权了这次修改" */
+  actionId: text('action_id').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  consumedAt: integer('consumed_at', { mode: 'timestamp_ms' }),
+})

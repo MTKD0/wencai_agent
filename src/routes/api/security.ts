@@ -7,6 +7,7 @@ import type { AgentContext } from '#/server/agent/context'
 import { StepUpSchema, verifyStrongStepUp } from '#/server/auth/step-up'
 import { hashParams } from '#/server/confirm/integrity'
 import { withUserExecutionLock } from '#/server/confirm/lock'
+import { consumePasswordChangeGrant } from '#/server/auth/password-change'
 
 /**
  * 安全设置写操作。全部要求已登录，且一律记审计。
@@ -42,20 +43,34 @@ export const Route = createFileRoute('/api/security')({
             return Response.json({ ok })
           }
           case 'set_tx_password': {
-            const { password, stepUp } = parsed.data
+            const { password, stepUp, ticket } = parsed.data
+            if (!stepUp && !ticket) {
+              return Response.json({ ok: false, message: '修改交易密码须通过 Passkey、绑定手机号验证，或从 Agent 确认单跳转' }, { status: 403 })
+            }
             return withUserExecutionLock(session.userId, async () => {
-            const scope = `security:${hashParams({ action: 'set_tx_password', password })}`
-            if (!await verifyStrongStepUp(session.userId, scope, stepUp)) {
-              await audit(ctx, 'confirm_attempt', { scope: 'set_tx_password', ok: false, reason: 'strong_verification_required' })
-              return Response.json({ ok: false, message: '修改交易密码须通过 Passkey 或绑定手机号验证' }, { status: 403 })
-            }
-            try {
-              await setTxPassword(session.userId, password)
-            } catch (err) {
-              return Response.json({ ok: false, message: err instanceof Error ? err.message : '设置失败' }, { status: 400 })
-            }
-            await audit(ctx, 'tx_password_set', {})
-            return Response.json({ ok: true })
+              // 路径一：用户从 Agent 的红色确认单跳转过来。凭证已证明强验证完成，
+              // 它同时把本次修改绑定到具体那笔 pending action，可追溯。
+              if (ticket) {
+                const consumed = await consumePasswordChangeGrant(session.userId, ticket)
+                if (!consumed.ok) {
+                  const message = {
+                    not_found: '该修改凭证无效，请重新向 Agent 发起',
+                    expired: '修改凭证已超时，请重新向 Agent 发起',
+                    consumed: '该修改凭证已使用过，请重新向 Agent 发起',
+                  }[consumed.reason]
+                  await audit(ctx, 'confirm_attempt', { scope: 'set_tx_password', ok: false, reason: `grant_${consumed.reason}` })
+                  return Response.json({ ok: false, message }, { status: 403 })
+                }
+                const done = await applyPassword(ctx, session.userId, password, { grantActionId: consumed.actionId })
+                return done
+              }
+              // 路径二：用户在设置页当场强验证。挑战绑定新密码，改密码即失效。
+              const scope = `security:${hashParams({ action: 'set_tx_password', password })}`
+              if (!await verifyStrongStepUp(session.userId, scope, stepUp)) {
+                await audit(ctx, 'confirm_attempt', { scope: 'set_tx_password', ok: false, reason: 'strong_verification_required' })
+                return Response.json({ ok: false, message: '修改交易密码须通过 Passkey 或绑定手机号验证' }, { status: 403 })
+              }
+              return applyPassword(ctx, session.userId, password, {})
             })
           }
         }
@@ -64,8 +79,39 @@ export const Route = createFileRoute('/api/security')({
   },
 })
 
+/**
+ * 落库并审计。刻意只记"发生了什么"，**不记录任何密码材料**——
+ * 既不记新密码，也不记它的哈希：审计表要能整链校验，也就要能长期保留。
+ * `grantedActionId` 用于回答"哪一笔红色确认授权了这次修改"。
+ */
+async function applyPassword(
+  ctx: AgentContext,
+  userId: string,
+  password: string,
+  extra: { grantActionId?: string },
+) {
+  try {
+    await setTxPassword(userId, password)
+  } catch (err) {
+    return Response.json({ ok: false, message: err instanceof Error ? err.message : '设置失败' }, { status: 400 })
+  }
+  await audit(ctx, 'tx_password_set', extra.grantActionId ? { via: 'agent_confirmation', actionId: extra.grantActionId } : { via: 'settings' })
+  return Response.json({ ok: true })
+}
+
 const BodySchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('revoke_session'), sessionId: z.string().min(1).max(100) }),
   z.object({ action: z.literal('revoke_binding'), bindingId: z.string().min(1).max(100) }),
-  z.object({ action: z.literal('set_tx_password'), password: z.string().regex(/^\d{6}$/), stepUp: StepUpSchema.optional() }),
+  /**
+   * 改交易密码。两条路径二选一：
+   * - 用户在设置页手动发起：提供 `stepUp`（Passkey / 短信），当场强验证；
+   * - 用户从 Agent 确认单跳转过来：提供 `ticket`，它是确认时已完成红色强验证的一次性凭证。
+   * 两者都不接收旧密码，新密码也只在本次请求体内出现一次，不写入审计。
+   */
+  z.object({
+    action: z.literal('set_tx_password'),
+    password: z.string().regex(/^\d{6}$/),
+    stepUp: StepUpSchema.optional(),
+    ticket: z.string().max(200).optional(),
+  }),
 ])
