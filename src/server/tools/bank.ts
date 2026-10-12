@@ -1,5 +1,8 @@
 import { settleTransfer, reverseTransfer, transferSummary } from '#/server/payments/service'
 import { PAYMENT_TOOLS } from './payments'
+import { CARD_TOOLS } from './cards'
+import { ownProfile, userCards } from '#/server/cards/service'
+import { paymentAccounts } from '#/server/payments/service'
 import { and, desc, eq, gte, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
@@ -13,12 +16,7 @@ const fmt = (cents: number) => `¥${yuan(cents).toFixed(2)}`
 const DAY = 24 * 60 * 60 * 1000
 
 async function ownCard(ctx: AgentContext, cardId: string) {
-  const [c] = await db
-    .select()
-    .from(schema.cards)
-    .where(and(eq(schema.cards.id, cardId), eq(schema.cards.userId, ctx.userId)))
-  if (!c) throw new Error('卡片不存在')
-  return c
+  return ownProfile(ctx.userId, cardId)
 }
 
 const maskAccount = (no: string) => `${no.slice(0, 4)} **** ${no.slice(-4)}`
@@ -32,8 +30,8 @@ export const getAccounts = defineBankTool({
   kind: 'read',
   inputSchema: z.object({}),
   execute: async (_args, ctx) => {
-    const rows = await db.select().from(schema.accounts).where(eq(schema.accounts.userId, ctx.userId))
-    return rows.map((a) => ({ id: a.id, name: a.name, balance: yuan(a.balanceCents), currency: a.currency }))
+    const rows = await paymentAccounts(ctx.userId)
+    return rows.map((a) => ({ id: a.id, name: a.cardLast4 ? `储蓄卡 · 尾号${a.cardLast4}` : a.name, remark: a.remark, cardId: a.cardId, last4: a.cardLast4, balance: yuan(a.balanceCents), currency: a.currency }))
   },
 })
 
@@ -119,13 +117,13 @@ function editDistance(a: string, b: string): number {
 
 export const listCards = defineBankTool({
   name: 'list_cards',
-  description: '查询用户名下的银行卡及状态、每日限额',
+  description: '查询全部银行卡，包含储蓄卡/信用卡类型、备注、尾号、绑定账户、状态、余额或信用额度与待还金额。备注重名必须询问用户具体尾号。',
   baseRisk: 'green',
   kind: 'read',
   inputSchema: z.object({}),
   execute: async (_args, ctx) => {
-    const rows = await db.select().from(schema.cards).where(eq(schema.cards.userId, ctx.userId))
-    return rows.map((c) => ({ id: c.id, last4: c.last4, kind: c.kind, status: c.status, dailyLimit: yuan(c.dailyLimitCents) }))
+    const rows = await userCards(ctx.userId)
+    return rows.map((c) => ({ id: c.id, accountId: c.accountId, remark: c.remark, last4: c.last4, kind: c.kind, status: c.status, dailyLimit: yuan(c.dailyLimitCents), ...(c.kind === 'debit' ? { balance: yuan(c.balanceCents) } : { creditLimit: yuan(c.creditLimitCents), outstanding: yuan(c.outstandingCents), availableCredit: yuan(c.creditLimitCents - c.outstandingCents), billDay: c.billDay, dueDay: c.dueDay }) }))
   },
 })
 
@@ -183,7 +181,7 @@ export const analyzeSpending = defineBankTool({
           gte(schema.transactions.occurredAt, new Date(Date.now() - days * DAY)),
         ),
       )
-    const transactions = rows.map((t) => ({
+    const transactions = rows.filter((t) => t.category !== '信用卡还款').map((t) => ({
       amount: yuan(t.amountCents),
       category: t.category,
       counterparty: t.counterparty,
@@ -220,14 +218,15 @@ export const transfer = defineBankTool({
 })
 
 const setCardStatus = async (ctx: AgentContext, cardId: string, status: 'active' | 'locked' | 'lost') => {
-  await ownCard(ctx, cardId)
+  const card = await ownCard(ctx, cardId)
+  if (card.status === 'lost' && status !== 'lost') throw new Error('已挂失卡片不可恢复，请重新办卡')
   await db.update(schema.cards).set({ status }).where(eq(schema.cards.id, cardId))
 }
 
 const cardSummary = (title: string, extra: { label: string; value: string }[] = []) =>
   async (a: { cardId: string }, ctx: AgentContext) => {
     const c = await ownCard(ctx, a.cardId)
-    return { title, fields: [{ label: '卡片', value: `${c.kind === 'credit' ? '信用卡' : '借记卡'} 尾号 ${c.last4}` }, ...extra] }
+    return { title, fields: [{ label: '卡片', value: `${c.remark ? `${c.remark} · ` : ''}${c.kind === 'credit' ? '信用卡' : '储蓄卡'} 尾号 ${c.last4}` }, ...extra] }
   }
 
 export const lockCard = defineBankTool({
@@ -348,6 +347,7 @@ export const BANK_TOOLS: BankToolDef[] = [
   ...EXTENDED_TOOLS,
   ...PLANNING_TOOLS,
   ...PAYMENT_TOOLS,
+  ...CARD_TOOLS,
 ]
 
 const byName = new Map<string, BankToolDef>(BANK_TOOLS.map((t) => [t.name, t]))

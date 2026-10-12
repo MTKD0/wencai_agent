@@ -18,7 +18,7 @@ export type AdminSnapshot = {
   account: { id: string; name: string; balance: number; available: number; held: number }
   accounts: Array<{ id: string; name: string; balanceCents: number; balance: number; available: number }>
   contacts: Array<{ id: string; name: string; phone: string; note: string; bank: string; accountMask: string }>
-  cards: Array<{ id: string; last4: string; kind: string; status: string; dailyLimit: number; creditLimit: number; onlineEnabled: boolean }>
+  cards: Array<{ id: string; accountId: string; remark: string; last4: string; kind: string; status: string; dailyLimit: number; creditLimit: number; outstanding: number; onlineEnabled: boolean }>
   products: Array<{ id: string; name: string; riskLevel: string; minAmount: number; annualRate: number; lockDays: number; description: string }>
   holdings: Array<{ id: string; productId: string; principal: number; redeemableAt: string }>
   subscriptions: Array<{ id: string; merchant: string; amount: number; cycle: string; status: string; nextChargeAt: string | null; remindDays: number; lastReminderAt: string | null }>
@@ -59,6 +59,8 @@ export type AdminCommand =
   | { type: 'purchase'; productId: string; amount: number }
   | { type: 'redeem'; holdingId: string; amount: number }
   | { type: 'applyCard'; kind: 'debit' | 'credit' }
+  | { type: 'cardRemark'; cardId: string; remark: string }
+  | { type: 'creditSpend'; cardId: string; amount: number; merchant: string }
   | { type: 'updateCard'; cardId: string; action: 'freeze' | 'unlock' | 'reportLost' | 'limits'; dailyLimit?: number; onlineEnabled?: boolean }
   | { type: 'cancelSubscription'; subscriptionId: string }
   | { type: 'subscriptionReminder'; subscriptionId: string; days: number }

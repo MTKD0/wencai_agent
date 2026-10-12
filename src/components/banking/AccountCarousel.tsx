@@ -4,13 +4,7 @@ import { BankCard } from '#/components/ui/BankCard'
 import type { DashboardData } from '#/lib/dashboard'
 
 export function accountSlides(data: Pick<DashboardData, 'cards' | 'accounts'>) {
-  return [
-    ...data.cards.filter((card) => data.accounts.some((account) => account.id === card.accountId)),
-    ...data.accounts.filter((account) => !data.cards.some((card) => card.accountId === account.id)).map((account) => ({
-      id: `account-${account.id}`, accountId: account.id, accountName: account.name,
-      kind: 'account', status: 'active', last4: '',
-    })),
-  ]
+  return data.cards.filter((card) => data.accounts.some((account) => account.id === card.accountId))
 }
 
 /** 原生触屏滚动与吸附；鼠标拖动、方向键和按钮使用同一个选择状态。 */
@@ -94,7 +88,7 @@ export function AccountCarousel({ data, selectedId, onSelect, hidden }: {
           <div key={card.id} className="bank-card-slide" role="group" aria-roledescription="卡片"
             aria-label={`${i + 1} / ${slides.length} ${card.accountName}`} inert={i !== index}>
             <BankCard name={card.accountName} last4={card.last4} kind={card.kind} status={card.status}
-              balance={data.accounts.find((account) => account.id === card.accountId)?.balance} hidden={hidden} />
+              balance={card.kind === 'credit' ? card.availableCredit : data.accounts.find((account) => account.id === card.accountId)?.balance} hidden={hidden} />
           </div>
         ))}
       </div>

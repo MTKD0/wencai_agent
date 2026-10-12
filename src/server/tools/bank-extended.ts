@@ -148,7 +148,7 @@ export const getSpendingReport = defineBankTool({
       .where(inArray(schema.transactions.accountId, accs.map((a) => a.id)))
     const prefix = period
     const filtered = rows.filter((t) => {
-      return businessMonth(t.occurredAt).startsWith(prefix)
+      return businessMonth(t.occurredAt).startsWith(prefix) && t.category !== '信用卡还款'
     })
     const income = filtered.filter((t) => t.amountCents > 0).reduce((s, t) => s + t.amountCents, 0)
     const expense = filtered.filter((t) => t.amountCents < 0).reduce((s, t) => s + (-t.amountCents), 0)

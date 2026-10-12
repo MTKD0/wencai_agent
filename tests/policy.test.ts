@@ -19,6 +19,12 @@ const transfer = (amount: number, f: Partial<PolicyFacts> = {}): PolicyInput => 
 })
 
 describe('权限分级', () => {
+  it.each(['transfer_between_cards', 'repay_credit_card'])('%s 复用金额与频率风控，本人操作不误判新收款人', (tool) => {
+    const input = { tool, baseRisk: 'yellow' as const, args: { amountCents: 50_000 }, facts: facts({ payeeAgeDays: undefined }) }
+    expect(decide(input)).toMatchObject({ allowed: true, level: 'yellow' })
+    expect(decide({ ...input, args: { amountCents: 100_001 } }).level).toBe('red')
+    expect(decide({ ...input, facts: facts({ recentTransferCount: 5 }) }).allowed).toBe(false)
+  })
   it('只读操作为绿色', () => {
     expect(decide({ tool: 'get_accounts', baseRisk: 'green', args: {}, facts: facts() }).level).toBe('green')
   })

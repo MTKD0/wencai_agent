@@ -3,12 +3,13 @@ import { db, schema } from '#/server/db/client'
 import { businessMonth } from '#/lib/dashboard'
 import type { DashboardData } from '#/lib/dashboard'
 import { simNow } from '#/server/tools/jobs'
+import { userCards, cardKindName } from '#/server/cards/service'
 
 /** 用户首页只接受已认证会话中的身份，所有业务数据按归属过滤。金额返回元。 */
 export async function getDashboard(userId: string): Promise<DashboardData> {
-  const [accounts, cards, holdings, subscriptions, now] = await Promise.all([
+  const cards = await userCards(userId)
+  const [accounts, holdings, subscriptions, now] = await Promise.all([
     db.select().from(schema.accounts).where(eq(schema.accounts.userId, userId)),
-    db.select().from(schema.cards).where(eq(schema.cards.userId, userId)),
     db
       .select({ principal: schema.holdings.principalCents })
       .from(schema.holdings)
@@ -58,7 +59,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
       transactions: transactionData(own),
     }]
   }))
-  const current = rows.filter((row) => businessMonth(row.occurredAt) === period)
+  const current = rows.filter((row) => businessMonth(row.occurredAt) === period && row.category !== '信用卡还款')
   const categories = new Map<string, number>()
   let incomeCents = 0
   let expenseCents = 0
@@ -76,7 +77,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     const date = new Date(Date.UTC(year, month - 6 + i, 1))
     const key = date.toISOString().slice(0, 7)
     const total = rows
-      .filter((row) => businessMonth(row.occurredAt) === key && row.amountCents < 0)
+      .filter((row) => businessMonth(row.occurredAt) === key && row.amountCents < 0 && row.category !== '信用卡还款')
       .reduce((sum, row) => sum - row.amountCents, 0)
     return { label: `${date.getUTCMonth() + 1}月`, value: total / 100 }
   })
@@ -97,7 +98,13 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
       last4: card.last4,
       kind: card.kind,
       status: card.status,
-      accountName: accounts.find((account) => account.id === card.accountId)?.name ?? '银行卡',
+      accountName: card.remark || cardKindName(card.kind),
+      remark: card.remark,
+      dailyLimit: card.dailyLimitCents / 100,
+      creditLimit: card.creditLimitCents / 100,
+      outstanding: card.outstandingCents / 100,
+      availableCredit: (card.creditLimitCents - card.outstandingCents) / 100,
+      billDay: card.billDay, dueDay: card.dueDay,
     })),
     transactions: transactionData(rows),
     accountActivity,

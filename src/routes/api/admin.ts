@@ -1,4 +1,5 @@
 import { settleTransfer } from '#/server/payments/service'
+import { createUserCard, creditSpend, saveCardRemark, userCards } from '#/server/cards/service'
 /**
  * 银行管理后台 API：/api/admin/*
  *
@@ -35,12 +36,12 @@ async function simNow(): Promise<string> {
 
 /** 读取全量快照 */
 async function getSnapshot(userId: string) {
+  const cards = await userCards(userId)
   const now = await simNow()
   const [user] = await db.select().from(schema.users).where(eq(schema.users.id, userId))
   const registered = user ? undefined : (await db.select({ name: authTables.baUser.name }).from(authTables.baUser).where(eq(authTables.baUser.id, userId)))[0]
   const accounts = await db.select().from(schema.accounts).where(eq(schema.accounts.userId, userId))
   const contacts = await db.select().from(schema.contacts).where(eq(schema.contacts.userId, userId))
-  const cards = await db.select().from(schema.cards).where(eq(schema.cards.userId, userId))
   const products = await db.select().from(schema.products)
   const holdings = await db.select().from(schema.holdings).where(eq(schema.holdings.userId, userId))
   const subscriptions = await db
@@ -98,7 +99,8 @@ async function getSnapshot(userId: string) {
     cards: cards.map((c) => ({
       ...c,
       dailyLimit: c.dailyLimitCents,
-      creditLimit: 0,
+      creditLimit: c.creditLimitCents,
+      outstanding: c.outstandingCents,
       onlineEnabled: true,
     })),
     products: products.map((p) => ({
@@ -285,6 +287,8 @@ const CommandSchema = z.discriminatedUnion('type', [
     dailyLimit: z.number().int().positive().optional(),
     onlineEnabled: z.boolean().optional(),
   }),
+  z.object({ type: z.literal('cardRemark'), cardId: z.string(), remark: z.string().trim().max(30) }),
+  z.object({ type: z.literal('creditSpend'), cardId: z.string(), amount: z.number().int().positive().max(100_000_000), merchant: z.string().trim().min(1).max(60) }),
   z.object({
     type: z.literal('cancelSubscription'),
     subscriptionId: z.string(),
@@ -511,25 +515,17 @@ async function executeCommand(userId: string, command: Command) {
       return { transactionId: txId, amount: command.amount }
     }
     case 'applyCard': {
-      const id = `card_${Date.now()}`
-      const accs = await db.select().from(schema.accounts).where(eq(schema.accounts.userId, userId))
-      await db.insert(schema.cards).values({
-        id,
-        userId,
-        accountId: accs[0]?.id ?? '',
-        last4: String(Math.floor(1000 + Math.random() * 9000)),
-        kind: command.kind,
-        status: 'active',
-        dailyLimitCents: 5_000_000,
-      })
-      return { id, kind: command.kind, status: 'active', simulation: true as const }
+      return { ...await createUserCard(userId, command.kind), status: 'active', simulation: true as const }
     }
+    case 'cardRemark': return saveCardRemark(userId, command.cardId, command.remark)
+    case 'creditSpend': return creditSpend(userId, command.cardId, command.amount, command.merchant)
     case 'updateCard': {
       const [c] = await db
         .select()
         .from(schema.cards)
         .where(and(eq(schema.cards.id, command.cardId), eq(schema.cards.userId, userId)))
       if (!c) throw new Error('卡片不存在')
+      if (c.status === 'lost' && command.action !== 'reportLost') throw new Error('已挂失卡片不可恢复或修改状态')
       if (command.action === 'freeze') {
         await db.update(schema.cards).set({ status: 'locked' }).where(eq(schema.cards.id, command.cardId))
       } else if (command.action === 'unlock') {

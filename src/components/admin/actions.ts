@@ -141,12 +141,22 @@ export function createActions(s: AdminSnapshot, open: (a: Action) => void) {
         fields: [
           {
             name: 'kind', label: '卡片类型', type: 'select', value: 'debit',
-            options: [{ value: 'debit', label: '借记卡' }, { value: 'credit', label: '信用卡' }],
+            options: [{ value: 'debit', label: '储蓄卡' }, { value: 'credit', label: '信用卡' }],
           },
         ],
         build: (v) => ({ type: 'applyCard', kind: val(v, 'kind') as 'debit' | 'credit' }),
       }),
 
+    cardRemark: (cardId: string) => open({
+      title: '修改卡片备注', description: '可填写工资卡、储蓄卡A等；同名卡片转账时需指定尾号。', submitLabel: '保存备注',
+      fields: [{ name: 'remark', label: '卡片备注', type: 'text', value: s.cards.find((c) => c.id === cardId)?.remark ?? '' }],
+      build: (v) => ({ type: 'cardRemark', cardId, remark: val(v, 'remark') }),
+    }),
+    creditSpend: (cardId: string) => open({
+      title: '模拟信用卡消费', description: '记录到当前信用卡账单，增加待还款并扣减可用额度。', submitLabel: '记录消费',
+      fields: [amount('amount', '消费金额（元）', '100'), { name: 'merchant', label: '商户', type: 'text', value: '演示商户' }],
+      build: (v) => ({ type: 'creditSpend', cardId, amount: toFen(val(v, 'amount')), merchant: val(v, 'merchant') }),
+    }),
     cardState: (cardId: string, action: 'freeze' | 'unlock' | 'reportLost') =>
       confirm(
         { freeze: '冻结卡片', unlock: '解锁卡片', reportLost: '挂失卡片' }[action],

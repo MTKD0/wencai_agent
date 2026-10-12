@@ -17,6 +17,7 @@
     0 5px 9px #246cc735,
     inset 0 1px #ffffff99;
   transition: transform 500ms var(--bank-ease);
+  transform: var(--stack-rest);
 }
 .bank-stack-card.stack-2 {
   --stack-rest: rotate(5deg);
@@ -100,6 +101,13 @@
   box-shadow: 0 16px 30px #1d6ae12b;
   animation: bank-card-push 700ms var(--bank-ease) var(--card-delay, 0ms) backwards;
 }
+.bank-physical-card.is-credit {
+  background: linear-gradient(120deg, #606aab, #384878 60%, #253756);
+  border-color: #aebad5;
+  box-shadow: 0 16px 30px #34436525;
+}
+.bank-card-value { text-align: right; }
+.bank-card-value small { margin: 0 0 5px; }
 .bank-physical-card::before {
   content: '';
   position: absolute;
@@ -135,6 +143,8 @@
   align-items: center;
   gap: 12px;
 }
+.bank-card-bottom > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bank-card-value { flex-shrink: 0; }
 .bank-card-top strong {
   font-size: 15px;
   letter-spacing: 1px;

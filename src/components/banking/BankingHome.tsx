@@ -38,6 +38,7 @@ import { FinancialReport } from './FinancialReport'
 import PaymentCenter from './PaymentCenter'
 import type { PaymentView } from './PaymentCenter'
 import { AccountCarousel, accountSlides } from './AccountCarousel'
+import { CardServices, type CardServiceMode } from './CardServices'
 import { subscribeConfirmations } from '#/lib/confirmation-notices'
 import './banking.css'
 
@@ -75,20 +76,24 @@ export default function BankingHome({ user }: { user: { id: string; name: string
   const [signingOut, setSigningOut] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [selectedCardId, setSelectedCardId] = useState<string>()
+  const [paymentAccountId, setPaymentAccountId] = useState<string>()
+  const [cardService, setCardService] = useState<{ id: string; mode: CardServiceMode } | null>(null)
   const data = query.data
   const selectedCard = data && (accountSlides(data).find((card) => card.id === selectedCardId) ?? accountSlides(data)[0])
   const selectedAccount = data?.accounts.find((account) => account.id === selectedCard?.accountId)
   const activity = selectedAccount && data?.accountActivity[selectedAccount.id]
   const openAgent = (text?: string) => {
+    setCardService(null)
     setPaymentView(null)
     setDetail(null)
     if (text) setRequest((previous) => ({ id: (previous?.id ?? 0) + 1, text }))
     setAgentOpen(true)
   }
   useEffect(() => subscribeConfirmations((notice) => {
-    if (notice.userId === user.id) { setPaymentView(null); setDetail(null); setAgentOpen(true) }
+    if (notice.userId === user.id) { setPaymentView(null); setDetail(null); setCardService(null); setAgentOpen(true) }
   }), [user.id])
-  const openPayment = (view: PaymentView) => { setDetail(null); setAgentOpen(false); setPaymentView(view) }
+  const openPayment = (view: PaymentView, accountId?: string) => { setCardService(null); setPaymentAccountId(accountId); setDetail(null); setAgentOpen(false); setPaymentView(view) }
+  const openCardService = (mode: CardServiceMode) => { if (selectedCard) { setAgentOpen(false); setPaymentView(null); setDetail(null); setCardService({ id: selectedCard.id, mode }) } }
   const closePayment = () => { setPaymentView(null); void queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] }) }
   const closeAgent = () => {
     setAgentOpen(false)
@@ -129,7 +134,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
   return (
     <div className="bank-stage">
       <div className="bank-shell">
-        <div className="bank-home-scroll" ref={pageScroll} inert={agentOpen || !!detail || !!paymentView}>
+        <div className="bank-home-scroll" ref={pageScroll} inert={agentOpen || !!detail || !!paymentView || !!cardService}>
           <header className="bank-home-header">
             <button
               className="bank-profile bank-lift"
@@ -311,22 +316,33 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                       <h1>我的账户</h1>
                       <span>{data.cards.length} 张银行卡</span>
                     </div>
-                    <p className="bank-page-note">左右滑动切换卡片，查看对应账户的账单。</p>
-                    <div className="bank-payment-entry">
-                      <button type="button" className="bank-primary bank-lift" onClick={() => openPayment('transfer')}><ArrowUpRight size={17} /> 转账 / 本人互转</button>
-                      <button type="button" className="bank-payment-secondary bank-lift" onClick={() => openPayment('payees')}><UsersRound size={17} /> 收款人</button>
-                    </div>
+                    <p className="bank-page-note">每张卡独立记账，左右滑动查看对应账单。</p>
                     <AccountCarousel data={data} selectedId={selectedCard?.id} onSelect={setSelectedCardId} hidden={hidden} />
+                    {selectedCard && <>
+                      <div className="bank-card-actions">
+                        {selectedCard.kind === 'debit' ? <>
+                          <button className="bank-primary bank-lift" disabled={selectedCard.status !== 'active'} onClick={() => openPayment('transfer', selectedCard.accountId)}>转账</button>
+                          <button className="bank-payment-secondary bank-lift" disabled={selectedCard.status !== 'active'} onClick={() => openPayment('receive', selectedCard.accountId)}>收款</button>
+                        </> : <button className="bank-primary bank-lift" disabled={selectedCard.status !== 'active' || selectedCard.outstanding <= 0} onClick={() => openCardService('repay')}>信用卡还款</button>}
+                        <button className="bank-payment-secondary bank-lift" onClick={() => openCardService('remark')}>修改备注</button>
+                        <button className="bank-payment-secondary bank-lift" onClick={() => openCardService('manage')}>管理</button>
+                      </div>
+                      {selectedCard.kind === 'credit' && <Reveal key={selectedCard.id}><div className="bank-credit-summary">
+                        <div><span>当前待还</span><strong>{hidden ? '••••••' : `¥ ${formatAmount(selectedCard.outstanding)}`}</strong></div>
+                        <div><span>信用总额度</span><strong>{hidden ? '••••••' : `¥ ${formatAmount(selectedCard.creditLimit)}`}</strong></div>
+                        <p>账单日每月 {selectedCard.billDay} 日 · 还款日每月 {selectedCard.dueDay} 日</p>
+                      </div></Reveal>}
+                    </>}
                     {selectedAccount && activity && (
-                      <div key={selectedAccount.id} className="bank-account-activity" aria-label={`${selectedAccount.name}账单`}>
+                      <div key={selectedCard?.id} className="bank-account-activity" aria-label={`尾号${selectedCard?.last4}账单`}>
                         <Reveal>
                           <div className="bank-section-heading">
-                            <h2>{selectedAccount.name}账单</h2>
+                            <h2>{selectedCard?.accountName} · {selectedCard?.last4} 账单</h2>
                             <span>{activity.monthly.period.replace('-', ' / ')}</span>
                           </div>
                           <div className="bank-account-summary">
-                            <div><span>本月收入</span><strong className="is-income">{hidden ? '••••••' : `+${formatAmount(activity.monthly.income)}`}</strong></div>
-                            <div><span>本月支出</span><strong>{hidden ? '••••••' : `−${formatAmount(activity.monthly.expense)}`}</strong></div>
+                            <div><span>{selectedCard?.kind === 'credit' ? '本月还款' : '本月收入'}</span><strong className="is-income">{hidden ? '••••••' : `+${formatAmount(activity.monthly.income)}`}</strong></div>
+                            <div><span>{selectedCard?.kind === 'credit' ? '本月消费' : '本月支出'}</span><strong>{hidden ? '••••••' : `−${formatAmount(activity.monthly.expense)}`}</strong></div>
                           </div>
                           <div className="bank-section-heading"><h3>交易明细</h3><span>最近 {activity.transactions.length} 笔</span></div>
                           <TransactionList transactions={activity.transactions} hidden={hidden} />
@@ -334,7 +350,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                       </div>
                     )}
                     <div className="bank-section-heading">
-                      <h2>资金账户</h2>
+                      <h2>其他资金账户</h2>
                       <button
                         className="bank-text-button bank-lift"
                         onClick={() => setDetail('assets')}
@@ -343,7 +359,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                         <ChevronRight size={14} />
                       </button>
                     </div>
-                    {data.accounts.filter((account) => account.id === selectedAccount?.id).map((account, index) => (
+                    {data.accounts.filter((account) => !data.cards.some((card) => card.accountId === account.id)).map((account, index) => (
                       <Reveal key={account.id} delay={index * 70}>
                         <div className="bank-cash-account bank-lift">
                           <span className="bank-transaction-icon">
@@ -360,6 +376,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                       </Reveal>
                     ))}
                     {!data.accounts.length && <p className="bank-empty">你还没有银行账户</p>}
+                    <div className="bank-payment-entry"><button className="bank-payment-secondary bank-lift" onClick={() => openPayment('payees')}><UsersRound size={16} />收款人</button><button className="bank-payment-secondary bank-lift" onClick={() => openPayment('transfer', selectedCard?.kind === 'debit' ? selectedCard.accountId : undefined)}>账户互转</button></div>
                   </>
                 )}
                 {tab === 'life' && (
@@ -457,7 +474,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           )}
           <p className="bank-service-note">文财银行 · 模拟银行服务</p>
         </div>
-        <nav className="bank-bottom-nav" aria-label="底部导航" inert={agentOpen || !!detail || !!paymentView}>
+        <nav className="bank-bottom-nav" aria-label="底部导航" inert={agentOpen || !!detail || !!paymentView || !!cardService}>
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -501,7 +518,10 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           </div>
         </Sheet>
         <Sheet open={!!paymentView} onClose={closePayment} title="转账与收款" className="bank-payment-sheet">
-          {paymentView && <PaymentCenter userId={user.id} initialView={paymentView} />}
+          {paymentView && <PaymentCenter userId={user.id} initialView={paymentView} initialAccountId={paymentAccountId} />}
+        </Sheet>
+        <Sheet open={!!cardService} onClose={() => setCardService(null)} title={cardService?.mode === 'remark' ? '卡片备注' : cardService?.mode === 'repay' ? '信用卡还款' : '卡片管理'} className="bank-payment-sheet">
+          {cardService && data && <CardServices key={`${cardService.id}-${cardService.mode}`} data={data} cardId={cardService.id} mode={cardService.mode} userId={user.id} />}
         </Sheet>
         <Sheet
           open={!!detail}

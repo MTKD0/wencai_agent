@@ -29,7 +29,7 @@ function amountCents(input: PolicyInput): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 100) : 0
 }
 
-const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'transfer_between_accounts'].includes(i.tool)
+const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card'].includes(i.tool)
 
 export const RULES: Rule[] = [
   {
@@ -58,7 +58,7 @@ export const RULES: Rule[] = [
   },
   {
     id: 'transfer-new-payee',
-    applies: (i) => isTransfer(i) && i.tool !== 'transfer_between_accounts',
+    applies: (i) => isTransfer(i) && !['transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card'].includes(i.tool),
     evaluate: ({ facts }) =>
       facts.payeeAgeDays === undefined || facts.payeeAgeDays < LIMITS.newPayeeDays
         ? { kind: 'raise', to: 'red', reason: '首次或近期新增的收款人，需要强验证' }

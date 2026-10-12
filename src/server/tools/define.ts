@@ -14,6 +14,8 @@ export interface BankToolDef<I = any, O = any> {
   baseRisk: RiskLevel
   kind: 'read' | 'write'
   inputSchema: z.ZodType<I>
+  /** 服务端解析卡片别名，确认前冻结实际身份；客户端不可提供这些派生字段。 */
+  prepare?: (args: I, ctx: AgentContext) => Promise<I>
   /** 采集策略事实时需要的对象定位信息 */
   factsHint?: (args: I) => { payeeId?: string }
   /** 写操作必须提供确认摘要 */
@@ -54,4 +56,4 @@ export type ToolOutcome =
   | { status: 'error'; message: string }
 
 /** 外部可控的自由文本字段：交易对手、备注、商户名 */
-export const UNTRUSTED_FIELDS = new Set(['counterparty', 'memo', 'merchant', 'description'])
+export const UNTRUSTED_FIELDS = new Set(['counterparty', 'memo', 'merchant', 'description', 'remark'])

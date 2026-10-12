@@ -1,4 +1,4 @@
-import { and, eq, gte, lt } from 'drizzle-orm'
+import { and, eq, gte, lt, inArray } from 'drizzle-orm'
 import { db, schema } from '#/server/db/client'
 import type { Channel, PolicyFacts } from './types'
 
@@ -30,7 +30,7 @@ export async function collectFacts(params: {
       .where(
         and(
           eq(schema.transactions.accountId, id),
-          eq(schema.transactions.category, '转账'),
+          inArray(schema.transactions.category, ['转账', '信用卡还款']),
           lt(schema.transactions.amountCents, 0),
           gte(schema.transactions.occurredAt, startOfDay),
         ),

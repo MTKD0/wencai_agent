@@ -19,7 +19,12 @@ export async function runBankTool(
 ): Promise<ToolOutcome> {
   const parsed = def.inputSchema.safeParse(rawArgs)
   if (!parsed.success) return { status: 'error', message: `参数无效：${parsed.error.message}` }
-  const args = parsed.data as Record<string, unknown>
+  let args = parsed.data as Record<string, unknown>
+  try {
+    if (def.prepare) args = await def.prepare(args, ctx)
+  } catch (err) {
+    return { status: 'error', message: err instanceof Error ? err.message : String(err) }
+  }
 
   await audit(ctx, 'tool_call', { tool: def.name, args, plan })
 
@@ -38,7 +43,12 @@ export async function runBankTool(
     }
   }
 
-  const pending = await createPending({ ctx, def, args, decision, plan })
+  let pending: Awaited<ReturnType<typeof createPending>>
+  try {
+    pending = await createPending({ ctx, def, args, decision, plan })
+  } catch (err) {
+    return { status: 'error', message: err instanceof Error ? err.message : String(err) }
+  }
   if (decision.requiresChannelHandoff) {
     return {
       status: 'needs_handoff',

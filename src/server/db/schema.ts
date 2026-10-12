@@ -88,6 +88,16 @@ export const cards = sqliteTable('cards', {
   dailyLimitCents: integer('daily_limit_cents').notNull(),
 })
 
+/** 卡片备注与信用账户信息；扩展表支持旧数据库无损升级。 */
+export const bankCardProfiles = sqliteTable('bank_card_profiles', {
+  cardId: text('card_id').primaryKey().references(() => cards.id, { onDelete: 'cascade' }),
+  remark: text('remark').notNull().default(''),
+  creditLimitCents: integer('credit_limit_cents').notNull().default(0),
+  outstandingCents: integer('outstanding_cents').notNull().default(0),
+  billDay: integer('bill_day').notNull().default(10),
+  dueDay: integer('due_day').notNull().default(28),
+})
+
 export const subscriptions = sqliteTable('subscriptions', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),

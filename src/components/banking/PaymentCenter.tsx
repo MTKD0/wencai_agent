@@ -24,6 +24,7 @@ type Account = {
   id: string
   name: string
   accountNo: string
+  cardLast4?: string
   ownerName: string
   bank: string
   currency: string
@@ -70,9 +71,11 @@ async function request<T>(body?: unknown): Promise<T> {
 export default function PaymentCenter({
   userId,
   initialView,
+  initialAccountId,
 }: {
   userId: string
   initialView: PaymentView
+  initialAccountId?: string
 }) {
   const qc = useQueryClient()
   const query = useQuery({
@@ -84,7 +87,7 @@ export default function PaymentCenter({
   const [view, setView] = useState(initialView)
   const [adding, setAdding] = useState(false)
   const [ownTransfer, setOwnTransfer] = useState(false)
-  const [source, setSource] = useState('')
+  const [source, setSource] = useState(initialAccountId ?? '')
   const [destination, setDestination] = useState('')
   const [payeeId, setPayeeId] = useState('')
   const [amount, setAmount] = useState('')
@@ -101,7 +104,7 @@ export default function PaymentCenter({
   const [pending, setPending] = useState<Pending>()
   const [receipt, setReceipt] = useState<Record<string, unknown>>()
   const [copied, setCopied] = useState('')
-  const accounts = query.data?.accounts.filter((a) => a.currency === 'CNY') ?? []
+  const accounts = query.data?.accounts.filter((a) => a.currency === 'CNY').sort((a, b) => Number(b.id === initialAccountId) - Number(a.id === initialAccountId)) ?? []
   const payees = query.data?.payees ?? []
   const fromId = source || accounts[0]?.id || ''
   const from = accounts.find((a) => a.id === fromId)
@@ -337,7 +340,7 @@ export default function PaymentCenter({
                     </option>
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
-                        {a.name} · 尾号 {a.accountNo.slice(-4)}
+                        {a.name}{!a.cardLast4 ? ` · 尾号 ${a.accountNo.slice(-4)}` : ''}
                       </option>
                     ))}
                   </select>
@@ -361,7 +364,7 @@ export default function PaymentCenter({
                         .filter((a) => a.id !== fromId)
                         .map((a) => (
                           <option key={a.id} value={a.id}>
-                            {a.name} · 尾号 {a.accountNo.slice(-4)}
+                            {a.name}{!a.cardLast4 ? ` · 尾号 ${a.accountNo.slice(-4)}` : ''}
                           </option>
                         ))}
                     </select>
@@ -697,7 +700,7 @@ export default function PaymentCenter({
   )
 }
 
-function PaymentApproval({
+export function PaymentApproval({
   pending,
   onBack,
   onComplete,

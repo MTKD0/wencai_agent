@@ -5,6 +5,7 @@ import type { AgentContext } from '#/server/agent/context'
 import { auth, db, schema } from '#/server/db/client'
 import { env } from '#/server/env'
 import { ensurePaymentsSchema } from './migrate'
+import { assertDebitAccount, cardLabel, ensureUserCardAccounts, userCards } from '#/server/cards/service'
 
 export const maskAccount = (no: string) => `${no.slice(0, 4)} **** ${no.slice(-4)}`
 export const lookupSchema = z.discriminatedUnion('method', [
@@ -27,6 +28,7 @@ export const lookupSchema = z.discriminatedUnion('method', [
 
 export async function paymentAccounts(userId: string) {
   await ensurePaymentsSchema()
+  const cards = await userCards(userId)
   const accounts = await db.select().from(schema.accounts).where(eq(schema.accounts.userId, userId))
   for (const account of accounts) {
     // 主键解决并发生成同一账户账号的问题；号码碰撞时重新生成。
@@ -62,11 +64,11 @@ export async function paymentAccounts(userId: string) {
     )
     .where(eq(schema.accounts.userId, userId))
     .then((rows) =>
-      rows.map((a) => ({
-        ...a,
-        ownerName: owner?.name ?? '',
-        bank: '文财银行',
-      })),
+      rows.filter((a) => !cards.some((c) => c.accountId === a.id && c.kind === 'credit')).map((a) => {
+        const card = cards.find((c) => c.accountId === a.id)
+        return { ...a, name: card ? cardLabel(card) : a.name, cardLast4: card?.last4,
+          cardId: card?.id, remark: card?.remark ?? '', ownerName: owner?.name ?? '', bank: '文财银行' }
+      }),
     )
 }
 
@@ -154,6 +156,9 @@ export async function resolveRecipientReference(reference: string, userId: strin
     .where(eq(schema.accounts.id, value.targetAccountId))
   if (!target || target.accountNo !== value.accountNo || target.name !== value.name)
     throw new Error('收款账户信息已变更，请重新查找')
+  await ensureUserCardAccounts(target.userId)
+  const [card] = await db.select().from(schema.cards).where(eq(schema.cards.accountId, target.id))
+  if (card && (card.kind !== 'debit' || card.status !== 'active')) throw new Error('收款卡不可用，请重新选择储蓄卡')
   if (target.userId === userId) throw new Error('本人账户请使用“本人互转”')
   return target
 }
@@ -291,6 +296,7 @@ export async function transferSummary(a: TransferInput, ctx: AgentContext) {
 /** 条件扣款与双边流水必须处在同一个事务内，避免超扣或只扣不入账。 */
 export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurredAt = new Date()) {
   await ensurePaymentsSchema()
+  await ensureUserCardAccounts(ctx.userId)
   if (
     !Number.isSafeInteger(a.amountCents) ||
     a.amountCents <= 0 ||
@@ -305,6 +311,7 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
       .where(and(eq(schema.accounts.id, a.fromAccountId), eq(schema.accounts.userId, ctx.userId)))
     const [sender] = await tx.select().from(schema.users).where(eq(schema.users.id, ctx.userId))
     if (!source) throw new Error('付款账户不存在')
+    await assertDebitAccount(tx, source.id, a.amountCents, occurredAt)
     if (sender?.lockedUntil && sender.lockedUntil > new Date()) throw new Error('账户已临时锁定')
     let targetId = a.toAccountId,
       payeeName = '',
@@ -346,6 +353,7 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
     if (source.currency !== 'CNY' || (target && target.currency !== source.currency))
       throw new Error('目前仅支持人民币同币种转账')
     if (target) {
+      await assertDebitAccount(tx, target.id)
       const [owner] = await tx.select().from(schema.users).where(eq(schema.users.id, target.userId))
       if (a.payeeId && owner?.name !== payeeName) throw new Error('收款户名已变更，请重新添加')
       payeeName = a.toAccountId ? target.name : payeeName

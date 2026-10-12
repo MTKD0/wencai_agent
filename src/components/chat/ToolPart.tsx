@@ -32,6 +32,10 @@ const TOOL_LABEL: Record<string, string> = {
   list_payees: '我的收款人',
   add_payee: '添加收款人',
   transfer_between_accounts: '本人账户互转',
+  resolve_my_cards: '查找我的银行卡',
+  transfer_between_cards: '银行卡互转',
+  set_card_remark: '修改卡片备注',
+  repay_credit_card: '信用卡还款',
   lock_card: '临时锁卡',
   unlock_card: '解锁卡片',
   report_card_lost: '挂失',
@@ -175,13 +179,13 @@ function Outcome({ label, tool, outcome }: { label: string; tool: string; outcom
   }
 }
 
-function Accounts({ data }: { data: { id: string; name: string; balance: number }[] }) {
+function Accounts({ data }: { data: { id: string; name: string; remark?: string; balance: number }[] }) {
   return (
     <div className="grid gap-3">
       {data.map((account, index) => (
         <BankCard
           key={account.id}
-          name={account.name}
+          name={account.remark ? `${account.remark} · ${account.name}` : account.name}
           kind="account"
           balance={account.balance}
           index={index}
@@ -200,10 +204,11 @@ function CompletedResult({ label, tool, data }: { label: string; tool: string; d
         {data.map((card, index) => (
           <BankCard
             key={card.id}
-            name="我的银行卡"
+            name={card.remark || (card.kind === 'credit' ? '信用卡' : '储蓄卡')}
             last4={card.last4}
             kind={card.kind}
             status={card.status}
+            balance={card.kind === 'credit' ? card.availableCredit : card.balance}
             index={index}
           />
         ))}

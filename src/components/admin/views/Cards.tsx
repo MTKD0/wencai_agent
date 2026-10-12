@@ -23,12 +23,14 @@ export function AdminCards({ s, actions }: ViewProps) {
                 <div className="card-item-head">
                   <CreditCard size={20} />
                   <div>
-                    <strong>{c.kind === 'credit' ? '信用卡' : '借记卡'} · 尾号 {c.last4}</strong>
-                    <small>每日限额 {money(c.dailyLimit)}</small>
+                    <strong>{c.remark ? `${c.remark} · ` : ''}{c.kind === 'credit' ? '信用卡' : '储蓄卡'} · 尾号 {c.last4}</strong>
+                    <small>{c.kind === 'credit' ? `可用额度 ${money(c.creditLimit - c.outstanding)} · 待还 ${money(c.outstanding)}` : `余额 ${money(s.accounts.find((a) => a.id === c.accountId)?.balance ?? 0)} · 每日限额 ${money(c.dailyLimit)}`}</small>
                   </div>
                   <Badge status={c.status} />
                 </div>
                 <div className="card-actions">
+                  <button className="button button-ghost button-sm" onClick={() => actions.cardRemark(c.id)}>修改备注</button>
+                  {c.kind === 'credit' && c.status === 'active' && <button className="button button-ghost button-sm" onClick={() => actions.creditSpend(c.id)}>模拟消费</button>}
                   {c.status === 'active' && (
                     <button className="button button-outline button-sm" onClick={() => actions.cardState(c.id, 'freeze')}>
                       <Snowflake size={14} />冻结

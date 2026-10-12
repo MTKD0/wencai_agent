@@ -4,7 +4,7 @@ export interface DashboardData {
   availableBalance: number
   investmentPrincipal: number
   accounts: { id: string; name: string; balance: number; currency: string }[]
-  cards: { id: string; accountId: string; last4: string; kind: string; status: string; accountName: string }[]
+  cards: { id: string; accountId: string; last4: string; kind: string; status: string; accountName: string; remark: string; dailyLimit: number; creditLimit: number; outstanding: number; availableCredit: number; billDay: number; dueDay: number }[]
   accountActivity: Record<string, { monthly: DashboardData['monthly']; transactions: DashboardData['transactions'] }>
   transactions: {
     id: string
