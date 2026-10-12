@@ -19,6 +19,9 @@ import {
 } from './bank-extended'
 import { runDueJobs, scoreRisk, simNow } from './jobs'
 import type { AgentContext } from '#/server/agent/context'
+import { ensureAutomationSchema } from '#/server/automation/service'
+import { createSplitRequests } from '#/server/payments/splits'
+import { cancelBirthday } from '#/server/automation/birthdays'
 
 type Share = { contactId: string; amountCents: number; status: 'pending' | 'paid' }
 
@@ -267,7 +270,8 @@ export const settleSplit = defineBankTool({
     const txId = `tx_${randomUUID()}`
     const now = await simNow()
     await db.transaction(async (tx) => {
-      await tx.update(schema.splits).set({ sharesJson: JSON.stringify(shares) }).where(eq(schema.splits.id, split.id))
+      const [claimed] = await tx.update(schema.splits).set({ sharesJson: JSON.stringify(shares) }).where(and(eq(schema.splits.id, split.id), eq(schema.splits.sharesJson, split.sharesJson))).returning()
+      if (!claimed) throw new Error('收款进度已更新，请刷新后核对，未重复入账')
       await tx
         .update(schema.accounts)
         .set({ balanceCents: sql`${schema.accounts.balanceCents} + ${share.amountCents}` })
@@ -453,13 +457,14 @@ export const commitScheduledTransfer = defineBankTool({
       resultJson: null,
       createdAt: now.toISOString(),
     })
+    if (ctx.authorization) {
+      await ensureAutomationSchema()
+      await db.insert(schema.bankTaskPermissions).values({ taskId, level: ctx.authorization.level })
+    }
     return { taskId, status: 'pending', dueAt: iso, amount: yuan(amountCents) }
   },
   compensate: async (_args, out, ctx) => {
-    await db
-      .update(schema.scheduledTasks)
-      .set({ status: 'cancelled' })
-      .where(and(eq(schema.scheduledTasks.id, (out as { taskId: string }).taskId), eq(schema.scheduledTasks.userId, ctx.userId)))
+    await (await import('#/server/automation/service')).cancelScheduled(ctx.userId, (out as { taskId: string }).taskId)
   },
 })
 
@@ -495,7 +500,8 @@ export const commitSplit = defineBankTool({
       sharesJson: JSON.stringify(shares.map((s) => ({ ...s, status: 'pending' }))),
       createdAt: (await simNow()).toISOString(),
     })
-    return { splitId: id, total: yuan(totalCents), selfAmount: yuan(selfAmountCents), participants: shares.length + 1 }
+    const delivery = await createSplitRequests(ctx.userId, id)
+    return { splitId: id, total: yuan(totalCents), selfAmount: yuan(selfAmountCents), participants: shares.length + 1, ...delivery }
   },
 })
 
@@ -508,14 +514,9 @@ export const commitPlanCancel = defineBankTool({
   summarize: async ({ planId }) => ({ title: '确认取消生日计划', fields: [{ label: '计划', value: planId }] }),
   execute: async ({ confirmationToken, planId }, ctx) => {
     await consumeToken(ctx, confirmationToken, 'plan_cancel', { planId })
-    const plan = await ownPlanOrThrow(ctx, planId)
+    await ownPlanOrThrow(ctx, planId)
     const pending = await pendingPlanTasks(ctx, planId)
-    await db.transaction(async (tx) => {
-      await tx.update(schema.birthdayPlans).set({ status: 'cancelled' }).where(eq(schema.birthdayPlans.id, plan.id))
-      for (const t of pending)
-        await tx.update(schema.scheduledTasks).set({ status: 'cancelled' }).where(eq(schema.scheduledTasks.id, t.id))
-    })
-    return { planId, status: 'cancelled', cancelledTasks: pending.length, releasedBudget: yuan(plan.budgetCents) }
+    return { ...await cancelBirthday(ctx.userId, planId), cancelledTasks: pending.length }
   },
 })
 
@@ -528,7 +529,6 @@ export const PLANNING_TOOLS = [
   assessRiskProfile,
   commitRiskAssessment,
   setSubscriptionReminder,
-  settleSplit,
   previewScheduledTransfer,
   commitScheduledTransfer,
   previewSplit,

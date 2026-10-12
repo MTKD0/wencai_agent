@@ -17,6 +17,12 @@ export async function getConfirmationResult(userId: string, actionId: string) {
     const payload = JSON.parse(receipt.payloadJson) as { output: unknown }
     return { ...base, status: 'completed' as const, output: payload.output }
   }
+  if (row.sessionId.startsWith('scheduled:') && row.status === 'consumed') {
+    await (await import('#/server/automation/service')).ensureAutomationSchema()
+    const [link] = await db.select().from(schema.bankTaskApprovals).where(eq(schema.bankTaskApprovals.actionId, actionId))
+    const [task] = link ? await db.select().from(schema.scheduledTasks).where(and(eq(schema.scheduledTasks.id, link.taskId), eq(schema.scheduledTasks.userId, userId))) : []
+    if (task?.status === 'succeeded' && task.resultJson) return { ...base, status: 'completed' as const, output: JSON.parse(task.resultJson) as unknown }
+  }
   if (row.status === 'consumed') {
     const [failure] = await db.select().from(schema.auditLogs).where(and(
       eq(schema.auditLogs.userId, userId), eq(schema.auditLogs.type, 'confirm_attempt'),

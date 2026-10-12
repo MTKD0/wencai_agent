@@ -29,9 +29,14 @@ function amountCents(input: PolicyInput): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 100) : 0
 }
 
-const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card'].includes(i.tool)
+const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card', 'pay_split_request', 'create_birthday_plan', 'execute_birthday_order'].includes(i.tool)
 
 export const RULES: Rule[] = [
+  {
+    id: 'sensitive-card-operation',
+    applies: (i) => i.tool === 'commit_card_change' && ['unlock', 'lost', 'limits'].includes(String(i.args.action)),
+    evaluate: () => ({ kind: 'raise', to: 'red', reason: '解锁、挂失和额度变更必须进行强验证' }),
+  },
   {
     id: 'account-locked',
     applies: () => true,
@@ -58,7 +63,7 @@ export const RULES: Rule[] = [
   },
   {
     id: 'transfer-new-payee',
-    applies: (i) => isTransfer(i) && !['transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card'].includes(i.tool),
+    applies: (i) => isTransfer(i) && !['transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card', 'create_birthday_plan', 'execute_birthday_order'].includes(i.tool),
     evaluate: ({ facts }) =>
       facts.payeeAgeDays === undefined || facts.payeeAgeDays < LIMITS.newPayeeDays
         ? { kind: 'raise', to: 'red', reason: '首次或近期新增的收款人，需要强验证' }
@@ -68,7 +73,7 @@ export const RULES: Rule[] = [
     id: 'transfer-night',
     applies: isTransfer,
     evaluate: (input) => {
-      const hour = input.facts.now.getHours()
+      const hour = new Date(input.facts.now.getTime() + 8 * 3600_000).getUTCHours()
       return hour < 6 && amountCents(input) > LIMITS.nightSingleCents
         ? { kind: 'raise', to: 'red', reason: '夜间大额转账，需要强验证' }
         : null

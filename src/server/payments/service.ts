@@ -2,7 +2,7 @@ import { createHmac, randomInt, randomUUID, timingSafeEqual } from 'node:crypto'
 import { and, eq, gte, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { AgentContext } from '#/server/agent/context'
-import { auth, db, schema } from '#/server/db/client'
+import { auth, db, schema, type DB } from '#/server/db/client'
 import { env } from '#/server/env'
 import { ensurePaymentsSchema } from './migrate'
 import { assertDebitAccount, cardLabel, ensureUserCardAccounts, userCards } from '#/server/cards/service'
@@ -294,9 +294,14 @@ export async function transferSummary(a: TransferInput, ctx: AgentContext) {
 }
 
 /** 条件扣款与双边流水必须处在同一个事务内，避免超扣或只扣不入账。 */
-export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurredAt = new Date()) {
+export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurredAt = new Date(), options?: {
+  /** 仅银行内部 AA 请求服务可指定收款归属，工具参数不能传入。 */
+  targetUserId?: string
+  onSettled?: (tx: Parameters<Parameters<DB['transaction']>[0]>[0], transactionId: string) => Promise<void>
+}) {
   await ensurePaymentsSchema()
   await ensureUserCardAccounts(ctx.userId)
+  if (ctx.authorization) await (await import('#/server/automation/service')).ensureAutomationSchema()
   if (
     !Number.isSafeInteger(a.amountCents) ||
     a.amountCents <= 0 ||
@@ -348,7 +353,7 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
       ? (await tx.select().from(schema.accounts).where(eq(schema.accounts.id, targetId)))[0]
       : undefined
     if (targetId && !target) throw new Error('收款账户不存在')
-    if (a.toAccountId && target?.userId !== ctx.userId)
+    if (a.toAccountId && target?.userId !== ctx.userId && target?.userId !== options?.targetUserId)
       throw new Error('本人互转只能选择本人的账户')
     if (source.currency !== 'CNY' || (target && target.currency !== source.currency))
       throw new Error('目前仅支持人民币同币种转账')
@@ -414,7 +419,8 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
       targetAccountId: target?.id ?? null,
       creditTransactionId: creditId,
     })
-    return {
+    await options?.onSettled?.(tx, id)
+    const receipt = {
       transactionId: id,
       amount: a.amountCents / 100,
       payee: payeeName,
@@ -423,6 +429,11 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
       balanceAfter: updated.balanceCents / 100,
       settlement: target ? 'internal' : 'external',
     }
+    if (ctx.authorization) {
+      const [link] = await tx.select().from(schema.bankTaskApprovals).where(eq(schema.bankTaskApprovals.actionId, ctx.authorization.actionId))
+      if (link) await tx.update(schema.scheduledTasks).set({ status: 'succeeded', resultJson: JSON.stringify(receipt) }).where(and(eq(schema.scheduledTasks.id, link.taskId), eq(schema.scheduledTasks.userId, ctx.userId), eq(schema.scheduledTasks.status, 'awaiting_confirmation')))
+    }
+    return receipt
   })
 }
 

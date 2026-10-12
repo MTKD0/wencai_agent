@@ -20,8 +20,10 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiConfirmRouteImport } from './routes/api/confirm'
 import { Route as ApiDashboardRouteImport } from './routes/api/dashboard'
 import { Route as ApiPaymentsRouteImport } from './routes/api/payments'
+import { Route as ApiPlansRouteImport } from './routes/api/plans'
 import { Route as ApiSecurityRouteImport } from './routes/api/security'
 import { Route as ApiSettingsRouteImport } from './routes/api/settings'
+import { Route as ApiStepUpRouteImport } from './routes/api/step-up'
 import { Route as ConfirmActionIdRouteImport } from './routes/confirm.$actionId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiPasskeyDeleteRouteImport } from './routes/api/passkey/delete'
@@ -83,6 +85,11 @@ const ApiPaymentsRoute = ApiPaymentsRouteImport.update({
   path: '/api/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPlansRoute = ApiPlansRouteImport.update({
+  id: '/api/plans',
+  path: '/api/plans',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSecurityRoute = ApiSecurityRouteImport.update({
   id: '/api/security',
   path: '/api/security',
@@ -91,6 +98,11 @@ const ApiSecurityRoute = ApiSecurityRouteImport.update({
 const ApiSettingsRoute = ApiSettingsRouteImport.update({
   id: '/api/settings',
   path: '/api/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStepUpRoute = ApiStepUpRouteImport.update({
+  id: '/api/step-up',
+  path: '/api/step-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfirmActionIdRoute = ConfirmActionIdRouteImport.update({
@@ -131,8 +143,10 @@ export interface FileRoutesByFullPath {
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
   '/api/payments': typeof ApiPaymentsRoute
+  '/api/plans': typeof ApiPlansRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
+  '/api/step-up': typeof ApiStepUpRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/passkey/delete': typeof ApiPasskeyDeleteRoute
@@ -151,8 +165,10 @@ export interface FileRoutesByTo {
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
   '/api/payments': typeof ApiPaymentsRoute
+  '/api/plans': typeof ApiPlansRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
+  '/api/step-up': typeof ApiStepUpRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/passkey/delete': typeof ApiPasskeyDeleteRoute
@@ -172,8 +188,10 @@ export interface FileRoutesById {
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
   '/api/payments': typeof ApiPaymentsRoute
+  '/api/plans': typeof ApiPlansRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
+  '/api/step-up': typeof ApiStepUpRoute
   '/confirm/$actionId': typeof ConfirmActionIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/passkey/delete': typeof ApiPasskeyDeleteRoute
@@ -194,8 +212,10 @@ export interface FileRouteTypes {
     | '/api/confirm'
     | '/api/dashboard'
     | '/api/payments'
+    | '/api/plans'
     | '/api/security'
     | '/api/settings'
+    | '/api/step-up'
     | '/confirm/$actionId'
     | '/api/auth/$'
     | '/api/passkey/delete'
@@ -214,8 +234,10 @@ export interface FileRouteTypes {
     | '/api/confirm'
     | '/api/dashboard'
     | '/api/payments'
+    | '/api/plans'
     | '/api/security'
     | '/api/settings'
+    | '/api/step-up'
     | '/confirm/$actionId'
     | '/api/auth/$'
     | '/api/passkey/delete'
@@ -234,8 +256,10 @@ export interface FileRouteTypes {
     | '/api/confirm'
     | '/api/dashboard'
     | '/api/payments'
+    | '/api/plans'
     | '/api/security'
     | '/api/settings'
+    | '/api/step-up'
     | '/confirm/$actionId'
     | '/api/auth/$'
     | '/api/passkey/delete'
@@ -255,8 +279,10 @@ export interface RootRouteChildren {
   ApiConfirmRoute: typeof ApiConfirmRoute
   ApiDashboardRoute: typeof ApiDashboardRoute
   ApiPaymentsRoute: typeof ApiPaymentsRoute
+  ApiPlansRoute: typeof ApiPlansRoute
   ApiSecurityRoute: typeof ApiSecurityRoute
   ApiSettingsRoute: typeof ApiSettingsRoute
+  ApiStepUpRoute: typeof ApiStepUpRoute
   ConfirmActionIdRoute: typeof ConfirmActionIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPasskeyDeleteRoute: typeof ApiPasskeyDeleteRoute
@@ -343,6 +369,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/plans': {
+      id: '/api/plans'
+      path: '/api/plans'
+      fullPath: '/api/plans'
+      preLoaderRoute: typeof ApiPlansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/security': {
       id: '/api/security'
       path: '/api/security'
@@ -355,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/api/settings'
       fullPath: '/api/settings'
       preLoaderRoute: typeof ApiSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/step-up': {
+      id: '/api/step-up'
+      path: '/api/step-up'
+      fullPath: '/api/step-up'
+      preLoaderRoute: typeof ApiStepUpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/confirm/$actionId': {
@@ -407,8 +447,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConfirmRoute: ApiConfirmRoute,
   ApiDashboardRoute: ApiDashboardRoute,
   ApiPaymentsRoute: ApiPaymentsRoute,
+  ApiPlansRoute: ApiPlansRoute,
   ApiSecurityRoute: ApiSecurityRoute,
   ApiSettingsRoute: ApiSettingsRoute,
+  ApiStepUpRoute: ApiStepUpRoute,
   ConfirmActionIdRoute: ConfirmActionIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPasskeyDeleteRoute: ApiPasskeyDeleteRoute,

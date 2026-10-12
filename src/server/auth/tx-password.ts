@@ -35,7 +35,8 @@ export async function verifyTxPassword(userId: string, password: string): Promis
     .from(authTables.baAccount)
     .where(eq(authTables.baAccount.id, `acct_txpw_${userId}`))
   const stored = row?.password
-  const expected = stored ?? `${saltFor(userId)}:${hash(env.DEMO_TX_PASSWORD, saltFor(userId))}`
+  if (!stored) return false
+  const expected = stored
   const [salt, digest] = expected.split(':')
   const actual = Buffer.from(hash(input, salt), 'hex')
   const want = Buffer.from(digest, 'hex')

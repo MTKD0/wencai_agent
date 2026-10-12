@@ -1,6 +1,8 @@
 export interface DashboardData {
   now: string
+  notifications?: { id: string; title: string; body: string; actionId: string | null; read: boolean }[]
   totalAssets: number
+  reservedBalance?: number
   availableBalance: number
   investmentPrincipal: number
   accounts: { id: string; name: string; balance: number; currency: string }[]

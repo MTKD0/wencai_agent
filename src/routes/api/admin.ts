@@ -1,5 +1,8 @@
 import { settleTransfer } from '#/server/payments/service'
 import { createUserCard, creditSpend, saveCardRemark, userCards } from '#/server/cards/service'
+import { reserveBirthday, cancelBirthday, reservedFunds } from '#/server/automation/birthdays'
+import { createSplitRequests } from '#/server/payments/splits'
+import { paymentAccounts } from '#/server/payments/service'
 /**
  * 银行管理后台 API：/api/admin/*
  *
@@ -19,6 +22,7 @@ import { audit } from '#/server/audit/log'
 import { env } from '#/server/env'
 import { runDueJobs, scoreRisk } from '#/server/tools/jobs'
 import { adminUserExists, listAdminUsers } from '#/server/admin/users'
+import { adminAuthorized } from '#/server/admin/access'
 
 const disabled = () =>
   Response.json({ error: { code: 'ADMIN_DISABLED', message: '管理后台未启用（设置 ADMIN_ENABLED=true）' } }, { status: 403 })
@@ -78,6 +82,8 @@ async function getSnapshot(userId: string) {
 
   const mainAccount = accounts[0]
   const balance = mainAccount?.balanceCents ?? 0
+  const birthdayFunds = await reservedFunds(userId)
+  const held = birthdayFunds.filter((fund) => fund.accountId === mainAccount?.id).reduce((sum, fund) => sum + fund.heldCents, 0)
 
   return {
     now,
@@ -90,9 +96,9 @@ async function getSnapshot(userId: string) {
     account: {
       id: mainAccount?.id ?? '',
       name: mainAccount?.name ?? '主账户',
-      balance,
+      balance: balance + held,
       available: balance,
-      held: 0,
+      held,
     },
     accounts: accounts.map((a) => ({ ...a, balance: a.balanceCents, available: a.balanceCents })),
     contacts: contacts.map((c) => ({ ...c })),
@@ -145,7 +151,7 @@ async function getSnapshot(userId: string) {
         selfAmount,
       }
     }),
-    plans: plans.map((p) => ({ ...p, budget: p.budgetCents })),
+    plans: plans.map((p) => ({ ...p, status: p.status === 'reserved' && !birthdayFunds.some((fund) => fund.planId === p.id) ? 'planned' : p.status, budget: p.budgetCents })),
     orders: orders.map((o) => ({ ...o, amount: o.amountCents })),
     transactions: transactions.map((t) => ({
       ...t,
@@ -381,62 +387,14 @@ async function executeCommand(userId: string, command: Command) {
         sharesJson: JSON.stringify(shares),
         createdAt: now.toISOString(),
       })
-      return { id, title: command.title, total: command.total, shares, selfAmount: Math.floor(command.total / (command.contactIds.length + 1)) }
+      const requests = await createSplitRequests(userId, id)
+      return { id, ...requests, title: command.title, total: command.total, shares, selfAmount: Math.floor(command.total / (command.contactIds.length + 1)) }
     }
     case 'settleSplit': {
-      const [split] = await db
-        .select()
-        .from(schema.splits)
-        .where(and(eq(schema.splits.id, command.splitId), eq(schema.splits.userId, userId)))
-      if (!split) throw new Error('AA 分摊不存在')
-      const shares = JSON.parse(split.sharesJson) as Array<{
-        contactId: string
-        amountCents: number
-        status: string
-      }>
-      const updated = shares.map((s) =>
-        s.contactId === command.contactId ? { ...s, status: 'paid' } : s,
-      )
-      await db
-        .update(schema.splits)
-        .set({ sharesJson: JSON.stringify(updated) })
-        .where(eq(schema.splits.id, command.splitId))
-      const accs = await db.select().from(schema.accounts).where(eq(schema.accounts.userId, userId))
-      const acc = accs[0]
-      if (acc) {
-        const share = shares.find((s) => s.contactId === command.contactId)
-        if (share) {
-          const txId = `tx_${Date.now()}`
-          await db.transaction(async (tx) => {
-            await tx
-              .update(schema.accounts)
-              .set({ balanceCents: sql`${schema.accounts.balanceCents} + ${share.amountCents}` })
-              .where(eq(schema.accounts.id, acc.id))
-            await tx.insert(schema.transactions).values({
-              id: txId,
-              accountId: acc.id,
-              amountCents: share.amountCents,
-              counterparty: 'AA 收款',
-              memo: split.title,
-              category: 'AA',
-              occurredAt: now,
-            })
-          })
-        }
-      }
-      return { splitId: command.splitId, settled: true }
+      throw new Error('AA 必须由参与人登录自己的账户确认付款，后台不能代替参与人生成到账记录')
     }
     case 'cancelTask': {
-      await db
-        .update(schema.scheduledTasks)
-        .set({ status: 'cancelled' })
-        .where(
-          and(
-            eq(schema.scheduledTasks.id, command.taskId),
-            eq(schema.scheduledTasks.userId, userId),
-          ),
-        )
-      return { id: command.taskId, status: 'cancelled' as const }
+      return (await import('#/server/confirm/lock')).withUserExecutionLock(userId, async () => (await import('#/server/automation/service')).cancelScheduled(userId, command.taskId))
     }
     case 'assessRisk': {
       const riskRating = scoreRisk(command.answers)
@@ -457,10 +415,12 @@ async function executeCommand(userId: string, command: Command) {
       const holdingId = `h_${Date.now()}`
       const txId = `tx_${Date.now()}`
       await db.transaction(async (tx) => {
-        await tx
+        const [debited] = await tx
           .update(schema.accounts)
           .set({ balanceCents: sql`${schema.accounts.balanceCents} - ${command.amount}` })
-          .where(eq(schema.accounts.id, acc.id))
+          .where(and(eq(schema.accounts.id, acc.id), gte(schema.accounts.balanceCents, command.amount)))
+          .returning()
+        if (!debited) throw new Error('余额不足')
         await tx.insert(schema.holdings).values({
           id: holdingId,
           userId,
@@ -494,10 +454,12 @@ async function executeCommand(userId: string, command: Command) {
       if (!acc) throw new Error('没有可用账户')
       const txId = `tx_${Date.now()}`
       await db.transaction(async (tx) => {
-        await tx
+        const [redeemed] = await tx
           .update(schema.holdings)
           .set({ principalCents: sql`${schema.holdings.principalCents} - ${command.amount}` })
-          .where(eq(schema.holdings.id, command.holdingId))
+          .where(and(eq(schema.holdings.id, command.holdingId), gte(schema.holdings.principalCents, command.amount)))
+          .returning()
+        if (!redeemed) throw new Error('可赎回本金不足')
         await tx
           .update(schema.accounts)
           .set({ balanceCents: sql`${schema.accounts.balanceCents} + ${command.amount}` })
@@ -560,31 +522,15 @@ async function executeCommand(userId: string, command: Command) {
       return { subscriptionId: command.subscriptionId, remindDays: command.days }
     }
     case 'birthdayPlan': {
-      const id = `bplan_${Date.now()}`
-      await db.insert(schema.birthdayPlans).values({
-        id,
-        userId,
-        contactId: command.contactId,
-        birthday: command.birthday,
-        budgetCents: command.budget,
-        status: 'reserved',
-        createdAt: now.toISOString(),
-      })
-      return { id, contactId: command.contactId, birthday: command.birthday, budget: command.budget, status: 'reserved' }
+      const account = (await paymentAccounts(userId))[0]
+      if (!account) throw new Error('没有可预留资金的储蓄账户')
+      return reserveBirthday({ fromAccountId: account.id, contactId: command.contactId, birthday: command.birthday, budgetCents: command.budget }, { userId, sessionId: 'admin', channel: 'web', authorization: { level: 'red', actionId: 'admin' } }, now)
     }
     case 'cancelPlan': {
-      await db
-        .update(schema.birthdayPlans)
-        .set({ status: 'cancelled' })
-        .where(
-          and(
-            eq(schema.birthdayPlans.id, command.planId),
-            eq(schema.birthdayPlans.userId, userId),
-          ),
-        )
-      return { id: command.planId, status: 'cancelled' as const }
+      return cancelBirthday(userId, command.planId)
     }
     case 'advanceClock': {
+      await db.insert(schema.settings).values({ key: 'clock_mode', value: 'manual' }).onConflictDoUpdate({ target: schema.settings.key, set: { value: 'manual' } })
       const current = new Date(await simNow())
       const target = new Date(command.to)
       if (target <= current) throw new Error('目标时间不能早于当前模拟时间')
@@ -651,6 +597,7 @@ export const Route = createFileRoute('/api/admin')({
     handlers: {
       GET: async ({ request }) => {
         if (!env.ADMIN_ENABLED) return disabled()
+        if (!adminAuthorized(request)) return Response.json({ error: { code: 'ADMIN_AUTH_REQUIRED', message: '请输入后台访问凭据' } }, { status: 401 })
         const url = new URL(request.url)
         const action = url.searchParams.get('action') ?? 'snapshot'
         const userId = url.searchParams.get('userId') ?? DEMO_USER_ID
@@ -680,6 +627,7 @@ export const Route = createFileRoute('/api/admin')({
       },
       POST: async ({ request }) => {
         if (!env.ADMIN_ENABLED) return disabled()
+        if (!adminAuthorized(request)) return Response.json({ error: { code: 'ADMIN_AUTH_REQUIRED', message: '请输入后台访问凭据' } }, { status: 401 })
         try {
           const body = await request.json()
           const parsed = CommandSchema.safeParse(body)

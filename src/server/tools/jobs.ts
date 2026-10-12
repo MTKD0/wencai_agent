@@ -1,11 +1,10 @@
-import { settleTransfer } from '#/server/payments/service'
 /**
  * 到期任务执行器：admin 后台与 Agent 系统工具（advance_simulation_clock / run_due_jobs）共用。
  */
-import { and, eq, lte } from 'drizzle-orm'
+import { and, eq, inArray, lte } from 'drizzle-orm'
 import { db, schema } from '#/server/db/client'
 
-export type JobResult = { id: string; kind: string; status: 'succeeded' | 'failed'; message?: string }
+export type JobResult = { id: string; kind: string; status: 'succeeded' | 'failed' | 'awaiting_confirmation'; message?: string }
 
 /** 仿真时钟：读 settings 表，未设置则返回当前时间 */
 export async function simNow(): Promise<Date> {
@@ -35,26 +34,10 @@ export async function runDueJobs(userId: string, now: Date): Promise<JobResult[]
       ),
     )
   const results: JobResult[] = []
-  const finish = async (id: string, kind: string, status: 'succeeded' | 'failed', result: object) => {
-    await db
-      .update(schema.scheduledTasks)
-      .set({ status, resultJson: JSON.stringify(result) })
-      .where(eq(schema.scheduledTasks.id, id))
-    results.push({ id, kind, status, ...('message' in result ? { message: String(result.message) } : {}) })
-  }
-  for (const task of pending) {
-    try {
-      const payload = JSON.parse(task.payloadJson)
-      if (task.kind === 'transfer') {
-        const [claimed] = await db.update(schema.scheduledTasks).set({ status: 'processing' })
-          .where(and(eq(schema.scheduledTasks.id, task.id), eq(schema.scheduledTasks.status, 'pending'))).returning()
-        if (!claimed) continue
-        const result = await settleTransfer({ fromAccountId: payload.fromAccountId, payeeId: payload.payeeId, amountCents: payload.amountCents, memo: payload.memo || '定时转账' }, { userId, sessionId: 'scheduled', channel: 'web' }, now)
-        await finish(task.id, task.kind, 'succeeded', { transactionId: result.transactionId })
-      }
-    } catch (e) {
-      await finish(task.id, task.kind, 'failed', { message: e instanceof Error ? e.message : String(e) })
-    }
+  const { runAutomaticTransfers } = await import('#/server/automation/service')
+  await runAutomaticTransfers(userId, now)
+  if (pending.length) for (const task of await db.select().from(schema.scheduledTasks).where(inArray(schema.scheduledTasks.id, pending.map((p) => p.id)))) {
+    if (['succeeded', 'failed', 'awaiting_confirmation'].includes(task.status)) results.push({ id: task.id, kind: task.kind, status: task.status as JobResult['status'], message: task.resultJson ? JSON.parse(task.resultJson).message : undefined })
   }
   return results
 }

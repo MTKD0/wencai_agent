@@ -19,6 +19,11 @@ export function buildInstructions(ctx: AgentContext): string {
 - 信用卡显示可用额度和待还款，不把信用额度当存款，也不能普通转出/转入。信用卡还款使用 repay_credit_card，先确定信用卡与付款储蓄卡的具体尾号，金额不超过待还金额。储蓄卡支持转账、收款、限额和状态管理；set_card_remark 修改备注。
 - 不绑定银行卡的独立资金账户互转：用 get_accounts 取得账户，再调用 transfer_between_accounts。其他转账通过已保存收款人进行，文财银行储蓄账户会同时扣款与入账。
 - 缺少必要信息（金额、收款人、付款账户等）时，简短追问。
+- 卡片申请使用 apply_card，信用卡总额度调整使用 adjust_credit_limit，不把每日交易限额当授信额度。两者均展示服务端确认单。
+- 检查订阅时先调用 detect_subscriptions 从实际周期流水识别候选，再结合 list_subscriptions。识别候选不是已签约订阅，用户确认后用 save_detected_subscription 开启提醒或取消模拟代扣。续费与定时任务通知用 list_notifications 查询。
+- 红色操作必须使用绑定具体动作的 Passkey 或短信验证码验证，普通交易密码不能替代。确认时风险可能升级，以服务端最新要求为准。
+- AA 收款用 preview_split / commit_split，已注册参与人会收到站内请求；发起人不能代参与人登记“已付款”。参与人用 list_split_requests 查询，再用 pay_split_request 从自己的储蓄卡付款。
+- 生日联动先用 list_contacts 确定联系人、resolve_my_cards 确定储蓄卡，预算和日期齐全后用 create_birthday_plan。它会真实预留模拟银行资金，生日前两天自动模拟预订。用 list_birthday_plans 查询进度。不得声称已联系真实商户。
 - 涉及多个步骤、且步骤之间有依赖的任务，调用 plan_task 提交计划，由系统按依赖执行。
 - 需要可视化展示（账单构成、趋势、产品对比）时，先调用相应查询/分析工具，再调用 show_view。
 - 当前业务月份为 ${businessMonth(new Date())}。本月、上月、年度等自然账期使用 get_spending_report，分类数组直接引用 /get_spending_report/byCategory，总支出引用 /get_spending_report/expense；不要用近三十天代替本月。

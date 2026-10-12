@@ -8,14 +8,14 @@ import type { ToolOutcome } from '#/server/tools/define'
 import { PaymentApproval } from './PaymentCenter'
 import { Reveal } from '#/components/ui/motion'
 
-export type CardServiceMode = 'remark' | 'repay' | 'manage'
+export type CardServiceMode = 'remark' | 'repay' | 'manage' | 'apply'
 export function CardServices({ data, cardId, mode, userId }: { data: DashboardData; cardId: string; mode: CardServiceMode; userId: string }) {
   const card = data.cards.find((c) => c.id === cardId)!
   const debit = data.cards.filter((c) => c.kind === 'debit' && c.status === 'active')
   const [remark, setRemark] = useState(card.remark)
   const [source, setSource] = useState(debit[0]?.id ?? '')
   const [amount, setAmount] = useState(card.outstanding ? String(card.outstanding) : '')
-  const [limit, setLimit] = useState(String(card.dailyLimit))
+  const [limit, setLimit] = useState(String(card.kind === 'credit' ? card.creditLimit : card.dailyLimit))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [pending, setPending] = useState<Extract<ToolOutcome, { status: 'needs_confirmation' }>>()
@@ -61,13 +61,28 @@ export function CardServices({ data, cardId, mode, userId }: { data: DashboardDa
         {card.status === 'active' && <button className="bank-payment-secondary bank-lift" disabled={busy} onClick={() => void prepare('lock_card', { cardId })}>临时冻结</button>}
         {card.status === 'locked' && <button className="bank-payment-secondary bank-lift" disabled={busy} onClick={() => void prepare('unlock_card', { cardId })}>解锁卡片</button>}
         {card.status !== 'lost' && <button className="bank-payment-secondary bank-lift" disabled={busy} onClick={() => void prepare('report_card_lost', { cardId })}>挂失卡片</button>}
-        {card.kind === 'debit' && card.status !== 'lost' && <form className="bank-payment-form" onSubmit={(e) => {
+        {card.status !== 'lost' && <form className="bank-payment-form" onSubmit={(e) => {
           e.preventDefault(); const cents = parsePaymentAmount(limit)
           if (cents === null) { setError('请输入有效限额'); return }
-          void prepare('adjust_card_limit', { cardId, dailyLimit: cents / 100 })
-        }}><label>每日转出限额（元）<input inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} disabled={busy} /></label><button className="bank-primary bank-lift" disabled={busy}>调整限额</button></form>}
+          void prepare(card.kind === 'credit' ? 'adjust_credit_limit' : 'adjust_card_limit', card.kind === 'credit' ? { cardId, creditLimit: cents / 100 } : { cardId, dailyLimit: cents / 100 })
+        }}><label>{card.kind === 'credit' ? '信用总额度（元）' : '每日转出限额（元）'}<input inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} disabled={busy} /></label><button className="bank-primary bank-lift" disabled={busy}>调整额度 / 限额</button></form>}
       </div>}
     </Reveal>}
     {error && <p className="bank-error" role="alert">{error}</p>}
   </div>
+}
+
+export function CardApplication() {
+  const [kind, setKind] = useState<'debit' | 'credit'>('debit'), [remark, setRemark] = useState('')
+  const [pending, setPending] = useState<Extract<ToolOutcome, { status: 'needs_confirmation' }>>()
+  const [busy, setBusy] = useState(false), [error, setError] = useState('')
+  return <div className="bank-payment-scroll">{pending ? <PaymentApproval pending={pending} onBack={() => setPending(undefined)} onComplete={() => {}} /> : <form className="bank-payment-form" onSubmit={async (e) => {
+    e.preventDefault(); setBusy(true); setError('')
+    try {
+      const res = await fetch('/api/payments', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tool: 'apply_card', args: { kind, remark } }) })
+      const out = await res.json()
+      if (out.status !== 'needs_confirmation') throw new Error(out.message ?? out.error ?? '申请失败')
+      setPending(out)
+    } catch (e) { setError(e instanceof Error ? e.message : '申请失败') } finally { setBusy(false) }
+  }}><h2>申请新卡</h2><label>卡片类型<select value={kind} onChange={(e) => setKind(e.target.value as 'debit' | 'credit')} disabled={busy}><option value="debit">储蓄卡</option><option value="credit">信用卡</option></select></label><label>卡片备注<input value={remark} maxLength={30} onChange={(e) => setRemark(e.target.value)} disabled={busy} /></label><p className="bank-page-note">申请文财模拟银行卡，新卡独立记账。信用卡初始模拟额度为 20,000 元。</p><button className="bank-primary bank-lift" disabled={busy}>{busy ? '准备中…' : '下一步 · 核对申请'}</button></form>}{error && <p className="bank-error">{error}</p>}</div>
 }

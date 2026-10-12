@@ -4,6 +4,8 @@ import { businessMonth } from '#/lib/dashboard'
 import type { DashboardData } from '#/lib/dashboard'
 import { simNow } from '#/server/tools/jobs'
 import { userCards, cardKindName } from '#/server/cards/service'
+import { notifications } from '#/server/automation/service'
+import { reservedFunds } from '#/server/automation/birthdays'
 
 /** 用户首页只接受已认证会话中的身份，所有业务数据按归属过滤。金额返回元。 */
 export async function getDashboard(userId: string): Promise<DashboardData> {
@@ -72,6 +74,7 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
   }
   const availableCents = accounts.reduce((sum, account) => sum + account.balanceCents, 0)
   const principalCents = holdings.reduce((sum, holding) => sum + holding.principal, 0)
+  const reservedCents = (await reservedFunds(userId)).reduce((sum, fund) => sum + fund.heldCents, 0)
   const [year, month] = period.split('-').map(Number)
   const trend = Array.from({ length: 6 }, (_, i) => {
     const date = new Date(Date.UTC(year, month - 6 + i, 1))
@@ -82,8 +85,10 @@ export async function getDashboard(userId: string): Promise<DashboardData> {
     return { label: `${date.getUTCMonth() + 1}月`, value: total / 100 }
   })
   return {
+    notifications: (await notifications(userId)).map((n) => ({ id: n.id, title: n.title, body: n.body, actionId: n.actionId, read: !!n.readAt })),
     now: now.toISOString(),
-    totalAssets: (availableCents + principalCents) / 100,
+    totalAssets: (availableCents + principalCents + reservedCents) / 100,
+    reservedBalance: reservedCents / 100,
     availableBalance: availableCents / 100,
     investmentPrincipal: principalCents / 100,
     accounts: accounts.map((account) => ({

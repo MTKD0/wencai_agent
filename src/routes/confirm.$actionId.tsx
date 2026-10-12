@@ -4,6 +4,7 @@ import ConfirmCard from '#/components/chat/ConfirmCard'
 import type { ConfirmCardProps } from '#/components/chat/ConfirmCard'
 import { UnauthorizedError, isRetryableConfirmError, useCancelAction, useConfirmAction } from '#/lib/queries'
 import type { StepUpPayload } from '#/lib/queries'
+import ToolPart from '#/components/chat/ToolPart'
 
 /** IM 渠道红色操作的 H5 跳转页：在 App 内完成强验证 */
 export const Route = createFileRoute('/confirm/$actionId')({ component: ConfirmPage })
@@ -41,14 +42,15 @@ function ConfirmPage() {
           {...pending.data}
           submitting={confirm.isPending || cancel.isPending}
           error={settled ? undefined : confirm.error?.message}
-          done={confirm.isSuccess ? '操作已完成' : cancel.isSuccess ? '已取消' : undefined}
-          doneState={confirm.isSuccess ? 'success' : 'cancelled'}
+          done={confirm.isSuccess ? '操作已完成' : cancel.isSuccess ? '已取消' : settled ? confirm.error?.message : undefined}
+          doneState={confirm.isSuccess ? 'success' : cancel.isSuccess ? 'cancelled' : 'failed'}
           onConfirm={async (stepUp?: StepUpPayload) => {
             await confirm.mutateAsync(stepUp)
           }}
           onCancel={() => cancel.mutate()}
         />
       )}
+      {confirm.data?.plan && <div className="mt-4"><ToolPart part={{ type: 'tool-plan_task', toolCallId: confirm.data.plan.id, state: 'output-available', output: { status: 'plan', state: confirm.data.plan } }} /></div>}
     </div>
   )
 }

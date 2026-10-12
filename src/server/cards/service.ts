@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from 'node:crypto'
-import { and, eq, gte, sql } from 'drizzle-orm'
-import { db, schema, type DB } from '#/server/db/client'
+import { and, eq, gte, lt, sql } from 'drizzle-orm'
+import { auth, db, schema, type DB } from '#/server/db/client'
 import type { AgentContext } from '#/server/agent/context'
 
 let ready: Promise<void> | undefined
@@ -100,7 +100,9 @@ export async function resolveCard(userId: string, query: string, kind?: 'debit' 
   return matches[0]
 }
 
-export async function createUserCard(userId: string, kind: 'debit' | 'credit') {
+export async function createUserCard(userId: string, kind: 'debit' | 'credit', remark = '') {
+  const [registered] = await db.select().from(auth.baUser).where(eq(auth.baUser.id, userId))
+  if (registered) await db.insert(schema.users).values({ id: userId, name: registered.name }).onConflictDoNothing()
   await ensureUserCardAccounts(userId)
   return db.transaction(async (tx) => {
     const existing = await tx.select().from(schema.cards).where(eq(schema.cards.userId, userId))
@@ -109,9 +111,18 @@ export async function createUserCard(userId: string, kind: 'debit' | 'credit') {
     const id = `card_${randomUUID()}`, accountId = `acc_card_${id}`
     await tx.insert(schema.accounts).values({ id: accountId, userId, name: cardKindName(kind), balanceCents: 0 })
     await tx.insert(schema.cards).values({ id, userId, accountId, kind, last4, status: 'active', dailyLimitCents: 5_000_000 })
-    await tx.insert(schema.bankCardProfiles).values({ cardId: id, creditLimitCents: kind === 'credit' ? 2_000_000 : 0 })
+    await tx.insert(schema.bankCardProfiles).values({ cardId: id, remark, creditLimitCents: kind === 'credit' ? 2_000_000 : 0 })
     return { cardId: id, accountId, last4, kind }
   })
+}
+
+export async function changeCreditLimit(userId: string, cardId: string, limitCents: number) {
+  const card = await ownProfile(userId, cardId)
+  if (card.kind !== 'credit' || card.status === 'lost') throw new Error('请选择未挂失的本人信用卡')
+  if (!Number.isSafeInteger(limitCents) || limitCents <= 0 || limitCents > 20_000_000) throw new Error('额度必须在 0.01 至 200000 元之间')
+  const [updated] = await db.update(schema.bankCardProfiles).set({ creditLimitCents: limitCents }).where(and(eq(schema.bankCardProfiles.cardId, cardId), sql`${schema.bankCardProfiles.outstandingCents} <= ${limitCents}`)).returning()
+  if (!updated) throw new Error('新额度不能低于当前待还金额')
+  return { cardId, creditLimit: limitCents / 100, outstanding: updated.outstandingCents / 100, previousLimit: card.creditLimitCents / 100 }
 }
 
 type Transaction = Parameters<Parameters<DB['transaction']>[0]>[0]
@@ -123,7 +134,7 @@ export async function assertDebitAccount(tx: Transaction, accountId: string, amo
   if (card.status !== 'active') throw new Error(`尾号${card.last4}已冻结或挂失`)
   if (amountCents) {
     const start = new Date(Math.floor((now.getTime() + 8 * 3600_000) / 86_400_000) * 86_400_000 - 8 * 3600_000)
-    const rows = await tx.select().from(schema.transactions).where(and(eq(schema.transactions.accountId, accountId), gte(schema.transactions.occurredAt, start)))
+    const rows = await tx.select().from(schema.transactions).where(and(eq(schema.transactions.accountId, accountId), gte(schema.transactions.occurredAt, start), lt(schema.transactions.occurredAt, new Date(start.getTime() + 86400_000))))
     const spent = rows.filter((r) => r.amountCents < 0 && ['转账', '信用卡还款'].includes(r.category)).reduce((sum, r) => sum - r.amountCents, 0)
     if (spent + amountCents > card.dailyLimitCents) throw new Error(`尾号${card.last4}超过每日转出限额`)
   }

@@ -4,7 +4,7 @@ import { GENESIS_HASH, hashEntry, verifyChain } from './chain'
 import type { AuditEntry, AuditType, StoredAuditEntry } from './chain'
 import type { AgentContext } from '#/server/agent/context'
 
-// 单进程内串行写入，保证哈希链顺序；多实例部署需换成数据库事务 + 行锁
+// 进程内排队，数据库写事务同时约束 Web 与自动任务进程，避免哈希链分叉。
 let tail: Promise<unknown> = Promise.resolve()
 
 export function audit(ctx: AgentContext, type: AuditType, payload: unknown): Promise<void> {
@@ -17,14 +17,14 @@ export function audit(ctx: AgentContext, type: AuditType, payload: unknown): Pro
     // 先归一化为纯 JSON（Date → 字符串、去掉 undefined），保证写入前后哈希一致
     payload: JSON.parse(JSON.stringify(payload ?? null)),
   }
-  const write = tail.then(async () => {
-    const [last] = await db
+  const write = tail.then(() => db.transaction(async (tx) => {
+    const [last] = await tx
       .select({ hash: schema.auditLogs.hash })
       .from(schema.auditLogs)
       .orderBy(desc(schema.auditLogs.seq))
       .limit(1)
     const prevHash = last?.hash ?? GENESIS_HASH
-    await db.insert(schema.auditLogs).values({
+    await tx.insert(schema.auditLogs).values({
       at: new Date(entry.at),
       userId: entry.userId,
       sessionId: entry.sessionId,
@@ -34,7 +34,7 @@ export function audit(ctx: AgentContext, type: AuditType, payload: unknown): Pro
       prevHash,
       hash: hashEntry(prevHash, entry),
     })
-  })
+  }))
   tail = write.catch(() => {})
   return write
 }

@@ -12,6 +12,8 @@ import { buildInstructions } from './instructions'
 import { buildAgentTools } from './tools'
 import { getConfirmationResult } from '#/server/confirm/result'
 import { quarantineForModel } from '#/server/tools/sanitize'
+import { verifiedOutputTransform } from '#/server/verify/response'
+import { getSessionData } from './session'
 
 export const BLOCKED_REPLY = '抱歉，这条消息包含试图改变我工作规则的内容，我无法处理。如需办理业务，请直接描述您的需求。'
 
@@ -33,6 +35,8 @@ export async function runAgent(params: {
   confirmedActionId?: string
 }) {
   const { ctx } = params
+  // 浏览器提交的历史工具结果不是银行凭证。数字核验只信任服务端快照与本轮结果。
+  const trustedEvidence = Object.values(getSessionData(ctx.sessionId))
   const confirmation = params.confirmedActionId
     ? await getConfirmationResult(ctx.userId, params.confirmedActionId)
     : undefined
@@ -51,6 +55,7 @@ export async function runAgent(params: {
     tools,
     stopWhen: isStepCount(8),
     temperature: 0.2,
+    experimental_transform: verifiedOutputTransform(ctx, [...trustedEvidence, ...(confirmation ? [confirmation] : [])], confirmation?.status === 'completed'),
     abortSignal: params.abortSignal,
     onStepEnd: ({ toolCalls, finishReason, usage }) => {
       console.info(
@@ -62,7 +67,7 @@ export async function runAgent(params: {
     },
     onEnd: async ({ text, steps }) => {
       const evidence = collectEvidence([
-        ...params.priorEvidence,
+        ...trustedEvidence,
         ...(confirmation ? [confirmation] : []),
         ...steps.flatMap((s) => s.toolResults.map((r) => r.output)),
       ])

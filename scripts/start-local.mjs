@@ -17,6 +17,7 @@ const maxLogBytes = 10 * 1024 * 1024
 let logBytes = 0
 const secrets = new Set()
 let server
+let worker
 let activeChild
 let stopping = false
 
@@ -195,6 +196,16 @@ async function main() {
   activeChild = server
   relay(server.stdout)
   relay(server.stderr)
+  worker = spawn(process.execPath, ['--import=tsx', path.join(root, 'scripts', 'worker.ts')], { cwd: root, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true })
+  relay(worker.stdout)
+  relay(worker.stderr)
+  worker.on('error', (error) => log(`自动任务服务启动失败：${error.message}`))
+  worker.once('exit', (code) => {
+    if (!stopping) {
+      log(`自动任务服务意外退出（${code}），正在停止本次服务，请检查日志后重新启动。`)
+      server?.kill('SIGTERM')
+    }
+  })
   const closed = new Promise((resolve, reject) => {
     server.once('error', reject)
     server.once('close', (code, signal) => {
@@ -212,6 +223,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
     stopping = true
     log('正在停止服务……')
     activeChild?.kill('SIGTERM')
+    worker?.kill('SIGTERM')
   })
 }
 
@@ -222,4 +234,5 @@ try {
   process.exitCode = 1
 } finally {
   stopping = true
+  worker?.kill('SIGTERM')
 }

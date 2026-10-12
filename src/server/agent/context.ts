@@ -5,4 +5,6 @@ export interface AgentContext {
   userId: string
   sessionId: string
   channel: Channel
+  /** 仅确认服务写入，模型与客户端不能指定。 */
+  authorization?: { level: 'yellow' | 'red'; actionId: string }
 }

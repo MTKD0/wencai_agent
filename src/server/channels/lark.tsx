@@ -5,7 +5,8 @@ import { createLarkAdapter } from '@larksuite/vercel-chat-adapter'
 import type { ModelMessage } from 'ai'
 import { BLOCKED_REPLY, runAgent, screenInput } from '#/server/agent/run'
 import type { AgentContext } from '#/server/agent/context'
-import { cancelPending, confirmPending } from '#/server/confirm/pending'
+import { confirmPending } from '#/server/confirm/pending'
+import { cancelActionAndPlan } from '#/server/executor/service'
 import { resolveChannelUser } from '#/server/session'
 import { audit } from '#/server/audit/log'
 import { bindLink, createBindCode } from '#/server/auth/bind'
@@ -75,13 +76,14 @@ export function createLarkBot() {
     // 操作必须属于该绑定的银行用户，否则拒绝（confirmPending 会再次校验归属）
     const ctx: AgentContext = { userId, sessionId: `lark:${event.threadId}`, channel: 'lark' }
     if (event.actionId === 'cancel') {
-      await cancelPending(ctx, event.value)
+      await cancelActionAndPlan(ctx, event.value)
       await event.thread.post('已取消。')
       return
     }
     // confirmPending 会校验点击者即操作所属用户、完整性、时效与一次性
     const res = await confirmPending({ ctx, actionId: event.value, resolveTool })
     await event.thread.post(res.ok ? '✅ 操作已完成。' : `未能完成：${res.message}`)
+    if (res.ok && res.plan) for (const node of Object.values(res.plan.nodes)) await postOutcomeCard(event.thread, node.output as ToolOutcome)
   })
 
   return bot

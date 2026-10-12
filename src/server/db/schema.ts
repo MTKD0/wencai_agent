@@ -36,6 +36,45 @@ export const accounts = sqliteTable('accounts', {
   currency: text('currency').notNull().default('CNY'),
 })
 
+export const bankExecutionLocks = sqliteTable('bank_execution_locks', {
+  userId: text('user_id').primaryKey(),
+  token: text('token').notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+export const bankStepUpCodes = sqliteTable('bank_step_up_codes', {
+  id: text('id').primaryKey(), userId: text('user_id').notNull(), scope: text('scope').notNull(),
+  codeHash: text('code_hash').notNull(), attempts: integer('attempts').notNull().default(0),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  consumedAt: integer('consumed_at', { mode: 'timestamp_ms' }),
+})
+
+export const bankNotifications = sqliteTable('bank_notifications', {
+  id: text('id').primaryKey(), userId: text('user_id').notNull(), type: text('type').notNull(),
+  title: text('title').notNull(), body: text('body').notNull(), actionId: text('action_id'),
+  dedupeKey: text('dedupe_key').notNull().unique(), createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  readAt: integer('read_at', { mode: 'timestamp_ms' }),
+})
+export const bankTaskPermissions = sqliteTable('bank_task_permissions', {
+  taskId: text('task_id').primaryKey(), level: text('level', { enum: ['yellow', 'red'] }).notNull(),
+})
+export const bankTaskApprovals = sqliteTable('bank_task_approvals', {
+  taskId: text('task_id').primaryKey(), actionId: text('action_id').notNull().unique(),
+})
+
+export const bankSplitRequests = sqliteTable('bank_split_requests', {
+  id: text('id').primaryKey(), splitId: text('split_id').notNull(), contactId: text('contact_id').notNull(),
+  requesterUserId: text('requester_user_id').notNull(), payerUserId: text('payer_user_id').notNull(),
+  targetAccountId: text('target_account_id').notNull(), amountCents: integer('amount_cents').notNull(),
+  status: text('status').notNull(), transactionId: text('transaction_id'),
+}, (t) => [uniqueIndex('bank_split_participant').on(t.splitId, t.contactId)])
+
+export const bankBirthdayFunds = sqliteTable('bank_birthday_funds', {
+  planId: text('plan_id').primaryKey(), userId: text('user_id').notNull(), accountId: text('account_id').notNull(),
+  heldCents: integer('held_cents').notNull(), status: text('status').notNull(),
+})
+
 export const payees = sqliteTable('payees', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),
@@ -146,7 +185,7 @@ export const plans = sqliteTable('plans', {
   sessionId: text('session_id').notNull(),
   stateJson: text('state_json').notNull(),
   status: text('status', {
-    enum: ['running', 'suspended', 'completed', 'failed', 'compensated', 'handoff'],
+    enum: ['running', 'suspended', 'paused', 'completed', 'failed', 'compensated', 'handoff'],
   }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })

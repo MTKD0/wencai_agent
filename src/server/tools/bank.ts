@@ -1,6 +1,9 @@
 import { settleTransfer, reverseTransfer, transferSummary } from '#/server/payments/service'
 import { PAYMENT_TOOLS } from './payments'
 import { CARD_TOOLS } from './cards'
+import { SUBSCRIPTION_TOOLS } from './subscriptions'
+import { SPLIT_TOOLS } from './splits'
+import { BIRTHDAY_TOOLS } from './birthdays'
 import { ownProfile, userCards } from '#/server/cards/service'
 import { paymentAccounts } from '#/server/payments/service'
 import { and, desc, eq, gte, inArray } from 'drizzle-orm'
@@ -348,6 +351,9 @@ export const BANK_TOOLS: BankToolDef[] = [
   ...PLANNING_TOOLS,
   ...PAYMENT_TOOLS,
   ...CARD_TOOLS,
+  ...SUBSCRIPTION_TOOLS,
+  ...SPLIT_TOOLS,
+  ...BIRTHDAY_TOOLS,
 ]
 
 const byName = new Map<string, BankToolDef>(BANK_TOOLS.map((t) => [t.name, t]))

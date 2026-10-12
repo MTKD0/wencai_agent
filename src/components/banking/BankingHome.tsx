@@ -38,12 +38,13 @@ import { FinancialReport } from './FinancialReport'
 import PaymentCenter from './PaymentCenter'
 import type { PaymentView } from './PaymentCenter'
 import { AccountCarousel, accountSlides } from './AccountCarousel'
-import { CardServices, type CardServiceMode } from './CardServices'
+import { CardApplication, CardServices, type CardServiceMode } from './CardServices'
 import { subscribeConfirmations } from '#/lib/confirmation-notices'
+import { TaskCenter } from './TaskCenter'
 import './banking.css'
 
 type Tab = 'home' | 'accounts' | 'life' | 'profile'
-type Detail = 'assets' | 'bill' | 'transactions' | 'receive' | 'notifications' | null
+type Detail = 'assets' | 'bill' | 'transactions' | 'receive' | 'notifications' | 'tasks' | null
 const tabs = [
   { id: 'home', label: '首页', icon: House },
   { id: 'accounts', label: '账户', icon: CreditCard },
@@ -65,6 +66,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
     queryKey: ['dashboard', user.id],
     queryFn: fetchDashboard,
     staleTime: 30_000,
+    refetchInterval: 15_000,
     retry: (count, error) => !(error instanceof UnauthorizedError) && count < 2,
   })
   const [tab, setTab] = useState<Tab>('home')
@@ -105,7 +107,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
     pageScroll.current?.scrollTo({ top: 0, behavior: 'instant' })
   }
   const title =
-    detail === 'assets'
+    detail === 'tasks' ? '任务与人工处理' : detail === 'assets'
       ? '资产详情'
       : detail === 'bill'
         ? '智能账单分析'
@@ -315,6 +317,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                     <div className="bank-section-heading">
                       <h1>我的账户</h1>
                       <span>{data.cards.length} 张银行卡</span>
+                      <button className="bank-text-button bank-lift" onClick={() => setCardService({ id: 'new', mode: 'apply' })}>申请新卡</button>
                     </div>
                     <p className="bank-page-note">每张卡独立记账，左右滑动查看对应账单。</p>
                     <AccountCarousel data={data} selectedId={selectedCard?.id} onSelect={setSelectedCardId} hidden={hidden} />
@@ -381,6 +384,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                 )}
                 {tab === 'life' && (
                   <>
+                    <button className="bank-payment-secondary bank-full-width" onClick={() => setDetail('tasks')}>任务中心 · 暂停 / 恢复 / 人工处理</button>
                     <h1 className="bank-page-title">生活服务</h1>
                     <p className="bank-page-note">照顾日常，也为重要的日子做好准备。</p>
                     <div className="bank-life-actions">
@@ -520,8 +524,8 @@ export default function BankingHome({ user }: { user: { id: string; name: string
         <Sheet open={!!paymentView} onClose={closePayment} title="转账与收款" className="bank-payment-sheet">
           {paymentView && <PaymentCenter userId={user.id} initialView={paymentView} initialAccountId={paymentAccountId} />}
         </Sheet>
-        <Sheet open={!!cardService} onClose={() => setCardService(null)} title={cardService?.mode === 'remark' ? '卡片备注' : cardService?.mode === 'repay' ? '信用卡还款' : '卡片管理'} className="bank-payment-sheet">
-          {cardService && data && <CardServices key={`${cardService.id}-${cardService.mode}`} data={data} cardId={cardService.id} mode={cardService.mode} userId={user.id} />}
+        <Sheet open={!!cardService} onClose={() => setCardService(null)} title={cardService?.mode === 'apply' ? '申请新卡' : cardService?.mode === 'remark' ? '卡片备注' : cardService?.mode === 'repay' ? '信用卡还款' : '卡片管理'} className="bank-payment-sheet">
+          {cardService?.mode === 'apply' ? <CardApplication /> : cardService && data && <CardServices key={`${cardService.id}-${cardService.mode}`} data={data} cardId={cardService.id} mode={cardService.mode} userId={user.id} />}
         </Sheet>
         <Sheet
           open={!!detail}
@@ -557,6 +561,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                 {[
                   { label: '可用余额', value: data.availableBalance },
                   { label: '理财持仓本金', value: data.investmentPrincipal },
+                  { label: '生日计划预留资金', value: data.reservedBalance ?? 0 },
                 ].map((item) => (
                   <div key={item.label} className="bank-detail-row">
                     <span>{item.label}</span>
@@ -603,6 +608,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
             )}
             {data && detail === 'notifications' && (
               <>
+                {data.notifications?.map((notice) => <article key={notice.id} className="bank-payment-address"><strong>{notice.title}</strong><p>{notice.body}</p>{notice.actionId && <a className="bank-text-button" href={`/confirm/${encodeURIComponent(notice.actionId)}`}>核对并确认</a>}</article>)}
                 <div className="bank-notice">
                   <Bell size={20} />
                   <span>
@@ -622,6 +628,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                 </button>
               </>
             )}
+            {detail === 'tasks' && <TaskCenter onFollowUp={openAgent} />}
           </div>
         </Sheet>
       </div>

@@ -4,6 +4,7 @@ import { phoneNumber } from 'better-auth/plugins'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db, auth as authSchema } from '#/server/db/client'
 import { env } from '#/server/env'
+import { sendVerificationSMS } from '#/server/auth/step-up'
 
 /**
  * 认证实例。仅负责「你是谁」，不涉及任何银行业务授权。
@@ -16,6 +17,7 @@ import { env } from '#/server/env'
 export const auth = betterAuth({
   baseURL: env.PUBLIC_BASE_URL,
   secret: env.CONFIRM_SECRET,
+  trustedOrigins: [env.PUBLIC_BASE_URL, ...(['localhost', '127.0.0.1'].includes(new URL(env.PUBLIC_BASE_URL).hostname) ? ['localhost', '127.0.0.1'].map((host) => { const url = new URL(env.PUBLIC_BASE_URL); url.hostname = host; return url.origin }) : [])],
   database: drizzleAdapter(db, {
     provider: 'sqlite',
     schema: {
@@ -47,9 +49,11 @@ export const auth = betterAuth({
     phoneNumber({
       otpLength: 6,
       expiresIn: 300,
-      // 演示环境不真的发短信：验证码写入服务端日志
-      sendOTP: ({ phoneNumber: phone, code }) => {
-        console.log(`[auth] 演示验证码 ${phone}: ${code}`)
+      // 生产必须配置短信通道；仅本地开发的登录验证码允许演示日志。
+      sendOTP: async ({ phoneNumber: phone, code }) => {
+        if (env.SMS_DELIVERY_URL) await sendVerificationSMS(phone, code)
+        else if (env.AUTH_DEMO_MODE && process.env.NODE_ENV !== 'production') console.log(`[auth] 演示登录验证码 ${phone}: ${code}`)
+        else throw new Error('登录短信通道尚未配置')
       },
       // 演示环境允许任意未注册手机号直接注册登录（自动生成占位邮箱）
       signUpOnVerification: {
@@ -60,12 +64,12 @@ export const auth = betterAuth({
   ],
   advanced: {
     // 演示环境同时跑飞书（WebSocket 回调用不同来源）与 Web，这里信任自身来源
-    disableCSRFCheck: true,
+    disableCSRFCheck: false,
     useSecureCookies: env.PUBLIC_BASE_URL.startsWith('https'),
   },
   rateLimit: {
-    // 演示环境关闭全局限流，登录相关的失败计数由 failedAuthCount 自行控制
-    enabled: false,
+    // 认证端点开启限流，交易验证另有尝试计数及账户熔断。
+    enabled: true,
   },
 })
 

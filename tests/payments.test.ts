@@ -20,7 +20,8 @@ import { runBankTool } from '#/server/tools/runner'
 import { confirmPending } from '#/server/confirm/pending'
 import { runDueJobs } from '#/server/tools/jobs'
 import { parsePaymentAmount } from '#/lib/payment-amount'
-import { env } from '#/server/env'
+import { requestStepUpCode } from '#/server/auth/step-up'
+import { ensureAutomationSchema } from '#/server/automation/service'
 
 const A = 'u_payment_a',
   B = 'u_payment_b'
@@ -173,11 +174,13 @@ describe('双边转账', () => {
         stepUp: { method: 'password', password: 'wrong' },
       }),
     ).toMatchObject({ ok: false, code: 'step_up_failed' })
+    let verificationCode = ''
+    const verification = await requestStepUpCode(A, `action:${out.actionId}`, async (_phone, code) => { verificationCode = code })
     const result = await confirmPending({
       ctx: a,
       actionId: out.actionId,
       resolveTool,
-      stepUp: { method: 'password', password: env.DEMO_TX_PASSWORD },
+      stepUp: { method: 'sms', challengeId: verification.challengeId, code: verificationCode },
     })
     expect(result.ok).toBe(true)
     const output = result.ok ? (result.output as { transactionId: string }) : { transactionId: '' }
@@ -306,7 +309,11 @@ describe('双边转账', () => {
   })
   it('并发到期任务只扣一次，也能入账 B', async () => {
     await reset()
+    await ensureAutomationSchema()
+    await db.delete(schema.transactions).where(inArray(schema.transactions.accountId, ids))
     const taskId = 'payment_job'
+    await db.delete(schema.bankTaskPermissions).where(eq(schema.bankTaskPermissions.taskId, taskId))
+    await db.insert(schema.bankTaskPermissions).values({ taskId, level: 'red' })
     await db.insert(schema.scheduledTasks).values({
       id: taskId,
       userId: A,

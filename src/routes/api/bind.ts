@@ -70,5 +70,5 @@ const BodySchema = z.object({
 
 async function verifyStepUp(userId: string, stepUp: StepUp): Promise<boolean> {
   if (stepUp.method === 'password') return verifyTxPassword(userId, stepUp.password)
-  return verifyPasskeyAssertion(userId, stepUp.response)
+  return stepUp.method === 'passkey' && verifyPasskeyAssertion(userId, stepUp.response)
 }

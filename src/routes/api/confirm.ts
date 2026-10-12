@@ -1,22 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { cancelPending, confirmPending, getPendingForUser } from '#/server/confirm/pending'
+import { confirmPending, getPendingForUser } from '#/server/confirm/pending'
 import { db, schema } from '#/server/db/client'
-import { rejectPlanNode, resumePlan } from '#/server/executor/service'
+import { cancelActionAndPlan } from '#/server/executor/service'
 import { resolveTool } from '#/server/tools/bank'
 import { requireSession } from '#/server/session'
 import type { AgentContext } from '#/server/agent/context'
+import { StepUpSchema } from '#/server/auth/step-up'
 
 const BodySchema = z.object({
   actionId: z.string(),
   decision: z.enum(['confirm', 'cancel']),
-  stepUp: z
-    .discriminatedUnion('method', [
-      z.object({ method: z.literal('password'), password: z.string().max(32) }),
-      z.object({ method: z.literal('passkey'), response: z.unknown() }),
-    ])
-    .optional(),
+  stepUp: StepUpSchema.optional(),
 })
 
 /**
@@ -50,18 +46,14 @@ export const Route = createFileRoute('/api/confirm')({
         }
         if (!ctx) return Response.json({ ok: false, code: 'not_found', message: '待确认操作不存在' }, { status: 404 })
 
-        const [row] = await db.select().from(schema.pendingActions).where(eq(schema.pendingActions.id, actionId))
-
         if (decision === 'cancel') {
-          await cancelPending(ctx, actionId)
-          const plan = row?.planId && row.nodeId ? await rejectPlanNode(ctx, row.planId, row.nodeId) : undefined
+          const plan = await cancelActionAndPlan(ctx, actionId)
           return Response.json({ ok: true, cancelled: true, plan })
         }
 
         const result = await confirmPending({ ctx, actionId, stepUp, resolveTool })
         if (!result.ok) return Response.json(result, { status: 400 })
-        const plan = result.planId && result.nodeId ? await resumePlan(ctx, result.planId, result.nodeId, result.output) : undefined
-        return Response.json({ ...result, plan, actionId, userId: ctx.userId })
+        return Response.json({ ...result, actionId, userId: ctx.userId })
       },
     },
   },

@@ -17,10 +17,11 @@ export function collectEvidence(values: unknown[]): Set<string> {
   const visit = (v: unknown, key?: string) => {
     if (typeof v === 'number') {
       out.add(normalize(v))
+      out.add(normalize(Math.abs(v))) // “净支出/亏损”会用正数描述同一差额。
       // 以「分」为单位的字段同时登记为元
       if (key && /cents$/i.test(key)) out.add(normalize(v / 100))
     } else if (typeof v === 'string') {
-      for (const m of v.matchAll(/\d+(?:\.\d+)?/g)) out.add(normalize(Number(m[0])))
+      for (const m of v.matchAll(/\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?/g)) out.add(normalize(Number(m[0].replace(/,/g, ''))))
       if (/^\d{4,}$/.test(v)) out.add(v.slice(-4))
     } else if (Array.isArray(v)) {
       v.forEach((x) => visit(x))

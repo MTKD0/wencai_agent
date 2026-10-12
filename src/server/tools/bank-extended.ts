@@ -9,13 +9,15 @@
  */
 import { createHash, randomUUID } from 'node:crypto'
 import { settleTransfer, reverseTransfer, transferSummary } from '#/server/payments/service'
-import { and, desc, eq, gte, inArray, isNull, lt, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
 import { businessMonth } from '#/lib/dashboard'
 import { defineBankTool } from './define'
 import type { AgentContext } from '#/server/agent/context'
 import { runDueJobs, simNow } from './jobs'
+import { assertDebitAccount } from '#/server/cards/service'
+import { rollbackInvestment } from '#/server/payments/investment-rollback'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -160,6 +162,7 @@ export const getSpendingReport = defineBankTool({
       period,
       income: yuan(income),
       expense: yuan(expense),
+      consumptionExpense: yuan(expense - (byCategory['转账'] ?? 0) - (byCategory['理财'] ?? 0)),
       net: yuan(income - expense),
       transactionCount: filtered.length,
       categories: Object.fromEntries(Object.entries(byCategory).map(([k, v]) => [k, yuan(v)])),
@@ -757,11 +760,14 @@ export const commitPurchase = defineBankTool({
     const redeemableAt = new Date(now.getTime() + product.termDays * DAY).toISOString()
     const holdingId = `h_${randomUUID()}`
     const txId = `tx_${randomUUID()}`
-    await db.transaction(async (tx) => {
-      await tx
+    const balanceAfter = await db.transaction(async (tx) => {
+      await assertDebitAccount(tx, acc.id)
+      const [debited] = await tx
         .update(schema.accounts)
         .set({ balanceCents: sql`${schema.accounts.balanceCents} - ${amountCents}` })
-        .where(eq(schema.accounts.id, acc.id))
+        .where(and(eq(schema.accounts.id, acc.id), eq(schema.accounts.userId, ctx.userId), gte(schema.accounts.balanceCents, amountCents)))
+        .returning()
+      if (!debited) throw new Error('余额不足，申购未执行')
       await tx.insert(schema.holdings).values({
         id: holdingId,
         userId: ctx.userId,
@@ -779,9 +785,11 @@ export const commitPurchase = defineBankTool({
         category: '理财',
         occurredAt: now,
       })
+      return debited.balanceCents
     })
-    return { holdingId, productId, amount: yuan(amountCents), redeemableAt, balanceAfter: yuan(acc.balanceCents - amountCents) }
+    return { holdingId, transactionId: txId, productId, amount: yuan(amountCents), redeemableAt, balanceAfter: yuan(balanceAfter) }
   },
+  compensate: (_a, output, ctx) => rollbackInvestment(ctx.userId, output.transactionId, output.holdingId, 'purchase'),
 })
 
 export const commitRedemption = defineBankTool({
@@ -809,16 +817,20 @@ export const commitRedemption = defineBankTool({
     if (amountCents > h.principalCents) throw new Error('赎回金额超过持仓本金')
     const acc = await ownAccountOrThrow(ctx, toAccountId)
     const now = await simNow()
+    if (h.redeemableAt > now.toISOString()) throw new Error('持仓仍在锁定期内，不可赎回')
     const txId = `tx_${randomUUID()}`
-    await db.transaction(async (tx) => {
-      await tx
+    const balanceAfter = await db.transaction(async (tx) => {
+      await assertDebitAccount(tx, acc.id)
+      const [redeemed] = await tx
         .update(schema.holdings)
         .set({ principalCents: sql`${schema.holdings.principalCents} - ${amountCents}` })
-        .where(eq(schema.holdings.id, holdingId))
-      await tx
+        .where(and(eq(schema.holdings.id, holdingId), eq(schema.holdings.userId, ctx.userId), gte(schema.holdings.principalCents, amountCents), lte(schema.holdings.redeemableAt, now.toISOString())))
+        .returning()
+      if (!redeemed) throw new Error('可赎回本金不足或持仓处于锁定期')
+      const [credited] = await tx
         .update(schema.accounts)
         .set({ balanceCents: sql`${schema.accounts.balanceCents} + ${amountCents}` })
-        .where(eq(schema.accounts.id, acc.id))
+        .where(eq(schema.accounts.id, acc.id)).returning()
       await tx.insert(schema.transactions).values({
         id: txId,
         accountId: acc.id,
@@ -828,9 +840,11 @@ export const commitRedemption = defineBankTool({
         category: '理财',
         occurredAt: now,
       })
+      return credited.balanceCents
     })
-    return { transactionId: txId, amount: yuan(amountCents), balanceAfter: yuan(acc.balanceCents + amountCents) }
+    return { transactionId: txId, amount: yuan(amountCents), balanceAfter: yuan(balanceAfter) }
   },
+  compensate: (a, output, ctx) => rollbackInvestment(ctx.userId, output.transactionId, a.holdingId, 'redemption'),
 })
 
 export const commitCardChange = defineBankTool({
@@ -850,7 +864,8 @@ export const commitCardChange = defineBankTool({
   },
   execute: async ({ confirmationToken, cardId, action, dailyLimitCents }, ctx) => {
     await consumeToken(ctx, confirmationToken, 'card_change', { cardId, action, dailyLimitCents: dailyLimitCents ?? null })
-    await ownCardOrThrow(ctx, cardId)
+    const card = await ownCardOrThrow(ctx, cardId)
+    if (card.status === 'lost' && action !== 'lost') throw new Error('已挂失卡片不可恢复，请重新办卡')
     if (action === 'limits') {
       if (!dailyLimitCents) throw new Error('调整限额需提供 dailyLimitCents')
       await db.update(schema.cards).set({ dailyLimitCents }).where(eq(schema.cards.id, cardId))
@@ -861,9 +876,11 @@ export const commitCardChange = defineBankTool({
     return { cardId, action, done: true }
   },
   compensate: async ({ cardId, action, dailyLimitCents: _dl }, _out, ctx) => {
+    if (action !== 'lock') throw new Error('该卡片变更不支持自动回退，需人工核对')
     if (action === 'lock') {
-      await ownCardOrThrow(ctx, cardId)
-      await db.update(schema.cards).set({ status: 'active' }).where(eq(schema.cards.id, cardId))
+      const card = await ownCardOrThrow(ctx, cardId)
+      if (card.status === 'lost') throw new Error('卡片已挂失，不能通过回退恢复')
+      await db.update(schema.cards).set({ status: 'active' }).where(and(eq(schema.cards.id, cardId), eq(schema.cards.status, 'locked')))
     }
   },
 })
@@ -909,6 +926,7 @@ export const advanceSimulationClock = defineBankTool({
     const target = new Date(to)
     if (!Number.isFinite(target.getTime())) throw new Error('时间格式无效')
     if (target <= current) throw new Error('目标时间不能早于当前模拟时间')
+    await db.insert(schema.settings).values({ key: 'clock_mode', value: 'manual' }).onConflictDoUpdate({ target: schema.settings.key, set: { value: 'manual' } })
     await db
       .insert(schema.settings)
       .values({ key: 'clock', value: target.toISOString() })
@@ -952,14 +970,7 @@ export const cancelScheduledTask = defineBankTool({
     fields: [{ label: '任务 ID', value: taskId }],
   }),
   execute: async ({ taskId }, ctx) => {
-    const [task] = await db
-      .select()
-      .from(schema.scheduledTasks)
-      .where(and(eq(schema.scheduledTasks.id, taskId), eq(schema.scheduledTasks.userId, ctx.userId)))
-    if (!task) throw new Error('任务不存在')
-    if (task.status !== 'pending') throw new Error('只能取消待执行的任务')
-    await db.update(schema.scheduledTasks).set({ status: 'cancelled' }).where(eq(schema.scheduledTasks.id, taskId))
-    return { taskId, cancelled: true }
+    return (await import('#/server/automation/service')).cancelScheduled(ctx.userId, taskId)
   },
 })
 

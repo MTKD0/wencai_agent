@@ -37,9 +37,13 @@ export async function runBankTool(
   if (decision.level === 'green') {
     try {
       const output = await def.execute(args, ctx)
-      return { status: 'done', data: await sanitizeToolOutput(ctx, def.name, output) }
+      const data = await sanitizeToolOutput(ctx, def.name, output)
+      await audit(ctx, 'tool_result', { tool: def.name, ok: true, output: data })
+      return { status: 'done', data }
     } catch (err) {
-      return { status: 'error', message: err instanceof Error ? err.message : String(err) }
+      const message = err instanceof Error ? err.message : String(err)
+      await audit(ctx, 'tool_result', { tool: def.name, ok: false, message })
+      return { status: 'error', message }
     }
   }
 

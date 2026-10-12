@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { UnauthorizedError } from '#/lib/queries'
+import { useRef, useState } from 'react'
+import { ConfirmError } from '#/lib/queries'
+import { useStrongVerification } from '#/components/ui/StrongVerification'
 import type { ConfirmSummary } from '#/server/tools/define'
 import './confirm-card.css'
 
@@ -24,53 +24,21 @@ export interface ConfirmCardProps {
   doneState?: 'success' | 'cancelled' | 'failed'
 }
 
-export type StepUpPayload = { method: 'password'; password: string } | { method: 'passkey'; response: unknown }
-
-type Method = 'password' | 'passkey'
+export type StepUpPayload = import('#/server/auth/step-up').StrongStepUp
 
 /**
  * 安全关键组件：内容全部来自服务端生成的 summary，不渲染任何模型文字。
- * 黄色：一键确认；红色：交易密码或 Passkey，二选一。
+ * 黄色：一键确认；红色：绑定手机短信或 Passkey 强验证。
  */
 export default function ConfirmCard(props: ConfirmCardProps) {
-  const [password, setPassword] = useState('')
-  const [method, setMethod] = useState<Method>('password')
   const [message, setMessage] = useState<string>()
   const confirming = useRef(false)
   const [verifying, setVerifying] = useState(false)
-  const red = props.level === 'red'
+  const [escalated, setEscalated] = useState(false)
+  const red = props.level === 'red' || escalated
   const submitting = props.submitting || verifying
   const state = props.done ? (props.doneState ?? 'success') : 'pending'
-
-  // 已注册 Passkey 时默认走 Passkey，否则退回交易密码。
-  // Query 未命中就说明没有可用 Passkey，保持密码方式即可，无需再发一次请求。
-  const passkeyReady = useQuery({
-    queryKey: ['passkey', 'options'],
-    queryFn: async () => {
-      const res = await fetch('/api/passkey/options', { credentials: 'same-origin' })
-      if (res.status === 401) throw new UnauthorizedError()
-      if (!res.ok) return null
-      return (await res.json()) as { challenge?: string } | null
-    },
-    staleTime: 5 * 60_000,
-    enabled: red,
-    retry: false,
-  })
-
-  // 探测完成后：有 challenge 说明已注册 Passkey，默认选它
-  useEffect(() => {
-    if (red && passkeyReady.data?.challenge) setMethod('passkey')
-  }, [red, passkeyReady.data])
-
-  const passkeyAssert = async (): Promise<unknown | null> => {
-    // challenge 是一次性的：每次签名前重新取，不用 mount 时的缓存
-    const res = await fetch('/api/passkey/options', { credentials: 'same-origin' })
-    if (res.status === 401) throw new Error('登录已过期，请重新登录')
-    const options = await res.json()
-    if (!res.ok || !options?.challenge) throw new Error(options?.message ?? 'Passkey 不可用')
-    const { startAuthentication } = await import('@simplewebauthn/browser')
-    return startAuthentication({ optionsJSON: options })
-  }
+  const verification = useStrongVerification({ purpose: 'action', actionId: props.actionId }, !!submitting)
 
   async function confirm() {
     if (confirming.current || submitting || props.done) return
@@ -79,15 +47,10 @@ export default function ConfirmCard(props: ConfirmCardProps) {
     setMessage(undefined)
     try {
       // 强验证的 stepUp 只在红色操作时构造；Passkey 用浏览器 API 现取 challenge
-      const stepUp: StepUpPayload | undefined =
-        !red
-          ? undefined
-          : method === 'passkey'
-            ? { method: 'passkey', response: await passkeyAssert() }
-            : { method: 'password', password }
+      const stepUp: StepUpPayload | undefined = red ? await verification.getProof() : undefined
       await props.onConfirm?.(stepUp)
-      setPassword('')
     } catch (err) {
+      if (err instanceof ConfirmError && err.data.requiredLevel === 'red') setEscalated(true)
       // 错误由 props.error 展示；这里不再自行维护错误态
       setMessage(err instanceof Error ? err.message : '验证失败')
     } finally {
@@ -124,42 +87,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
         <p className="bank-confirm-status" role="status">{state === 'success' ? '✓ ' : ''}{props.done}</p>
       ) : (
         <div className="mt-4 space-y-2">
-          {red && (
-            <>
-              <div className="flex gap-2 text-xs">
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => setMethod('password')}
-                  className={`bank-lift flex-1 rounded-full border py-1 ${method === 'password' ? 'border-[var(--lagoon-deep)] text-[var(--sea-ink)]' : 'border-[var(--line)] text-[var(--sea-ink-soft)]'}`}
-                >
-                  交易密码
-                </button>
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => setMethod('passkey')}
-                  className={`bank-lift flex-1 rounded-full border py-1 ${method === 'passkey' ? 'border-[var(--lagoon-deep)] text-[var(--sea-ink)]' : 'border-[var(--line)] text-[var(--sea-ink-soft)]'}`}
-                >
-                  Passkey
-                </button>
-              </div>
-              {method === 'password' && (
-                <input
-                  type="password"
-                  aria-label="交易密码"
-                  autoComplete="off"
-                  disabled={submitting}
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="请输入 6 位交易密码"
-                  className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-center tracking-[0.5em]"
-                />
-              )}
-            </>
-          )}
+          {red && verification.controls}
           <div className="flex gap-2">
             <button type="button" onClick={() => props.onCancel?.()} disabled={submitting} className="bank-confirm-cancel bank-lift flex-1 rounded-full border border-[var(--line)] py-2 text-sm">
               取消
@@ -167,7 +95,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
             <button
               onClick={() => void confirm()}
               type="button"
-              disabled={submitting || !props.onConfirm || (red && method === 'password' && password.length !== 6)}
+              disabled={submitting || !props.onConfirm || (red && !verification.ready)}
               className="bank-confirm-submit bank-lift flex-1 rounded-full py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               {submitting ? '处理中…' : '确认'}

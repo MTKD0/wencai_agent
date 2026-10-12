@@ -4,6 +4,9 @@ import { requireSession, revokeBinding, revokeSession } from '#/server/session'
 import { audit } from '#/server/audit/log'
 import { setTxPassword } from '#/server/auth/tx-password'
 import type { AgentContext } from '#/server/agent/context'
+import { StepUpSchema, verifyStrongStepUp } from '#/server/auth/step-up'
+import { hashParams } from '#/server/confirm/integrity'
+import { withUserExecutionLock } from '#/server/confirm/lock'
 
 /**
  * 安全设置写操作。全部要求已登录，且一律记审计。
@@ -39,13 +42,21 @@ export const Route = createFileRoute('/api/security')({
             return Response.json({ ok })
           }
           case 'set_tx_password': {
+            const { password, stepUp } = parsed.data
+            return withUserExecutionLock(session.userId, async () => {
+            const scope = `security:${hashParams({ action: 'set_tx_password', password })}`
+            if (!await verifyStrongStepUp(session.userId, scope, stepUp)) {
+              await audit(ctx, 'confirm_attempt', { scope: 'set_tx_password', ok: false, reason: 'strong_verification_required' })
+              return Response.json({ ok: false, message: '修改交易密码须通过 Passkey 或绑定手机号验证' }, { status: 403 })
+            }
             try {
-              await setTxPassword(session.userId, parsed.data.password)
+              await setTxPassword(session.userId, password)
             } catch (err) {
               return Response.json({ ok: false, message: err instanceof Error ? err.message : '设置失败' }, { status: 400 })
             }
             await audit(ctx, 'tx_password_set', {})
             return Response.json({ ok: true })
+            })
           }
         }
       },
@@ -56,5 +67,5 @@ export const Route = createFileRoute('/api/security')({
 const BodySchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('revoke_session'), sessionId: z.string().min(1).max(100) }),
   z.object({ action: z.literal('revoke_binding'), bindingId: z.string().min(1).max(100) }),
-  z.object({ action: z.literal('set_tx_password'), password: z.string().length(6) }),
+  z.object({ action: z.literal('set_tx_password'), password: z.string().regex(/^\d{6}$/), stepUp: StepUpSchema.optional() }),
 ])

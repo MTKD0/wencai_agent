@@ -9,6 +9,8 @@ import { runBankTool } from '#/server/tools/runner'
 import type { AgentContext } from '#/server/agent/context'
 import { advance, initPlanState, reject, resume } from './executor'
 import type { NodeRunner, PlanState } from './executor'
+import { withUserExecutionLock } from '#/server/confirm/lock'
+import { getConfirmationResult } from '#/server/confirm/result'
 
 function bankRunner(ctx: AgentContext, planId: string): NodeRunner {
   return {
@@ -59,9 +61,62 @@ export async function startPlan(ctx: AgentContext, input: unknown, allowedTools:
 }
 
 export async function resumePlan(ctx: AgentContext, planId: string, nodeId: string, output: unknown) {
-  const state = await resume(await load(ctx, planId), nodeId, output, bankRunner(ctx, planId))
-  await persist(ctx, state)
-  return state
+  return withUserExecutionLock(`plan:${planId}`, async () => {
+    const current = await load(ctx, planId)
+    if (current.nodes[nodeId]?.status === 'done') return current
+    if (current.status === 'paused') throw new Error('任务已暂停')
+    const state = await resume(current, nodeId, output, bankRunner(ctx, planId))
+    await persist(ctx, state)
+    return state
+  })
+}
+
+export async function cancelActionAndPlan(ctx: AgentContext, actionId: string) {
+  return withUserExecutionLock(ctx.userId, async () => {
+    const [row] = await db.select().from(schema.pendingActions).where(and(eq(schema.pendingActions.id, actionId), eq(schema.pendingActions.userId, ctx.userId)))
+    if (!row || row.status !== 'pending') throw new Error('该操作不存在或已处理')
+    await cancelPending(ctx, actionId)
+    return row.planId && row.nodeId ? rejectPlanNode(ctx, row.planId, row.nodeId) : undefined
+  })
+}
+
+export async function controlPlan(ctx: AgentContext, planId: string, command: 'pause' | 'resume' | 'cancel' | 'complete_handoff' | 'acknowledge_failure', note = '') {
+  return withUserExecutionLock(ctx.userId, () => withUserExecutionLock(`plan:${planId}`, async () => {
+    let state = await load(ctx, planId)
+    if (['completed', 'compensated'].includes(state.status)) throw new Error('计划已结束')
+    if (state.status === 'failed' || command === 'acknowledge_failure') {
+      if (state.status !== 'failed' || command !== 'acknowledge_failure' || !note.trim()) throw new Error('失败计划不能继续执行，请填写人工核对结果')
+      state.manualReview = { note: note.trim(), at: new Date().toISOString() }
+      await persist(ctx, state)
+      await audit(ctx, 'handoff', { planId, resolved: true, ...state.manualReview })
+      return state
+    }
+    if (command === 'pause') state.status = 'paused'
+    else if (command === 'cancel') {
+      const node = state.plan.nodes.find((n) => ['pending', 'suspended', 'handoff'].includes(state.nodes[n.id].status))
+      if (!node) throw new Error('没有可取消的待执行节点')
+      state = await reject(state, node.id, bankRunner(ctx, planId))
+    } else {
+      if (command === 'complete_handoff') {
+        const node = state.plan.nodes.find((n) => state.nodes[n.id].status === 'handoff')
+        if (!node || !note.trim()) throw new Error('请填写人工处理说明')
+        state.nodes[node.id] = { status: 'done', output: { operatorNote: note, confirmedBy: 'account_owner' } }
+        state.completed.push(node.id)
+        await audit(ctx, 'handoff', { planId, nodeId: node.id, resolved: true, operatorNote: note })
+      } else if (state.status !== 'paused' && state.status !== 'suspended') throw new Error('请先完成对应人工处理或核对')
+      for (const [nodeId, node] of Object.entries(state.nodes)) if (node.status === 'suspended' && node.actionId) {
+        const receipt = await getConfirmationResult(ctx.userId, node.actionId)
+        if (receipt.status === 'completed') { state.nodes[nodeId] = { status: 'done', output: receipt.output }; if (!state.completed.includes(nodeId)) state.completed.push(nodeId) }
+        else if (['expired', 'cancelled', 'not_found'].includes(receipt.status)) state.nodes[nodeId] = { status: 'pending' }
+      }
+      state.status = 'running'
+      if (Object.values(state.nodes).some((node) => node.status === 'handoff')) state.status = 'handoff'
+      else state = await advance(state, bankRunner(ctx, planId))
+    }
+    await persist(ctx, state)
+    await audit(ctx, 'plan_control', { planId, command, status: state.status })
+    return state
+  }))
 }
 
 export async function rejectPlanNode(ctx: AgentContext, planId: string, nodeId: string) {

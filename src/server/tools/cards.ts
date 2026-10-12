@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { defineBankTool } from './define'
-import { cardLabel, findCards, ownProfile, repayCredit, resolveCard, saveCardRemark } from '#/server/cards/service'
+import { cardLabel, changeCreditLimit, createUserCard, findCards, ownProfile, repayCredit, resolveCard, saveCardRemark } from '#/server/cards/service'
 import { reverseTransfer, settleTransfer, transferSummary } from '#/server/payments/service'
 
 export const resolveMyCards = defineBankTool({
@@ -75,4 +75,19 @@ export const repayCreditCard = defineBankTool({
   execute: (a, ctx) => repayCredit(a as Repayment, ctx),
 })
 
-export const CARD_TOOLS = [resolveMyCards, transferBetweenCards, setCardRemark, repayCreditCard]
+export const applyCard = defineBankTool({
+  name: 'apply_card', kind: 'write', baseRisk: 'yellow',
+  description: '申请一张文财模拟银行卡，kind=debit 储蓄卡/credit 信用卡，可添加备注。须用户确认，新卡独立账户零余额，模拟信用卡初始额度20000元。',
+  inputSchema: z.object({ kind: z.enum(['debit', 'credit']), remark: z.string().trim().max(30).default('') }),
+  summarize: async (a) => ({ title: '确认申请模拟银行卡', fields: [{ label: '类型', value: a.kind === 'credit' ? '信用卡' : '储蓄卡' }, { label: '备注', value: a.remark || '无备注' }, ...(a.kind === 'credit' ? [{ label: '初始模拟额度', value: '¥20,000.00' }] : []), { label: '说明', value: '文财模拟卡，创建独立零余额账户' }] }),
+  execute: (a, ctx) => createUserCard(ctx.userId, a.kind, a.remark),
+})
+export const adjustCreditLimit = defineBankTool({
+  name: 'adjust_credit_limit', kind: 'write', baseRisk: 'red',
+  description: '调整本人模拟信用卡授信总额度，单位元，不能低于待还金额。不是每日交易限额，须强验证。',
+  inputSchema: z.object({ cardId: z.string(), creditLimit: z.number().positive().max(200_000) }),
+  summarize: async (a, ctx) => { const card = await ownProfile(ctx.userId, a.cardId); if (card.kind !== 'credit') throw new Error('请选择信用卡'); return { title: '确认调整信用额度', fields: [{ label: '信用卡', value: cardLabel(card) }, { label: '原额度', value: `¥${(card.creditLimitCents / 100).toFixed(2)}` }, { label: '新额度', value: `¥${a.creditLimit.toFixed(2)}` }] } },
+  execute: (a, ctx) => changeCreditLimit(ctx.userId, a.cardId, Math.round(a.creditLimit * 100)),
+  compensate: async (a, out, ctx) => { await changeCreditLimit(ctx.userId, a.cardId, Math.round(out.previousLimit * 100)) },
+})
+export const CARD_TOOLS = [resolveMyCards, transferBetweenCards, setCardRemark, repayCreditCard, applyCard, adjustCreditLimit]

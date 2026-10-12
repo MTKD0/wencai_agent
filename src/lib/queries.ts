@@ -111,9 +111,10 @@ export interface ConfirmResponse {
   code?: string
   message?: string
   output?: unknown
-  plan?: unknown
+  plan?: import('#/server/executor/executor').PlanState
   actionId?: string
   userId?: string
+  requiredLevel?: 'red'
 }
 
 /** 服务端的确认失败。code 让 UI 判断能否重试（step_up_failed 可重试）。 */
@@ -125,14 +126,14 @@ export class ConfirmError extends Error {
   }
 }
 
-export type StepUpPayload = { method: 'password'; password: string } | { method: 'passkey'; response: unknown }
+export type StepUpPayload = import('#/server/auth/step-up').StrongStepUp
 
 /**
  * 服务端错误码里，哪些还允许用户再试一次。
  * 其余（not_found / forbidden / tampered / expired / already_used / locked）都是终态：
  * 该操作已经不能被执行，重试只会再次被拒，UI 应该直接收起到结束态。
  */
-const RETRYABLE_CODES = new Set(['step_up_required', 'step_up_failed'])
+const RETRYABLE_CODES = new Set(['step_up_required', 'step_up_failed', 'plan_paused'])
 
 export function isRetryableConfirmError(error: unknown): boolean {
   return error instanceof ConfirmError && RETRYABLE_CODES.has(error.data.code ?? '')
@@ -154,12 +155,14 @@ export function useConfirmAction(actionId: string) {
     },
     onSuccess: (data) => {
       void qc.invalidateQueries({ queryKey: ['dashboard'] })
+      void qc.invalidateQueries({ queryKey: ['plans'] })
       if (data.actionId === actionId && data.userId) notifyConfirmation({ actionId, userId: data.userId })
     },
   })
 }
 
 export function useCancelAction(actionId: string) {
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: async () => {
       const res = await fetch('/api/confirm', {
@@ -171,6 +174,10 @@ export function useCancelAction(actionId: string) {
       const data = (await res.json()) as ConfirmResponse
       if (!data.ok) throw new ConfirmError(data.message ?? data.code ?? '取消失败', data)
       return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['plans'] })
+      void qc.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

@@ -9,6 +9,7 @@ import { BankCard } from '#/components/ui/BankCard'
 import { Reveal } from '#/components/ui/motion'
 import { normalizeChartData } from '#/components/ui/charts'
 import { FinancialReport } from '#/components/banking/FinancialReport'
+import { useQuery } from '@tanstack/react-query'
 
 export interface ToolUIPart {
   type: `tool-${string}`
@@ -36,6 +37,16 @@ const TOOL_LABEL: Record<string, string> = {
   transfer_between_cards: '银行卡互转',
   set_card_remark: '修改卡片备注',
   repay_credit_card: '信用卡还款',
+  apply_card: '申请银行卡',
+  adjust_credit_limit: '调整信用额度',
+  detect_subscriptions: '识别周期扣款',
+  save_detected_subscription: '管理识别的订阅',
+  list_notifications: '查看提醒',
+  list_split_requests: '查看待付款AA',
+  pay_split_request: '支付AA',
+  create_birthday_plan: '创建生日计划',
+  execute_birthday_order: '预订生日礼品',
+  list_birthday_plans: '查看生日计划',
   lock_card: '临时锁卡',
   unlock_card: '解锁卡片',
   report_card_lost: '挂失',
@@ -265,17 +276,24 @@ const NODE_ICON: Record<string, string> = {
 }
 
 function PlanView({ state }: { state: PlanState }) {
+  const plans = useQuery({ queryKey: ['plans'], queryFn: async () => { const res = await fetch('/api/plans'); if (!res.ok) throw new Error('无法读取计划'); return res.json() as Promise<{ plans: { state: PlanState }[] }> } })
+  const latest = plans.data?.plans.find((p) => p.state.id === state.id)?.state ?? state
   return (
     <div className="space-y-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
       <p className="m-0 font-semibold text-[var(--sea-ink)]">📋 {state.plan.goal}</p>
       <ol className="m-0 list-none space-y-1 p-0 text-sm">
         {state.plan.nodes.map((n) => (
           <li key={n.id}>
-            {NODE_ICON[state.nodes[n.id].status]} {n.note ?? n.tool ?? '转人工'}
+            {NODE_ICON[latest.nodes[n.id].status]} {n.note ?? n.tool ?? '转人工'}
           </li>
         ))}
       </ol>
-      {/* TODO: 确认后用 /api/confirm 返回的新计划状态刷新本视图 */}
+        {Object.entries(latest.nodes).filter(([, node]) => node.status === 'suspended').map(([id, node]) => {
+          const outcome = node.output as ToolOutcome | undefined
+          const definition = latest.plan.nodes.find((item) => item.id === id)
+          return outcome && <Outcome key={`${id}-${node.actionId}`} label={definition?.note ?? '核对操作'} tool={definition?.tool ?? ''} outcome={outcome} />
+        })}
+      <p className="text-xs demo-muted">可在生活页的任务中心暂停、恢复或进行人工处理。</p>
     </div>
   )
 }

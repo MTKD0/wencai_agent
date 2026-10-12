@@ -74,10 +74,11 @@ export class AdminApiError extends Error {
 }
 
 const BASE = '/api/admin'
+const accessHeaders = (): Record<string, string> => typeof window !== 'undefined' && sessionStorage.getItem('wencai_admin_token') ? { authorization: `Bearer ${sessionStorage.getItem('wencai_admin_token')}` } : {}
 
 async function get<T>(action: string, params: Record<string, string> = {}): Promise<T> {
   const qs = new URLSearchParams({ action, ...params }).toString()
-  const res = await fetch(`${BASE}?${qs}`)
+  const res = await fetch(`${BASE}?${qs}`, { headers: accessHeaders() })
   const body = await res.json()
   if (!res.ok) throw new AdminApiError(body.error?.code ?? 'ERROR', body.error?.message ?? res.statusText)
   return body.data as T
@@ -86,7 +87,7 @@ async function get<T>(action: string, params: Record<string, string> = {}): Prom
 async function post<T>(userId: string, command: AdminCommand): Promise<T> {
   const res = await fetch(BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-admin-user': userId },
+    headers: { ...accessHeaders(), 'Content-Type': 'application/json', 'x-admin-user': userId },
     body: JSON.stringify(command),
   })
   const body = await res.json()

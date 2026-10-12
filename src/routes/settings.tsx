@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { authClient, useSession } from '#/lib/auth-client'
 import { UnauthorizedError, usePasskeyDelete, useSecurityAction, useSettings } from '#/lib/queries'
 import ThemeToggle from '#/components/ThemeToggle'
+import { useStrongVerification } from '#/components/ui/StrongVerification'
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
 
@@ -68,10 +69,11 @@ interface BodyProps {
   onSignOut: () => Promise<void>
 }
 
-function SettingsBody({ data, currentSessionId, password, setPassword, busy, onAction, onDeletePasskey, onSignOut }: BodyProps) {
+function SettingsBody({ data, currentSessionId, password, setPassword, setError, busy, onAction, onDeletePasskey, onSignOut }: BodyProps) {
+  const verification = useStrongVerification({ purpose: 'set_tx_password', password }, busy)
   if (!data) return null
   const { stepUp } = data
-  const methods = [stepUp.password ? '交易密码' : null, stepUp.passkey ? 'Passkey' : null].filter(Boolean)
+  const methods = [stepUp.passkey ? 'Passkey' : null, '绑定手机号短信（需短信通道）'].filter(Boolean)
 
   return (
     <>
@@ -121,11 +123,14 @@ function SettingsBody({ data, currentSessionId, password, setPassword, busy, onA
         <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">强验证方式</h2>
         <p className="m-0 text-xs demo-muted">当前可用：{methods.length ? methods.join(' + ') : '无（请联系客服）'}</p>
         <form
-          className="flex gap-2"
-          onSubmit={(e) => {
+          className="grid gap-2"
+          onSubmit={async (e) => {
             e.preventDefault()
-            onAction({ action: 'set_tx_password', password })
-            setPassword('')
+            try {
+              const stepUp = await verification.getProof()
+              onAction({ action: 'set_tx_password', password, stepUp })
+              setPassword('')
+            } catch (error) { setError(error instanceof Error ? error.message : '验证失败') }
           }}
         >
           <input
@@ -134,9 +139,11 @@ function SettingsBody({ data, currentSessionId, password, setPassword, busy, onA
             maxLength={6}
             placeholder="设置 6 位交易密码"
             value={password}
+            disabled={busy || verification.verifying}
             onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
-          <button className="demo-button shrink-0" type="submit" disabled={busy || password.length !== 6}>
+          {verification.controls}
+          <button className="demo-button shrink-0" type="submit" disabled={busy || password.length !== 6 || !verification.ready}>
             保存
           </button>
         </form>

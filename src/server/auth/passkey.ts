@@ -27,7 +27,7 @@ export async function registrationOptions(userId: string, userName: string) {
     userName,
     attestationType: 'none',
     excludeCredentials: existing.map((p) => ({ id: p.credentialId, transports: p.transports ? (JSON.parse(p.transports) as never) : undefined })),
-    authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' },
+    authenticatorSelection: { residentKey: 'preferred', userVerification: 'required' },
   })
 }
 
@@ -37,7 +37,7 @@ export async function verifyRegistration(userId: string, response: RegistrationR
     expectedChallenge,
     expectedOrigin: ORIGIN,
     expectedRPID: RP_ID,
-    requireUserVerification: false,
+    requireUserVerification: true,
   })
   if (!verification.verified || !verification.registrationInfo) return false
   const { credential } = verification.registrationInfo
@@ -59,12 +59,12 @@ export async function authenticationOptions(userId: string) {
   return generateAuthenticationOptions({
     rpID: RP_ID,
     allowCredentials: credentials.map((p) => ({ id: p.credentialId, transports: p.transports ? (JSON.parse(p.transports) as never) : undefined })),
-    userVerification: 'preferred',
+    userVerification: 'required',
   })
 }
 
 /** 校验 Passkey 签名，成功则推进计数器（防重放） */
-export async function verifyPasskeyAssertion(userId: string, response: unknown): Promise<boolean> {
+export async function verifyPasskeyAssertion(userId: string, response: unknown, scope = 'general'): Promise<boolean> {
   if (!response || typeof response !== 'object') return false
   const assertion = response as AuthenticationResponseJSON
   if (!assertion.id) return false
@@ -75,7 +75,7 @@ export async function verifyPasskeyAssertion(userId: string, response: unknown):
   if (!row) return false
 
   // challenge 由 /api/passkey/options 签发并缓存在内存，见 challenge.ts
-  const expectedChallenge = consumeChallenge(userId, 'auth')
+  const expectedChallenge = consumeChallenge(userId, 'auth', scope)
   if (!expectedChallenge) return false
 
   const verification = await verifyAuthenticationResponse({
@@ -89,7 +89,7 @@ export async function verifyPasskeyAssertion(userId: string, response: unknown):
       counter: row.counter,
       transports: row.transports ? (JSON.parse(row.transports) as never) : undefined,
     },
-    requireUserVerification: false,
+    requireUserVerification: true,
   })
   if (!verification.verified) return false
   await db.update(authTables.passkeys).set({ counter: verification.authenticationInfo.newCounter, lastUsedAt: new Date() }).where(eq(authTables.passkeys.id, row.id))

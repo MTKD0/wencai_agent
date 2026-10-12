@@ -12,8 +12,8 @@ export async function collectFacts(params: {
   now?: Date
 }): Promise<PolicyFacts> {
   const now = params.now ?? new Date()
-  const startOfDay = new Date(now)
-  startOfDay.setHours(0, 0, 0, 0)
+  const startOfDay = new Date(Math.floor((now.getTime() + 8 * 3600_000) / DAY) * DAY - 8 * 3600_000)
+  const since = new Date(Math.min(startOfDay.getTime(), now.getTime() - 10 * 60_000))
 
   const [user] = await db.select().from(schema.users).where(eq(schema.users.id, params.userId))
   const userAccounts = await db
@@ -30,13 +30,14 @@ export async function collectFacts(params: {
       .where(
         and(
           eq(schema.transactions.accountId, id),
-          inArray(schema.transactions.category, ['转账', '信用卡还款']),
+          inArray(schema.transactions.category, ['转账', '信用卡还款', '生日订购']),
           lt(schema.transactions.amountCents, 0),
-          gte(schema.transactions.occurredAt, startOfDay),
+          gte(schema.transactions.occurredAt, since),
+          lt(schema.transactions.occurredAt, new Date(now.getTime() + 1)),
         ),
       )
     for (const tx of todays) {
-      dailyOutgoingCents += -tx.amountCents
+      if (tx.occurredAt >= startOfDay) dailyOutgoingCents += -tx.amountCents
       if (now.getTime() - tx.occurredAt.getTime() < 10 * 60 * 1000) recentTransferCount++
     }
   }

@@ -11,7 +11,7 @@ export interface NodeState {
   error?: string
 }
 
-export type PlanStatus = 'running' | 'suspended' | 'completed' | 'failed' | 'compensated' | 'handoff'
+export type PlanStatus = 'running' | 'suspended' | 'paused' | 'completed' | 'failed' | 'compensated' | 'handoff'
 
 /** 可序列化的计划状态，挂起时整体持久化，确认后据此恢复 */
 export interface PlanState {
@@ -21,6 +21,7 @@ export interface PlanState {
   nodes: Record<string, NodeState>
   /** 已完成节点的完成顺序，补偿时逆序执行 */
   completed: string[]
+  manualReview?: { note: string; at: string }
 }
 
 /** 执行器与工具层的边界，便于用假实现做单测 */
