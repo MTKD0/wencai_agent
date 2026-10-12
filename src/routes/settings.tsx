@@ -5,6 +5,11 @@ import { authClient, useSession } from '#/lib/auth-client'
 import { UnauthorizedError, usePasskeyDelete, useSecurityAction, useSettings } from '#/lib/queries'
 import ThemeToggle from '#/components/ThemeToggle'
 import { useStrongVerification } from '#/components/ui/StrongVerification'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { ArrowLeft, Laptop, KeyRound, AlertCircle, Loader2 } from 'lucide-react'
 
 export const Route = createFileRoute('/settings')({ component: SettingsPage })
 
@@ -18,40 +23,47 @@ function SettingsPage() {
   const [error, setError] = useState('')
 
   const body = (() => {
-    if (sessionPending) return <Muted>加载中…</Muted>
+    if (sessionPending) return <Muted>正在加载安全配置…</Muted>
     if (!session) return <Muted>请先登录后再查看安全设置。</Muted>
-    if (settings.isPending) return <Muted>加载中…</Muted>
+    if (settings.isPending) return <Muted>正在加载安全配置…</Muted>
     if (settings.error) {
       if (settings.error instanceof UnauthorizedError) return <Muted>登录已过期，请重新登录。</Muted>
       return <Muted>加载失败：{settings.error.message}</Muted>
     }
-    return <SettingsBody
-      data={settings.data}
-      currentSessionId={session.session.id}
-      password={password}
-      setPassword={setPassword}
-      error={error}
-      setError={setError}
-      busy={securityAction.isPending || deletePasskey.isPending}
-      onAction={(body) => {
-        setError('')
-        securityAction.mutate(body, { onError: (e) => setError(e.message) })
-      }}
-      onDeletePasskey={(id) => {
-        setError('')
-        deletePasskey.mutate(id, { onError: (e) => setError(e.message) })
-      }}
-      onSignOut={async () => {
-        await authClient.signOut()
-        navigate({ to: '/login' })
-      }}
-    />
+    return (
+      <SettingsBody
+        data={settings.data}
+        currentSessionId={session.session.id}
+        password={password}
+        setPassword={setPassword}
+        error={error}
+        setError={setError}
+        busy={securityAction.isPending || deletePasskey.isPending}
+        onAction={(body) => {
+          setError('')
+          securityAction.mutate(body, { onError: (e) => setError(e.message) })
+        }}
+        onDeletePasskey={(id) => {
+          setError('')
+          deletePasskey.mutate(id, { onError: (e) => setError(e.message) })
+        }}
+        onSignOut={async () => {
+          await authClient.signOut()
+          navigate({ to: '/login' })
+        }}
+      />
+    )
   })()
 
   return (
     <Shell>
       {body}
-      {error && <p className="m-0 text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive" role="alert">
+          <AlertCircle className="size-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
     </Shell>
   )
 }
@@ -76,92 +88,161 @@ function SettingsBody({ data, currentSessionId, password, setPassword, setError,
   const methods = [stepUp.passkey ? 'Passkey' : null, '绑定手机号短信（需短信通道）'].filter(Boolean)
 
   return (
-    <>
-      <section className="space-y-2">
-        <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">账号</h2>
-        <p className="m-0 text-sm demo-muted">{data.user.name}</p>
-        <button className="text-xs underline demo-muted" type="button" onClick={() => void onSignOut()}>
-          退出登录
-        </button>
-      </section>
+    <div className="space-y-6">
+      {/* 账号信息 */}
+      <Card className="border-border bg-card shadow-xs">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold">账号与身份</CardTitle>
+            <Badge variant="outline" className="text-xs">已认证</Badge>
+          </div>
+          <CardDescription className="text-xs">个人账户基本安全身份</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between pt-0">
+          <div>
+            <div className="font-semibold text-foreground text-sm">{data.user.name}</div>
+            <div className="text-xs text-muted-foreground">用户唯一标识: {data.user.id}</div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => void onSignOut()} className="text-xs">
+            退出登录
+          </Button>
+        </CardContent>
+      </Card>
 
-      <section className="space-y-2">
-        <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">登录设备</h2>
-        <p className="m-0 text-xs demo-muted">踢掉其他设备后，那些设备上的会话立即失效。</p>
-        {data.sessions.map((s) => (
-          <div key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] p-3 text-xs">
-            <div className="min-w-0">
-              <p className="m-0 truncate text-[var(--sea-ink)]">{s.id === currentSessionId ? '当前设备' : (s.userAgent ?? '未知设备')}</p>
-              <p className="m-0 demo-muted">
-                {s.ipAddress ?? '未知 IP'} · 到期 {new Date(s.expiresAt).toLocaleString('zh-CN')}
-              </p>
+      {/* 登录设备 */}
+      <Card className="border-border bg-card shadow-xs">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">登录设备管理</CardTitle>
+          <CardDescription className="text-xs">移除未授权的设备，该设备上的登录会话将立即失效</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 pt-0">
+          {data.sessions.map((s) => (
+            <div key={s.id} className="flex items-center justify-between gap-3 rounded-lg border border-border/70 p-3 text-xs bg-muted/20">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Laptop className="size-3.5 text-muted-foreground" />
+                  <span className="font-medium text-foreground truncate">
+                    {s.id === currentSessionId ? '当前设备' : (s.userAgent ?? '未知设备')}
+                  </span>
+                  {s.id === currentSessionId && <Badge variant="secondary" className="text-[10px] py-0">本机</Badge>}
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">
+                  {s.ipAddress ?? '未知 IP'} · 到期 {new Date(s.expiresAt).toLocaleDateString('zh-CN')}
+                </div>
+              </div>
+              {s.id !== currentSessionId && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => onAction({ action: 'revoke_session', sessionId: s.id })}
+                  className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                >
+                  下线
+                </Button>
+              )}
             </div>
-            {s.id !== currentSessionId && (
-              <button className="shrink-0 text-red-600 underline" type="button" disabled={busy} onClick={() => onAction({ action: 'revoke_session', sessionId: s.id })}>
-                踢掉
-              </button>
-            )}
-          </div>
-        ))}
-      </section>
+          ))}
+        </CardContent>
+      </Card>
 
-      <section className="space-y-2">
-        <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">渠道绑定</h2>
-        <p className="m-0 text-xs demo-muted">绑定后可在该渠道代办业务；红色操作仍需回到 App 强验证。</p>
-        {data.bindings.length === 0 && <p className="m-0 text-xs demo-muted">未绑定任何渠道。</p>}
-        {data.bindings.map((b) => (
-          <div key={b.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] p-3 text-xs">
-            <span className="text-[var(--sea-ink)]">{b.channel === 'lark' ? '飞书' : b.channel}</span>
-            <button className="shrink-0 text-red-600 underline" type="button" disabled={busy} onClick={() => onAction({ action: 'revoke_binding', bindingId: b.id })}>
-              解绑
-            </button>
-          </div>
-        ))}
-      </section>
+      {/* 渠道绑定 */}
+      <Card className="border-border bg-card shadow-xs">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">第三方渠道绑定</CardTitle>
+          <CardDescription className="text-xs">绑定后可在外部协同办公渠道办理业务，高危操作仍需回到 App 进行二次强验证</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 pt-0">
+          {data.bindings.length === 0 && <p className="text-xs text-muted-foreground py-2">暂未绑定任何外部渠道。</p>}
+          {data.bindings.map((b) => (
+            <div key={b.id} className="flex items-center justify-between gap-3 rounded-lg border border-border/70 p-3 text-xs bg-muted/20">
+              <span className="font-medium text-foreground">{b.channel === 'lark' ? '飞书机器人' : b.channel}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={() => onAction({ action: 'revoke_binding', bindingId: b.id })}
+                className="h-7 text-xs text-destructive hover:bg-destructive/10"
+              >
+                解绑
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-      <section className="space-y-2">
-        <h2 className="m-0 text-sm font-semibold text-[var(--sea-ink)]">强验证方式</h2>
-        <p className="m-0 text-xs demo-muted">当前可用：{methods.length ? methods.join(' + ') : '无（请联系客服）'}</p>
-        <form
-          className="grid gap-2"
-          onSubmit={async (e) => {
-            e.preventDefault()
-            try {
-              const stepUp = await verification.getProof()
-              onAction({ action: 'set_tx_password', password, stepUp })
-              setPassword('')
-            } catch (error) { setError(error instanceof Error ? error.message : '验证失败') }
-          }}
-        >
-          <input
-            className="demo-input"
-            inputMode="numeric"
-            maxLength={6}
-            placeholder="设置 6 位交易密码"
-            value={password}
-            disabled={busy || verification.verifying}
-            onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          />
-          {verification.controls}
-          <button className="demo-button shrink-0" type="submit" disabled={busy || password.length !== 6 || !verification.ready}>
-            保存
-          </button>
-        </form>
-        {data.passkeys.map((p) => (
-          <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] p-3 text-xs">
-            <span className="text-[var(--sea-ink)]">Passkey{p.backedUp ? '（已同步）' : ''}</span>
-            <button className="shrink-0 text-red-600 underline" type="button" disabled={busy} onClick={() => onDeletePasskey(p.id)}>
-              删除
-            </button>
+      {/* 强验证与交易密码 */}
+      <Card className="border-border bg-card shadow-xs">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">强验证与安全凭据</CardTitle>
+          <CardDescription className="text-xs">
+            当前支持：{methods.length ? methods.join(' · ') : '无'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-0">
+          <form
+            className="space-y-3"
+            onSubmit={async (e) => {
+              e.preventDefault()
+              try {
+                const stepUp = await verification.getProof()
+                onAction({ action: 'set_tx_password', password, stepUp })
+                setPassword('')
+              } catch (error) {
+                setError(error instanceof Error ? error.message : '验证失败')
+              }
+            }}
+          >
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">设置或修改 6 位交易密码</label>
+              <Input
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="请输入 6 位数字密码"
+                value={password}
+                disabled={busy || verification.verifying}
+                onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="font-mono tracking-widest text-center"
+              />
+            </div>
+            {verification.controls}
+            <Button className="w-full" type="submit" disabled={busy || password.length !== 6 || !verification.ready}>
+              保存交易密码
+            </Button>
+          </form>
+
+          {data.passkeys.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-border/50">
+              <span className="text-xs font-semibold text-foreground">已注册的 Passkey</span>
+              {data.passkeys.map((p) => (
+                <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border border-border/70 p-3 text-xs bg-muted/20">
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="size-3.5 text-muted-foreground" />
+                    <span className="font-medium text-foreground">Passkey 生物认证凭证{p.backedUp ? '（已云同步）' : ''}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => onDeletePasskey(p.id)}
+                    className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                  >
+                    删除
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="pt-2">
+            <RegisterPasskeyButton />
           </div>
-        ))}
-        <RegisterPasskeyButton />
-      </section>
-    </>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 
-/** Passkey 注册需要浏览器 API，用 mutation 而非缓存查询 */
 function RegisterPasskeyButton() {
   const register = useMutation({
     mutationFn: async () => {
@@ -182,28 +263,42 @@ function RegisterPasskeyButton() {
   })
   return (
     <>
-      <button className="demo-button" type="button" disabled={register.isPending} onClick={() => register.mutate()}>
-        {register.isPending ? '注册中…' : '注册 Passkey'}
-      </button>
-      {register.error && <p className="m-0 text-xs text-red-600">{register.error.message}</p>}
+      <Button
+        variant="outline"
+        className="w-full gap-2"
+        type="button"
+        disabled={register.isPending}
+        onClick={() => register.mutate()}
+      >
+        {register.isPending ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+        {register.isPending ? '正在调起系统认证…' : '添加新的 Passkey 凭据'}
+      </Button>
+      {register.error && (
+        <p className="mt-2 text-xs text-destructive text-center">{register.error.message}</p>
+      )}
     </>
   )
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex h-dvh max-w-md flex-col bg-[var(--bg-base)]">
-      <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-        <a className="text-sm font-semibold text-[var(--sea-ink)]" href="/">
-          ← 文财
-        </a>
-        <ThemeToggle />
+    <div className="min-h-screen w-full bg-background text-foreground flex flex-col font-sans">
+      <header className="sticky top-0 z-30 w-full border-b border-border bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 sm:px-6 h-14">
+          <Button variant="ghost" size="sm" asChild className="gap-1.5 -ml-2 text-xs font-semibold">
+            <a href="/">
+              <ArrowLeft className="size-3.5" />
+              返回文财首页
+            </a>
+          </Button>
+          <ThemeToggle />
+        </div>
       </header>
-      <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-6">{children}</div>
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
     </div>
   )
 }
 
 function Muted({ children }: { children: React.ReactNode }) {
-  return <p className="m-0 text-sm demo-muted">{children}</p>
+  return <div className="text-center py-16 text-sm text-muted-foreground">{children}</div>
 }

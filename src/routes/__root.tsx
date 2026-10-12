@@ -25,19 +25,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   }),
   shellComponent: RootDocument,
   notFoundComponent: () => (
-    <div className="mx-auto flex h-dvh max-w-md flex-col items-center justify-center gap-3 bg-[var(--bg-base)] px-4">
-      <p className="m-0 text-lg font-semibold text-[var(--sea-ink)]">页面不存在</p>
-      <a className="text-sm text-[var(--lagoon-deep)] underline" href="/">
-        返回文财
+    <div className="mx-auto flex h-dvh max-w-md flex-col items-center justify-center gap-4 bg-background px-4 text-center">
+      <p className="m-0 text-xl font-bold tracking-tight text-foreground">页面不存在</p>
+      <p className="m-0 text-xs text-muted-foreground">该页面可能已被移动或不存在。</p>
+      <a className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors" href="/">
+        返回文财首页
       </a>
     </div>
   ),
   errorComponent: ({ error }: { error: unknown }) => (
-    <div className="mx-auto flex h-dvh max-w-md flex-col items-center justify-center gap-3 bg-[var(--bg-base)] px-4">
-      <p className="m-0 text-lg font-semibold text-[var(--sea-ink)]">出错了</p>
-      <p className="m-0 text-center text-sm text-[var(--sea-ink-soft)]">{error instanceof Error ? error.message : '未知错误'}</p>
-      <a className="text-sm text-[var(--lagoon-deep)] underline" href="/">
-        返回文财
+    <div className="mx-auto flex h-dvh max-w-md flex-col items-center justify-center gap-4 bg-background px-4 text-center">
+      <p className="m-0 text-xl font-bold tracking-tight text-foreground">系统发生错误</p>
+      <p className="m-0 max-w-xs text-xs text-muted-foreground">{error instanceof Error ? error.message : '未知异常，请稍后重试'}</p>
+      <a className="inline-flex h-9 items-center justify-center rounded-full bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors" href="/">
+        返回文财首页
       </a>
     </div>
   ),

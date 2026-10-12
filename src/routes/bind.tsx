@@ -5,6 +5,9 @@ import { UnauthorizedError, useBindCode } from '#/lib/queries'
 import type { StepUpPayload } from '#/lib/queries'
 import ConfirmCard from '#/components/chat/ConfirmCard'
 import ThemeToggle from '#/components/ThemeToggle'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { ArrowLeft, Loader2, Link2, CheckCircle2 } from 'lucide-react'
 
 export const Route = createFileRoute('/bind')({
   component: BindPage,
@@ -18,14 +21,22 @@ function BindPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="mx-auto flex h-dvh max-w-md flex-col bg-[var(--bg-base)]">
-      <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-        <span className="text-sm font-semibold text-[var(--sea-ink)]">文财 · 绑定飞书</span>
-        <ThemeToggle />
+    <div className="min-h-screen w-full bg-background text-foreground flex flex-col font-sans">
+      <header className="sticky top-0 z-30 w-full border-b border-border bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-md items-center justify-between px-4 h-14">
+          <Button variant="ghost" size="sm" asChild className="gap-1.5 -ml-2 text-xs font-semibold">
+            <a href="/">
+              <ArrowLeft className="size-3.5" />
+              返回首页
+            </a>
+          </Button>
+          <span className="text-sm font-semibold">绑定外部渠道</span>
+          <ThemeToggle />
+        </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 px-4 py-6">
+      <main className="flex-1 max-w-md w-full mx-auto px-4 py-8 flex flex-col items-center justify-center">
         <Body code={code} bindCode={bindCode} sessionPending={sessionPending} hasSession={!!session} navigate={navigate} />
-      </div>
+      </main>
     </div>
   )
 }
@@ -45,37 +56,56 @@ function Body({
   hasSession: boolean
   navigate: Nav
 }) {
-  if (code.length === 0) return <p className="text-sm text-red-600">缺少绑定参数，请在飞书重新获取绑定链接。</p>
-  if (sessionPending) return <p className="text-sm demo-muted">加载中…</p>
-
-  if (bindCode.isPending) return <p className="text-sm demo-muted">正在校验绑定链接…</p>
-
-  if (bindCode.error) {
-    if (bindCode.error instanceof UnauthorizedError) return <LoginFirst navigate={navigate} />
+  if (code.length === 0) {
     return (
-      <div className="space-y-2">
-        <p className="m-0 text-sm text-red-600">{bindCode.error.message}</p>
-        <p className="m-0 text-xs demo-muted">请在飞书重新获取绑定链接。</p>
+      <Card className="w-full p-6 text-center space-y-3 border-border bg-card">
+        <p className="text-sm text-destructive font-medium">缺少绑定参数，请在飞书中重新发起绑定。</p>
+        <Button variant="outline" size="sm" onClick={() => navigate({ to: '/' })}>返回首页</Button>
+      </Card>
+    )
+  }
+  if (sessionPending || bindCode.isPending) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 space-y-3 text-muted-foreground">
+        <Loader2 className="size-6 animate-spin text-primary" />
+        <p className="text-xs">正在校验绑定授权…</p>
       </div>
     )
   }
 
+  if (bindCode.error) {
+    if (bindCode.error instanceof UnauthorizedError) return <LoginFirst navigate={navigate} />
+    return (
+      <Card className="w-full p-6 text-center space-y-3 border-border bg-card">
+        <p className="text-sm text-destructive font-medium">{bindCode.error.message}</p>
+        <p className="text-xs text-muted-foreground">请在飞书应用中重新获取授权链接。</p>
+        <Button variant="outline" size="sm" onClick={() => navigate({ to: '/' })}>返回首页</Button>
+      </Card>
+    )
+  }
+
   const info = bindCode.data
-  // 服务端说需要登录，但客户端已经判定有会话：让用户重进一次以带上 Cookie
   if (info?.needsLogin && !hasSession) return <LoginFirst navigate={navigate} />
 
   if (info?.alreadyBoundToOther) {
-    return <p className="text-sm text-red-600">该飞书账号已绑定到其他用户，请联系客服处理。</p>
+    return (
+      <Card className="w-full p-6 text-center space-y-3 border-border bg-card">
+        <p className="text-sm text-destructive font-medium">该飞书账号已绑定到其他用户，请联系客服处理。</p>
+        <Button variant="outline" size="sm" onClick={() => navigate({ to: '/' })}>返回首页</Button>
+      </Card>
+    )
   }
 
   if (!hasSession) return <LoginFirst navigate={navigate} />
   if (!info) return null
 
   return (
-    <>
-      {info.alreadyBoundToMe && <p className="m-0 text-sm demo-muted">当前飞书账号已绑定到你名下。</p>}
+    <div className="w-full space-y-4">
+      {info.alreadyBoundToMe && (
+        <p className="text-xs text-center text-muted-foreground">当前飞书账号已绑定到你名下。</p>
+      )}
       <BindConfirmCard code={code} navigate={navigate} />
-    </>
+    </div>
   )
 }
 
@@ -95,12 +125,18 @@ function BindConfirmCard({ code, navigate }: { code: string; navigate: Nav }) {
 
   if (bind.isSuccess) {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="m-0 text-sm text-[var(--sea-ink)]">✅ 绑定成功，现在可以在飞书中使用文财了。</p>
-        <button className="demo-button" type="button" onClick={() => navigate({ to: '/' })}>
+      <Card className="w-full p-6 text-center space-y-4 border-border bg-card">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+          <CheckCircle2 className="size-6" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-foreground">绑定成功</h2>
+          <p className="text-xs text-muted-foreground">现在可以在飞书机器人中快捷办理文财业务了。</p>
+        </div>
+        <Button className="w-full" onClick={() => navigate({ to: '/' })}>
           返回首页
-        </button>
-      </div>
+        </Button>
+      </Card>
     )
   }
 
@@ -113,12 +149,11 @@ function BindConfirmCard({ code, navigate }: { code: string; navigate: Nav }) {
         title: '确认绑定飞书账号',
         fields: [
           { label: '绑定后', value: '可在飞书内办理业务' },
-          { label: '限制', value: '红色操作仍需跳转 App 完成强验证' },
+          { label: '限制', value: '高危操作仍需跳转 App 完成强验证' },
         ],
       }}
       error={bind.error?.message}
       onConfirm={(stepUp) => {
-        // 红色操作的强验证方式是必填的，缺失说明前端状态异常，直接拒绝
         if (!stepUp) return
         bind.mutate(stepUp)
       }}
@@ -128,11 +163,17 @@ function BindConfirmCard({ code, navigate }: { code: string; navigate: Nav }) {
 
 function LoginFirst({ navigate }: { navigate: Nav }) {
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm demo-muted">请先登录文财，再完成绑定。</p>
-      <button className="demo-button" type="button" onClick={() => navigate({ to: '/login' })}>
-        去登录
-      </button>
-    </div>
+    <Card className="w-full p-6 text-center space-y-4 border-border bg-card">
+      <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary text-foreground">
+        <Link2 className="size-6" />
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-foreground">请先登录</h2>
+        <p className="text-xs text-muted-foreground">登录文财账户后，即可完成与外部渠道的授权绑定。</p>
+      </div>
+      <Button className="w-full" onClick={() => navigate({ to: '/login' })}>
+        前往登录
+      </Button>
+    </Card>
   )
 }

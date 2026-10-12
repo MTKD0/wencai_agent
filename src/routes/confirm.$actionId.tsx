@@ -32,25 +32,34 @@ function ConfirmPage() {
   const settled = confirm.isSuccess || (confirm.error !== null && !isRetryableConfirmError(confirm.error))
 
   return (
-    <div className="mx-auto max-w-md px-4 py-8">
-      <h1 className="mb-4 text-lg font-semibold text-[var(--sea-ink)]">文财 · 安全验证</h1>
-      {pending.isPending && <p className="text-sm demo-muted">加载中…</p>}
-      {pending.error instanceof UnauthorizedError && <p className="text-sm demo-muted">登录已过期，请重新登录后再操作。</p>}
-      {!pending.isPending && !ready && <p className="text-sm demo-muted">该操作不存在、已处理或已过期。</p>}
-      {ready && pending.data && (
-        <ConfirmCard
-          {...pending.data}
-          submitting={confirm.isPending || cancel.isPending}
-          error={settled ? undefined : confirm.error?.message}
-          done={confirm.isSuccess ? '操作已完成' : cancel.isSuccess ? '已取消' : settled ? confirm.error?.message : undefined}
-          doneState={confirm.isSuccess ? 'success' : cancel.isSuccess ? 'cancelled' : 'failed'}
-          onConfirm={async (stepUp?: StepUpPayload) => {
-            await confirm.mutateAsync(stepUp)
-          }}
-          onCancel={() => cancel.mutate()}
-        />
-      )}
-      {confirm.data?.plan && <div className="mt-4"><PlanView state={confirm.data.plan} /></div>}
+    <div className="min-h-screen w-full bg-background text-foreground flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-4">
+        <div className="text-center">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">文财 · 安全二次核验</h1>
+          <p className="text-xs text-muted-foreground mt-1">关键金融与高危业务需要你在此完成授权确认</p>
+        </div>
+        {pending.isPending && <p className="text-sm text-center text-muted-foreground py-8">正在读取操作详情…</p>}
+        {pending.error instanceof UnauthorizedError && (
+          <p className="text-sm text-center text-muted-foreground py-8">登录凭证已过期，请重新登录后再操作。</p>
+        )}
+        {!pending.isPending && !ready && (
+          <p className="text-sm text-center text-muted-foreground py-8">该操作不存在、已由其他会话处理或已过期。</p>
+        )}
+        {ready && pending.data && (
+          <ConfirmCard
+            {...pending.data}
+            submitting={confirm.isPending || cancel.isPending}
+            error={settled ? undefined : confirm.error?.message}
+            done={confirm.isSuccess ? '操作已完成' : cancel.isSuccess ? '已取消' : settled ? confirm.error?.message : undefined}
+            doneState={confirm.isSuccess ? 'success' : cancel.isSuccess ? 'cancelled' : 'failed'}
+            onConfirm={async (stepUp?: StepUpPayload) => {
+              await confirm.mutateAsync(stepUp)
+            }}
+            onCancel={() => cancel.mutate()}
+          />
+        )}
+        {confirm.data?.plan && <div className="mt-4"><PlanView state={confirm.data.plan} /></div>}
+      </div>
     </div>
   )
 }
