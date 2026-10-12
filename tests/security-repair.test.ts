@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { eq, inArray } from 'drizzle-orm'
 import { auth, db, schema } from '#/server/db/client'
 import { confirmPending } from '#/server/confirm/pending'
@@ -60,6 +60,8 @@ afterAll(async () => {
   await db.delete(auth.baUser).where(eq(auth.baUser.id, uid))
   await db.delete(schema.users).where(eq(schema.users.id, uid))
 })
+afterEach(() => vi.useRealTimers())
+
 describe('安全要求修复回归', () => {
   it('用户申请信用卡需确认；调额需强验证且不可低于待还款', async () => {
     const proposal = await runBankTool(applyCard, { kind: 'credit', remark: '旅行卡' }, ctx)
@@ -96,6 +98,11 @@ describe('安全要求修复回归', () => {
     expect((await db.select().from(schema.holdings).where(eq(schema.holdings.id, holdingId)))[0].principalCents).toBe(100_000)
   })
   it('两笔预先创建的 600 元确认单在执行时重新升级，强验证前不消费第二张', async () => {
+    // This case isolates daily accumulation; late-night policy has separate coverage.
+    const localDay = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10)
+    const noon = new Date(`${localDay}T04:00:00Z`)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(noon)
     const input = { fromAccountId: source, toAccountId: target, amountCents: 60_000 }
     const proposals = await Promise.all([runBankTool(transferBetweenAccounts, input, ctx), runBankTool(transferBetweenAccounts, input, ctx)])
     if (proposals.some((p) => p.status !== 'needs_confirmation')) throw new Error(JSON.stringify(proposals))
