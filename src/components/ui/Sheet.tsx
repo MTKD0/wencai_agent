@@ -1,172 +1,206 @@
-import { useEffect, useId, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
-import { X } from 'lucide-react'
+import * as React from "react"
+import { cn } from "cn"
+import { Dialog as SheetPrimitive } from "radix-ui"
 
-/** 保留对话子树；关闭时 inert，打开时约束焦点并支持 Escape。 */
-export function Sheet({
+import { Button } from "@/components/ui/button"
+import { XIcon } from "lucide-react"
+
+function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
+  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+}
+
+function SheetTrigger({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+}
+
+function SheetClose({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Close>) {
+  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
+}
+
+function SheetPortal({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Portal>) {
+  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
+}
+
+function SheetOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
+  return (
+    <SheetPrimitive.Overlay
+      data-slot="sheet-overlay"
+      className={cn(
+        "fixed inset-0 z-50 bg-black/40 backdrop-blur-xs duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SheetContent({
+  className,
+  children,
+  side = "bottom",
+  showCloseButton = true,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Content> & {
+  side?: "top" | "right" | "bottom" | "left"
+  showCloseButton?: boolean
+}) {
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        data-slot="sheet-content"
+        data-side={side}
+        className={cn(
+          "fixed z-50 flex flex-col bg-background/95 backdrop-blur-md text-foreground shadow-2xl transition duration-300 ease-out border-border",
+          // bottom side (原本从下面升起，小屏全宽，大屏精致居中底部卡片)
+          side === "bottom" &&
+            "inset-x-0 bottom-0 h-[88vh] max-h-[88dvh] rounded-t-[28px] border-t mx-auto sm:max-w-2xl lg:max-w-3xl data-open:animate-in data-open:slide-in-from-bottom data-closed:animate-out data-closed:slide-out-to-bottom",
+          // right side
+          side === "right" &&
+            "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-md lg:max-w-lg data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right",
+          // left side
+          side === "left" &&
+            "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-md data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left",
+          // top side
+          side === "top" &&
+            "inset-x-0 top-0 h-auto border-b data-open:animate-in data-open:slide-in-from-top data-closed:animate-out data-closed:slide-out-to-top",
+          className
+        )}
+        {...props}
+      >
+        {/* Luma 风格药丸把手 (仅在 bottom 模式渲染) */}
+        {side === "bottom" && (
+          <div className="mx-auto mt-2.5 mb-1 h-1.5 w-12 rounded-full bg-muted-foreground/20 shrink-0" />
+        )}
+        {children}
+        {showCloseButton && (
+          <SheetPrimitive.Close data-slot="sheet-close" asChild>
+            <Button
+              variant="ghost"
+              className="absolute top-4 right-4 bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground rounded-full size-8"
+              size="icon"
+            >
+              <XIcon className="size-4" />
+              <span className="sr-only">关闭</span>
+            </Button>
+          </SheetPrimitive.Close>
+        )}
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  )
+}
+
+function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-header"
+      className={cn("flex flex-col gap-1.5 px-6 py-3 border-b border-border/40", className)}
+      {...props}
+    />
+  )
+}
+
+function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-footer"
+      className={cn("mt-auto flex flex-col gap-2 p-6 border-t border-border/40", className)}
+      {...props}
+    />
+  )
+}
+
+function SheetTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Title>) {
+  return (
+    <SheetPrimitive.Title
+      data-slot="sheet-title"
+      className={cn(
+        "font-sans text-base font-semibold text-foreground tracking-tight",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SheetDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Description>) {
+  return (
+    <SheetPrimitive.Description
+      data-slot="sheet-description"
+      className={cn("text-xs text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
+
+export interface AdaptiveSheetProps {
+  open: boolean
+  onClose: () => void
+  title: string
+  children: React.ReactNode
+  className?: string
+  header?: React.ReactNode
+  side?: "top" | "right" | "bottom" | "left"
+}
+
+export function AdaptiveSheet({
   open,
   onClose,
   title,
   children,
-  className = '',
+  className = "",
   header,
-}: {
-  open: boolean
-  onClose: () => void
-  title: string
-  children: ReactNode
-  className?: string
-  header?: ReactNode
-}) {
-  const ref = useRef<HTMLElement>(null)
-  const closeRef = useRef(onClose)
-  closeRef.current = onClose
-  const id = useId()
-  const gesture = useRef<{ pointer: number; start: number; at: number; distance: number } | null>(null)
-  const [drag, setDrag] = useState(0)
-  const [dragging, setDragging] = useState(false)
-  useEffect(() => {
-    if (!open) {
-      gesture.current = null
-      setDrag(0)
-      setDragging(false)
-    }
-  }, [open])
-  const focusInitial = () => {
-    const panel = ref.current
-    ;(
-      panel?.querySelector<HTMLElement>('[data-autofocus]') ??
-      panel?.querySelector<HTMLElement>('button:not(:disabled)') ??
-      panel
-    )?.focus({ preventScroll: true })
-  }
-  useEffect(() => {
-    if (!open) return
-    const previous = document.activeElement as HTMLElement | null
-    const panel = ref.current
-    const focusable = () =>
-      [
-        ...(panel?.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]',
-        ) ?? []),
-      ].filter((element) => element.getClientRects().length > 0)
-    const frame = requestAnimationFrame(() =>
-      (panel?.querySelector<HTMLElement>('[data-autofocus]') ?? focusable()[0] ?? panel)?.focus({
-        preventScroll: true,
-      }),
-    )
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        closeRef.current()
-      }
-      if (event.key !== 'Tab') return
-      const elements = focusable()
-      const first = elements[0]
-      const last = elements.at(-1)
-      if (!first) {
-        event.preventDefault()
-        panel?.focus({ preventScroll: true })
-        return
-      }
-      if (!panel?.contains(document.activeElement)) {
-        event.preventDefault()
-        ;(event.shiftKey ? last : first)?.focus({ preventScroll: true })
-        return
-      }
-      if (
-        event.shiftKey &&
-        (document.activeElement === first || document.activeElement === panel)
-      ) {
-        event.preventDefault()
-        last?.focus({ preventScroll: true })
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus({ preventScroll: true })
-      }
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => {
-      cancelAnimationFrame(frame)
-      document.removeEventListener('keydown', handleKey)
-      previous?.focus({ preventScroll: true })
-    }
-  }, [open])
+  side = "bottom", // 默认严格使用 bottom，还原原汁原味的底部升起抽屉！
+}: AdaptiveSheetProps) {
   return (
-    <>
-      <button
-        className={`bank-sheet-backdrop${open ? ' is-open' : ''}`}
-        aria-label={`关闭${title}`}
-        onClick={onClose}
-        tabIndex={-1}
-        aria-hidden="true"
-      />
-      <section
-        ref={ref}
-        className={`bank-sheet ${className}${open ? ' is-open' : ''}${dragging ? ' is-dragging' : ''}`}
-        style={open && drag > 0 ? { transform: `translateY(${drag}px)` } : undefined}
-        role={open ? 'dialog' : undefined}
-        aria-modal={open ? true : undefined}
-        aria-labelledby={id}
-        aria-hidden={!open}
-        inert={!open}
-        tabIndex={-1}
-        onTransitionEnd={(event) => {
-          if (
-            open &&
-            event.target === ref.current &&
-            event.propertyName === 'transform' &&
-            !ref.current?.contains(document.activeElement)
-          )
-            focusInitial()
-        }}
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen: boolean) => {
+        if (!nextOpen) onClose()
+      }}
+    >
+      <SheetContent
+        side={side}
+        className={cn(
+          "flex flex-col p-0 transition-all duration-300",
+          className
+        )}
       >
-        <button type="button" className="bank-sheet-grip" aria-label={`下拉收起${title}`}
-          onClick={(event) => {
-            // 键盘和辅助技术仍可直接激活；鼠标轻触白条不会意外关闭。
-            if (event.detail === 0) closeRef.current()
-          }}
-          onPointerDown={(event) => {
-            if (!open || (event.pointerType === 'mouse' && event.button !== 0)) return
-            event.currentTarget.setPointerCapture(event.pointerId)
-            gesture.current = { pointer: event.pointerId, start: event.clientY, at: event.timeStamp, distance: 0 }
-            setDragging(true)
-          }}
-          onPointerMove={(event) => {
-            const current = gesture.current
-            if (!current || current.pointer !== event.pointerId) return
-            current.distance = Math.max(0, event.clientY - current.start)
-            setDrag(current.distance)
-          }}
-          onPointerUp={(event) => {
-            const current = gesture.current
-            if (!current || current.pointer !== event.pointerId) return
-            const distance = Math.max(0, event.clientY - current.start)
-            const velocity = distance / Math.max(1, event.timeStamp - current.at)
-            const threshold = Math.min(110, (ref.current?.clientHeight ?? 500) * 0.2)
-            gesture.current = null
-            setDragging(false)
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
-            if (distance >= threshold || (distance >= 32 && velocity > 0.65)) closeRef.current()
-            setDrag(0)
-          }}
-          onPointerCancel={() => { gesture.current = null; setDragging(false); setDrag(0) }}
-          onLostPointerCapture={() => {
-            if (gesture.current) { gesture.current = null; setDragging(false); setDrag(0) }
-          }}
-        ><span className="bank-sheet-handle" /></button>
-        <header className="bank-sheet-heading">
-          <div id={id}>{header ?? <h2>{title}</h2>}</div>
-          <button
-            className="bank-icon-button bank-lift"
-            aria-label={`关闭${title}`}
-            onClick={onClose}
-          >
-            <X size={21} />
-          </button>
-        </header>
-        {children}
-      </section>
-    </>
+        <SheetHeader className="px-6 py-3.5">
+          <SheetTitle>
+            {header ?? title}
+          </SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          {children}
+        </div>
+      </SheetContent>
+    </Sheet>
   )
+}
+
+export {
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
 }

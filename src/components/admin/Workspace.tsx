@@ -28,6 +28,8 @@ import type { Action } from './actions'
 import { adminApi } from './client'
 import { createActions } from './actions'
 import { dateTime, localDate, exportLedger, periodRows } from './utils'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { AdminOverview } from './views/Overview'
 import { AdminTransactions } from './views/Transactions'
 import { AdminTransfers } from './views/Transfers'
@@ -221,15 +223,13 @@ export function AdminWorkspace({
             </span>
           </div>
           <div className="topbar-right">
-            <button className="button button-outline button-sm account-switch" onClick={home}>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={home}>
               <UsersRound size={14} />
               <span>{s?.user.name ?? '切换账户'}</span>
-              切换
-            </button>
-            <span className="env-badge">
-              <i />
+            </Button>
+            <Badge variant="secondary" className="text-[11px] font-mono px-2 py-0.5">
               ADMIN
-            </span>
+            </Badge>
             <button
               className="notification"
               aria-label={`异常交易 ${unread} 笔`}
@@ -248,23 +248,26 @@ export function AdminWorkspace({
               <h1>{nav.name}</h1>
               <p>{descriptions[section]}</p>
             </div>
-            <div className="heading-actions">
-              <button
-                className="button button-outline button-icon"
+            <div className="heading-actions flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon-sm"
                 aria-label="刷新数据"
                 onClick={refresh}
                 disabled={query.isFetching}
               >
-                <RefreshCw size={16} className={query.isFetching ? 'spin' : ''} />
-              </button>
+                <RefreshCw size={15} className={query.isFetching ? 'spin' : ''} />
+              </Button>
               {section === 'overview' ? (
-                <button className="button button-primary" onClick={() => actions?.transfer()} disabled={!actions}>
-                  <Plus size={16} />
+                <Button size="sm" onClick={() => actions?.transfer()} disabled={!actions} className="gap-1.5">
+                  <Plus size={15} />
                   新建转账
-                </button>
+                </Button>
               ) : section === 'transactions' ? (
-                <button
-                  className="button button-outline"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
                   onClick={() =>
                     query.data &&
                     exportLedger(periodRows(query.data.s.transactions, reportPeriod), reportPeriod)
@@ -272,7 +275,7 @@ export function AdminWorkspace({
                 >
                   <Download size={15} />
                   导出本期流水
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -325,9 +328,9 @@ export function AdminWorkspace({
                 <strong>无法读取银行数据</strong>
                 <p>{(query.error ?? report.error)?.message}</p>
               </div>
-              <button className="button button-outline button-sm" onClick={refresh}>
+              <Button variant="outline" size="sm" onClick={refresh}>
                 重新加载
-              </button>
+              </Button>
             </div>
           )}
 

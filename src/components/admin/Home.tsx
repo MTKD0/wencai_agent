@@ -4,6 +4,8 @@ import { ArrowRight, CircleAlert, Landmark, Loader2, RefreshCw, Search, UsersRou
 import { adminApi } from './client'
 import { Empty } from './shared'
 import { money } from './utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export function AdminHome({ onSelect }: { onSelect: (userId: string) => void }) {
   const [search, setSearch] = useState('')
@@ -28,9 +30,9 @@ export function AdminHome({ onSelect }: { onSelect: (userId: string) => void }) 
             <h1>选择管理账户</h1>
             <p>查看全部用户，登录指定账户开始管理银行业务。</p>
           </div>
-          <button className="button button-outline" onClick={() => void query.refetch()} disabled={query.isFetching}>
-            <RefreshCw size={15} className={query.isFetching ? 'spin' : ''} />刷新用户
-          </button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void query.refetch()} disabled={query.isFetching}>
+            <RefreshCw size={14} className={query.isFetching ? 'spin' : ''} />刷新用户
+          </Button>
         </div>
         <div className="home-summary">
           <div><span className="home-summary-icon"><UsersRound size={20} /></span><span>用户总数<strong>{query.data ? users.length : '—'}<small> 位</small></strong></span></div>
@@ -40,7 +42,16 @@ export function AdminHome({ onSelect }: { onSelect: (userId: string) => void }) 
         <section className="panel home-users" aria-label="全部用户">
           <div className="panel-head">
             <div><h2>全部用户</h2><p>每个账户的数据与操作独立展示</p></div>
-            <label className="home-search"><Search size={16} /><input aria-label="搜索用户" placeholder="搜索姓名、手机号或用户 ID" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+            <div className="relative w-64">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label="搜索用户"
+                placeholder="搜索姓名、手机号或用户 ID"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="pl-8.5 h-8.5 text-xs"
+              />
+            </div>
           </div>
           {query.isError ? (
             <div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法读取用户列表</strong><p>{query.error.message}</p></div><button className="button button-outline button-sm" onClick={() => void query.refetch()}>重试</button></div>
@@ -60,7 +71,9 @@ export function AdminHome({ onSelect }: { onSelect: (userId: string) => void }) 
                   <p className="home-user-id">用户 ID <span>{user.id}</span></p>
                   <div className="home-user-balance"><span>账户总余额</span><strong>{money(user.balanceCents)}</strong></div>
                   <div className="home-user-meta"><span>{user.accountCount} 个银行账户</span><span>风险等级 {user.riskLevel}</span></div>
-                  <button className="button button-primary" aria-label={`登录${user.name}的管理账户`} onClick={() => onSelect(user.id)}>登录账户<ArrowRight size={15} /></button>
+                  <Button size="sm" className="w-full gap-1.5 mt-3" aria-label={`登录${user.name}的管理账户`} onClick={() => onSelect(user.id)}>
+                    登录账户<ArrowRight size={14} />
+                  </Button>
                 </article>
               ))}
             </div>

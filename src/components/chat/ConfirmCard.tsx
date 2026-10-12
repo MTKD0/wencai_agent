@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { ConfirmError } from '#/lib/queries'
 import { useStrongVerification } from '#/components/ui/StrongVerification'
 import type { ConfirmSummary } from '#/server/tools/define'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import './confirm-card.css'
 
 export interface ConfirmCardProps {
@@ -63,9 +65,12 @@ export default function ConfirmCard(props: ConfirmCardProps) {
     <div className={`bank-confirm-card is-${state}${red ? ' is-strong' : ''}`}>
       <div className="mb-3 flex items-center justify-between">
         <p className="m-0 font-semibold text-[var(--sea-ink)]">{props.summary.title}</p>
-        <span className="bank-confirm-badge">
+        <Badge
+          variant={props.done ? (state === 'success' ? 'default' : 'secondary') : red ? 'destructive' : 'outline'}
+          className="text-xs"
+        >
           {props.done ? ({ success: '已完成', cancelled: '已取消', failed: '未完成' }[state as 'success' | 'cancelled' | 'failed']) : red ? '强验证' : '需确认'}
-        </span>
+        </Badge>
       </div>
       <dl className="m-0 space-y-1.5 text-sm">
         {props.summary.fields.map((f) => (
@@ -89,17 +94,26 @@ export default function ConfirmCard(props: ConfirmCardProps) {
         <div className="mt-4 space-y-2">
           {red && verification.controls}
           <div className="flex gap-2">
-            <button type="button" onClick={() => props.onCancel?.()} disabled={submitting} className="bank-confirm-cancel bank-lift flex-1 rounded-full border border-[var(--line)] py-2 text-sm">
-              取消
-            </button>
-            <button
-              onClick={() => void confirm()}
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => props.onCancel?.()}
+              disabled={submitting}
+              className="flex-1 rounded-full text-xs"
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant={red ? 'destructive' : 'default'}
+              size="sm"
+              onClick={() => void confirm()}
               disabled={submitting || !props.onConfirm || (red && !verification.ready)}
-              className="bank-confirm-submit bank-lift flex-1 rounded-full py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="flex-1 rounded-full text-xs font-semibold"
             >
               {submitting ? '处理中…' : '确认'}
-            </button>
+            </Button>
           </div>
           {(message ?? props.error) && <p className="m-0 text-center text-xs text-red-600">{message ?? props.error}</p>}
         </div>

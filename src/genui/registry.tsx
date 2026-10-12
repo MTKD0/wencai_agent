@@ -2,6 +2,15 @@ import { defineRegistry } from '@json-render/react'
 import { createContext, useContext } from 'react'
 import { AnimatedBarChart, AnimatedDonutChart, normalizeChartData } from '#/components/ui/charts'
 import { AnimatedAmount, Reveal } from '#/components/ui/motion'
+import {
+  Table as ShadcnTable,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import { catalog } from './catalog'
 
 /** FollowUp 点击后以用户身份发送消息。数值仍只能由已验证的 state 引用传入。 */
@@ -49,25 +58,25 @@ export const { registry } = defineRegistry(catalog, {
       />
     ),
     Table: ({ props }) => (
-      <div className="bank-gen-table">
-        <table>
-          <thead>
-            <tr>
+      <div className="bank-gen-table rounded-xl border border-border/80 overflow-hidden bg-background/80">
+        <ShadcnTable>
+          <TableHeader>
+            <TableRow>
               {props.columns.map((column) => (
-                <th key={column.key}>{column.label}</th>
+                <TableHead key={column.key} className="text-xs font-semibold">{column.label}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {asRows(props.rows).map((row, index) => (
-              <tr key={index} style={{ animationDelay: `${Math.min(index, 10) * 50}ms` }}>
+              <TableRow key={index} style={{ animationDelay: `${Math.min(index, 10) * 50}ms` }}>
                 {props.columns.map((column) => (
-                  <td key={column.key}>{String(row[column.key] ?? '')}</td>
+                  <TableCell key={column.key} className="text-xs">{String(row[column.key] ?? '')}</TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </ShadcnTable>
       </div>
     ),
     Note: ({ props }) => <p className="bank-gen-note">{props.text}</p>,
@@ -78,8 +87,13 @@ export const { registry } = defineRegistry(catalog, {
 function FollowUpButton({ label, prompt }: { label: string; prompt: string }) {
   const send = useContext(FollowUpContext)
   return (
-    <button onClick={() => send(prompt)} className="bank-follow-up bank-lift">
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => send(prompt)}
+      className="bank-follow-up rounded-full text-xs font-medium"
+    >
       {label}
-    </button>
+    </Button>
   )
 }
