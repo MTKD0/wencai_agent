@@ -275,7 +275,7 @@ const NODE_ICON: Record<string, string> = {
   handoff: '👤',
 }
 
-function PlanView({ state }: { state: PlanState }) {
+export function PlanView({ state }: { state: PlanState }) {
   const plans = useQuery({ queryKey: ['plans'], queryFn: async () => { const res = await fetch('/api/plans'); if (!res.ok) throw new Error('无法读取计划'); return res.json() as Promise<{ plans: { state: PlanState }[] }> } })
   const latest = plans.data?.plans.find((p) => p.state.id === state.id)?.state ?? state
   return (
