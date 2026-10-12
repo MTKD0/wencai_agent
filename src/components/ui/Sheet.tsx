@@ -148,51 +148,8 @@ function SheetDescription({
   )
 }
 
-export interface AdaptiveSheetProps {
-  open: boolean
-  onClose: () => void
-  title: string
-  children: React.ReactNode
-  className?: string
-  header?: React.ReactNode
-  side?: "top" | "right" | "bottom" | "left"
-}
-
-export function AdaptiveSheet({
-  open,
-  onClose,
-  title,
-  children,
-  className = "",
-  header,
-  side = "bottom", // 默认严格使用 bottom，还原原汁原味的底部升起抽屉！
-}: AdaptiveSheetProps) {
-  return (
-    <Sheet
-      open={open}
-      onOpenChange={(nextOpen: boolean) => {
-        if (!nextOpen) onClose()
-      }}
-    >
-      <SheetContent
-        side={side}
-        className={cn(
-          "flex flex-col p-0 transition-all duration-300",
-          className
-        )}
-      >
-        <SheetHeader className="px-6 py-3.5">
-          <SheetTitle>
-            {header ?? title}
-          </SheetTitle>
-        </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
-          {children}
-        </div>
-      </SheetContent>
-    </Sheet>
-  )
-}
+export { AdaptiveDrawer as AdaptiveSheet } from "@/components/ui/drawer"
+export type { AdaptiveDrawerProps as AdaptiveSheetProps } from "@/components/ui/drawer"
 
 export {
   Sheet,

@@ -29,7 +29,7 @@ import { formatAmount } from '#/lib/dashboard'
 import { AnimatedAmount, Reveal } from '#/components/ui/motion'
 import { AnimatedBarChart, AnimatedDonutChart } from '#/components/ui/charts'
 import { BankCardStack } from '#/components/ui/BankCard'
-import { AdaptiveSheet as Sheet } from '#/components/ui/sheet'
+import { AdaptiveDrawer as Drawer } from '#/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -621,18 +621,18 @@ export default function BankingHome({ user }: { user: { id: string; name: string
         <AgentAvatar small />
       </DraggableFloatingButton>
 
-      {/* 底部升起的 shadcn Sheet 抽屉组 */}
-      <Sheet open={agentOpen} onClose={closeAgent} title="文财 Agent">
+      {/* 底部升起的 Base UI Drawer 抽屉组 */}
+      <Drawer open={agentOpen} onClose={closeAgent} title="文财 Agent">
         <div id="bank-agent-conversation" className="h-[75vh] flex flex-col">
           <ChatView request={request} active={agentOpen} userId={user.id} />
         </div>
-      </Sheet>
+      </Drawer>
 
-      <Sheet open={!!paymentView} onClose={closePayment} title="转账与收款">
+      <Drawer open={!!paymentView} onClose={closePayment} title="转账与收款">
         {paymentView && <PaymentCenter userId={user.id} initialView={paymentView} initialAccountId={paymentAccountId} />}
-      </Sheet>
+      </Drawer>
 
-      <Sheet
+      <Drawer
         open={!!cardService}
         onClose={() => setCardService(null)}
         title={cardService?.mode === 'apply' ? '申请新卡' : cardService?.mode === 'remark' ? '卡片备注' : cardService?.mode === 'repay' ? '信用卡还款' : '卡片管理'}
@@ -642,9 +642,9 @@ export default function BankingHome({ user }: { user: { id: string; name: string
         ) : (
           cardService && data && <CardServices key={`${cardService.id}-${cardService.mode}`} data={data} cardId={cardService.id} mode={cardService.mode} userId={user.id} />
         )}
-      </Sheet>
+      </Drawer>
 
-      <Sheet open={!!detail} onClose={() => setDetail(null)} title={title}>
+      <Drawer open={!!detail} onClose={() => setDetail(null)} title={title}>
         <div className="space-y-4">
           {data && detail === 'bill' && (
             <>
@@ -692,7 +692,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
 
           {data && detail === 'tasks' && <TaskCenter onFollowUp={(text) => openAgent(text)} />}
         </div>
-      </Sheet>
+      </Drawer>
     </div>
   )
 }

@@ -124,6 +124,7 @@ body,
 }
 
 body {
+  position: relative;
   margin: 0;
   color: var(--foreground);
   font-family: var(--font-sans);
