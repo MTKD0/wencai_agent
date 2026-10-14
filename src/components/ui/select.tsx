@@ -192,3 +192,35 @@ export {
   SelectTrigger,
   SelectValue,
 }
+
+export type SelectControlProps = {
+  value: string
+  onValueChange: (value: string) => void
+  disabled?: boolean
+  className?: string
+  children?: React.ReactNode
+}
+
+/**
+ * Base-UI 风格的兼容包装，便于现有业务表单直接声明选项。
+ * 渲染出的仍然是原生 select，因此在任何 CSS 皮肤下都能保持外观一致。
+ */
+function SelectControl({ value, onValueChange, disabled, className, children }: SelectControlProps) {
+  return (
+    <select
+      data-slot="select-control"
+      className={cn("bank-select-control", className)}
+      value={value}
+      disabled={disabled}
+      onChange={(event) => onValueChange(event.target.value)}
+    >
+      {children}
+    </select>
+  )
+}
+
+function SelectOption({ value, children }: { value: string; children?: React.ReactNode }) {
+  return <option value={value}>{children}</option>
+}
+
+export { SelectControl, SelectOption }

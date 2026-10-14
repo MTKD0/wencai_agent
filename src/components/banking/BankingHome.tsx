@@ -1,3 +1,6 @@
+import { Button } from '#/components/ui/button'
+import { motion, useReducedMotion } from 'motion/react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '#/components/ui/tabs'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -17,6 +20,7 @@ import {
   ReceiptText,
   ScanLine,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   UserRound,
   UsersRound,
@@ -29,11 +33,7 @@ import { formatAmount } from '#/lib/dashboard'
 import { AnimatedAmount, Reveal } from '#/components/ui/motion'
 import { AnimatedBarChart, AnimatedDonutChart } from '#/components/ui/charts'
 import { BankCardStack } from '#/components/ui/BankCard'
-import { AdaptiveDrawer as Drawer } from '#/components/ui/drawer'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { cn } from 'cn'
+import { AdaptiveDrawer as Sheet } from '#/components/ui/drawer'
 import { DraggableFloatingButton } from '#/components/ui/DraggableFloatingButton'
 import ChatView from '#/components/chat/ChatView'
 import { AgentAvatar } from './AgentAvatar'
@@ -44,6 +44,7 @@ import { AccountCarousel, accountSlides } from './AccountCarousel'
 import { CardApplication, CardServices, type CardServiceMode } from './CardServices'
 import { subscribeConfirmations } from '#/lib/confirmation-notices'
 import { TaskCenter } from './TaskCenter'
+import './banking.css'
 
 type Tab = 'home' | 'accounts' | 'life' | 'profile'
 type Detail = 'assets' | 'bill' | 'transactions' | 'receive' | 'notifications' | 'tasks' | null
@@ -62,6 +63,7 @@ async function fetchDashboard(): Promise<DashboardData> {
 }
 
 export default function BankingHome({ user }: { user: { id: string; name: string } }) {
+  const reduce = useReducedMotion()
   const queryClient = useQueryClient()
   const pageScroll = useRef<HTMLDivElement>(null)
   const query = useQuery({
@@ -82,12 +84,10 @@ export default function BankingHome({ user }: { user: { id: string; name: string
   const [selectedCardId, setSelectedCardId] = useState<string>()
   const [paymentAccountId, setPaymentAccountId] = useState<string>()
   const [cardService, setCardService] = useState<{ id: string; mode: CardServiceMode } | null>(null)
-
   const data = query.data
   const selectedCard = data && (accountSlides(data).find((card) => card.id === selectedCardId) ?? accountSlides(data)[0])
   const selectedAccount = data?.accounts.find((account) => account.id === selectedCard?.accountId)
   const activity = selectedAccount && data?.accountActivity[selectedAccount.id]
-
   const openAgent = (text?: string) => {
     setCardService(null)
     setPaymentView(null)
@@ -95,49 +95,21 @@ export default function BankingHome({ user }: { user: { id: string; name: string
     if (text) setRequest((previous) => ({ id: (previous?.id ?? 0) + 1, text }))
     setAgentOpen(true)
   }
-
   useEffect(() => subscribeConfirmations((notice) => {
-    if (notice.userId === user.id) {
-      setPaymentView(null)
-      setDetail(null)
-      setCardService(null)
-      setAgentOpen(true)
-    }
+    if (notice.userId === user.id) { setPaymentView(null); setDetail(null); setCardService(null); setAgentOpen(true) }
   }), [user.id])
-
-  const openPayment = (view: PaymentView, accountId?: string) => {
-    setCardService(null)
-    setPaymentAccountId(accountId)
-    setDetail(null)
-    setAgentOpen(false)
-    setPaymentView(view)
-  }
-
-  const openCardService = (mode: CardServiceMode) => {
-    if (selectedCard) {
-      setAgentOpen(false)
-      setPaymentView(null)
-      setDetail(null)
-      setCardService({ id: selectedCard.id, mode })
-    }
-  }
-
-  const closePayment = () => {
-    setPaymentView(null)
-    void queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] })
-  }
-
+  const openPayment = (view: PaymentView, accountId?: string) => { setCardService(null); setPaymentAccountId(accountId); setDetail(null); setAgentOpen(false); setPaymentView(view) }
+  const openCardService = (mode: CardServiceMode) => { if (selectedCard) { setAgentOpen(false); setPaymentView(null); setDetail(null); setCardService({ id: selectedCard.id, mode }) } }
+  const closePayment = () => { setPaymentView(null); void queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] }) }
   const closeAgent = () => {
     setAgentOpen(false)
     void queryClient.invalidateQueries({ queryKey: ['dashboard', user.id] })
   }
-
   const selectTab = (next: Tab) => {
     setTab(next)
     setDetail(null)
-    window.scrollTo({ top: 0, behavior: 'instant' })
+    pageScroll.current?.scrollTo({ top: 0, behavior: 'instant' })
   }
-
   const title =
     detail === 'tasks' ? '任务与人工处理' : detail === 'assets'
       ? '资产详情'
@@ -148,7 +120,6 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           : detail === 'receive'
             ? '我的收款账户'
             : '消息与提醒'
-
   const signOut = async () => {
     setSigningOut(true)
     setProfileError('')
@@ -166,533 +137,510 @@ export default function BankingHome({ user }: { user: { id: string; name: string
       setSigningOut(false)
     }
   }
-
   return (
-    <div className="min-h-screen w-full bg-background text-foreground flex flex-col font-sans">
-      {/* 顶部全宽 Sticky Header */}
-      <header className="sticky top-0 z-30 w-full border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
-          {/* 用户信息 */}
-          <button
-            onClick={() => selectTab('profile')}
-            className="flex items-center gap-3 text-left rounded-lg p-1 hover:bg-muted/50 transition-colors"
-          >
-            <div className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-sm">
-              {user.name.slice(0, 1)}
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight text-foreground">{user.name}</span>
-              <span className="text-xs text-muted-foreground leading-tight">你好，美好的一天</span>
-            </div>
-          </button>
-
-          {/* 桌面端导航 Tabs (基于 shadcn Segmented) */}
-          <nav className="hidden md:flex items-center gap-1 bg-muted p-1 rounded-full border border-border">
-            {tabs.map(({ id, label, icon: Icon }) => (
+    <div className="bank-stage">
+      <Tabs className="bank-shell" value={tab} onValueChange={(value) => selectTab(value as Tab)}>
+        <div className="bank-home-scroll" ref={pageScroll} inert={agentOpen || !!detail || !!paymentView || !!cardService}>
+          <header className="bank-home-header">
+            <Button
+              className="bank-profile bank-lift"
+              onClick={() => selectTab('profile')}
+              aria-label="查看我的资料" type="button"
+            >
+              <span className="bank-user-avatar">{user.name.slice(0, 1)}</span>
+              <span>
+                <strong>{user.name}</strong>
+                <small>你好，美好的一天</small>
+              </span>
+            </Button>
+            <div className="bank-header-actions">
               <Button
-                key={id}
-                variant={tab === id ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => selectTab(id)}
-                className="rounded-full px-4 h-8 text-xs font-medium gap-1.5"
+                className="bank-icon-button bank-lift"
+                onClick={() => openPayment('receive')}
+                aria-label="查看收款账户" type="button"
               >
-                <Icon className="size-3.5" />
-                <span>{label}</span>
+                <ScanLine size={18} />
               </Button>
-            ))}
-          </nav>
-
-          {/* 顶部操作区 */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openAgent()}
-              className="hidden sm:inline-flex rounded-full gap-2 text-xs font-medium border-border hover:bg-muted"
-            >
-              <AgentAvatar small />
-              <span>智能助理</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => openPayment('receive')}
-              aria-label="查看收款账户"
-              className="size-9 rounded-full text-muted-foreground hover:text-foreground"
-            >
-              <ScanLine className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDetail('notifications')}
-              aria-label="消息与提醒"
-              className="relative size-9 rounded-full text-muted-foreground hover:text-foreground"
-            >
-              <Bell className="size-4" />
-              {data?.subscriptions.some((item) => item.status === 'active') && (
-                <span className="absolute top-2 right-2 size-2 rounded-full bg-destructive ring-2 ring-background" />
-              )}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* 主内容区域：居中、最大宽度约束、铺满全屏背景 */}
-      <div className="flex-1 w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8" ref={pageScroll}>
-        {query.isPending ? (
-          <div className="flex flex-col items-center justify-center py-28 space-y-4 text-muted-foreground">
-            <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-sm">正在安全连接文财银行…</p>
-          </div>
-        ) : query.isError ? (
-          <Card className="mx-auto max-w-md p-8 text-center space-y-4 border-border bg-card shadow-sm my-16">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <Wallet className="size-6" />
+              <Button
+                className="bank-icon-button bank-lift bank-bell"
+                onClick={() => setDetail('notifications')}
+                aria-label="消息与提醒" type="button"
+              >
+                <Bell size={18} />
+                {data?.subscriptions.some((item) => item.status === 'active') && <i />}
+              </Button>
             </div>
-            <div className="space-y-1.5">
-              <h2 className="text-lg font-semibold text-foreground">暂时无法连接账户</h2>
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">{query.error.message}</p>
+          </header>
+          {query.isPending ? (
+            <div className="bank-loading">
+              <Loader2 className="bank-spin" size={26} />
+              <p>正在读取你的账户</p>
             </div>
-            <div>
+          ) : query.isError ? (
+            <div className="bank-load-error" role="alert">
+              <Wallet size={28} />
+              <h2>暂时无法连接账户</h2>
+              <p>{query.error.message}</p>
               {query.error instanceof UnauthorizedError ? (
-                <Button asChild className="w-full">
-                  <a href="/login">重新登录</a>
-                </Button>
+                <a href="/login" className="bank-primary bank-lift">
+                  重新登录
+                </a>
               ) : (
-                <Button onClick={() => void query.refetch()} className="w-full">
+                <Button className="bank-primary bank-lift" onClick={() => void query.refetch()} type="button">
                   重新加载
                 </Button>
               )}
             </div>
-          </Card>
-        ) : data ? (
-          <main key={tab} className="w-full pb-20 md:pb-8">
-            {tab === 'home' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* 左列：资产概览、快捷业务、卡片与收支 */}
-                <div className="lg:col-span-7 space-y-6">
-                  {/* 资产大卡片 */}
-                  <Card className="border-border bg-card shadow-xs overflow-hidden">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <span>账户总资产（元）</span>
-                          <button
-                            onClick={() => setHidden(!hidden)}
-                            className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                            aria-label={hidden ? '显示资产' : '隐藏资产'}
-                          >
-                            {hidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                          </button>
-                        </div>
+          ) : (
+            data && (
+              <TabsContent value={tab} key={tab} className="bank-page-content"
+              >
+                <motion.main initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduce ? 0 : .5 }}>
+                {tab === 'home' && (
+                  <>
+                    <section className="bank-assets">
+                      <div className="bank-asset-label">
+                        账户总资产（元）
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDetail('assets')}
-                          className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
+                          className="bank-icon-button bank-lift"
+                          aria-label={hidden ? '显示资产金额' : '隐藏资产金额'}
+                          onClick={() => setHidden(!hidden)} type="button"
                         >
-                          资产详情
-                          <ChevronRight className="size-3" />
+                          {hidden ? <EyeOff size={17} /> : <Eye size={17} />}
                         </Button>
                       </div>
-                      <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-foreground mt-2">
-                        {hidden ? '••••••' : <AnimatedAmount value={data.totalAssets} />}
+                      <h1>{hidden ? '••••••' : <AnimatedAmount value={data.totalAssets} />}</h1>
+                      <div className="bank-asset-bottom">
+                        <p>
+                          可用余额{' '}
+                          <strong>
+                            {hidden ? '••••••' : `¥ ${formatAmount(data.availableBalance)}`}
+                          </strong>
+                        </p>
+                        <Button
+                          className="bank-text-button bank-lift"
+                          onClick={() => setDetail('assets')} type="button"
+                        >
+                          资产详情
+                          <ChevronRight size={15} />
+                        </Button>
                       </div>
-                    </CardHeader>
-                    <CardContent className="pt-2 border-t border-border/50 text-xs text-muted-foreground flex items-center justify-between">
-                      <span>可用余额: <strong className="text-foreground font-mono">{hidden ? '••••' : `¥ ${formatAmount(data.availableBalance)}`}</strong></span>
-                      <span>借记卡 {data.cards.filter((c) => c.kind === 'debit').length} 张 · 信用卡 {data.cards.filter((c) => c.kind === 'credit').length} 张</span>
-                    </CardContent>
-                  </Card>
-
-                  {/* 快捷业务入口 */}
-                  <Card className="border-border bg-card shadow-xs p-4 sm:p-5">
-                    <nav className="grid grid-cols-4 gap-3 sm:gap-4 text-center">
+                    </section>
+                    <nav className="bank-quick-actions" aria-label="快捷业务">
                       {[
-                        { label: '转账', icon: ArrowUpRight, action: () => openPayment('transfer') },
+                        {
+                          label: '转账',
+                          icon: ArrowUpRight,
+                          action: () => openPayment('transfer'),
+                        },
                         { label: '收款', icon: ArrowDownLeft, action: () => openPayment('receive') },
                         { label: '银行卡', icon: CreditCard, action: () => selectTab('accounts') },
-                        { label: '生活服务', icon: Grid2X2, action: () => selectTab('life') },
+                        { label: '更多', icon: Grid2X2, action: () => selectTab('life') },
                       ].map(({ label, icon: Icon, action }) => (
-                        <button
-                          key={label}
-                          onClick={action}
-                          className="group flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex size-13 items-center justify-center rounded-full bg-secondary group-hover:bg-muted border border-border/80 text-foreground transition-all group-hover:scale-105 shadow-xs">
-                            <Icon className="size-5" />
-                          </div>
-                          <span className="text-xs font-medium text-foreground">{label}</span>
-                        </button>
+                        <Button key={label} className="bank-lift" onClick={action} type="button">
+                          <span>
+                            <Icon size={28} strokeWidth={2.2} />
+                          </span>
+                          {label}
+                        </Button>
                       ))}
                     </nav>
-                  </Card>
-
-                  {/* 双格卡片：我的账户 & 本月收支 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Card
-                      onClick={() => selectTab('accounts')}
-                      className="cursor-pointer border-border bg-card shadow-xs hover:border-foreground/20 transition-all p-5 flex flex-col justify-between h-36"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm text-foreground">我的账户</span>
-                        <Badge variant="secondary" className="text-xs font-normal gap-1">
-                          {data.cards.length} 张卡
-                          <ChevronRight className="size-3" />
-                        </Badge>
-                      </div>
-                      <div className="mt-auto flex justify-end">
-                        <BankCardStack count={data.cards.length} />
-                      </div>
-                    </Card>
-
-                    <Card
-                      onClick={() => setDetail('bill')}
-                      className="cursor-pointer border-border bg-card shadow-xs hover:border-foreground/20 transition-all p-5 flex flex-col justify-between h-36"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm text-foreground">本月收支</span>
-                        <ChevronRight className="size-4 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>收入</span>
-                          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{hidden ? '••••' : `+¥ ${formatAmount(data.monthly.income)}`}</span>
-                        </div>
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>支出</span>
-                          <span className="font-mono text-foreground font-semibold">{hidden ? '••••' : `−¥ ${formatAmount(data.monthly.expense)}`}</span>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                </div>
-
-                {/* 右列：智能账单分析 & 最近流水 */}
-                <div className="lg:col-span-5 space-y-6">
-                  {/* 智能账单分析卡片 */}
-                  <Card
-                    onClick={() => setDetail('bill')}
-                    className="cursor-pointer border-border bg-card shadow-xs hover:border-foreground/20 transition-all p-5 flex items-center justify-between"
-                  >
-                    <div className="space-y-1">
-                      <div className="font-semibold text-sm text-foreground">智能账单分析</div>
-                      <div className="text-xs text-muted-foreground">清晰掌握每笔消费与资金归属</div>
+                    <div className="bank-home-tiles">
+                      <Reveal delay={60}>
+                        <Button
+                          className="bank-home-tile bank-lift bank-account-tile"
+                          onClick={() => selectTab('accounts')} type="button"
+                        >
+                          <strong>我的账户</strong>
+                          <span>
+                            {data.cards.length} 张银行卡
+                            <ChevronRight size={13} />
+                          </span>
+                          <BankCardStack count={data.cards.length} />
+                        </Button>
+                      </Reveal>
+                      <Reveal delay={130}>
+                        <Button
+                          className="bank-home-tile bank-lift bank-income-tile"
+                          onClick={() => setDetail('bill')} type="button"
+                        >
+                          <strong>本月收支</strong>
+                          <div className="bank-income-lines">
+                            <p>
+                              <span>收入</span>
+                              <b>{hidden ? '••••' : `¥ ${formatAmount(data.monthly.income)}`}</b>
+                            </p>
+                            <p>
+                              <span>支出</span>
+                              <b>{hidden ? '••••' : `¥ ${formatAmount(data.monthly.expense)}`}</b>
+                            </p>
+                          </div>
+                          <span className="bank-mini-bars" aria-hidden="true">
+                            <AnimatedBarChart data={data.trend} compact />
+                          </span>
+                        </Button>
+                      </Reveal>
                     </div>
-                    <div className="size-16 shrink-0 flex items-center justify-center">
-                      <AnimatedDonutChart data={data.monthly.categories} compact pie />
-                    </div>
-                  </Card>
-
-                  {/* 最近交易流水 */}
-                  <Card className="border-border bg-card shadow-xs">
-                    <CardHeader className="flex flex-row items-center justify-between pb-3 px-5 pt-5">
-                      <CardTitle className="text-sm font-semibold">最近交易</CardTitle>
+                    <Reveal delay={180}>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDetail('transactions')}
-                        className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
+                        className="bank-analysis-tile bank-lift"
+                        onClick={() => setDetail('bill')} type="button"
                       >
-                        查看全部
-                        <ChevronRight className="size-3" />
+                        <span>
+                          <strong>智能账单分析</strong>
+                          <small>看看钱都花在哪儿了</small>
+                        </span>
+                        <span className="bank-analysis-arrow">
+                          <ChevronRight size={22} />
+                        </span>
+                        <span className="bank-mini-pie" aria-hidden="true">
+                          <AnimatedDonutChart data={data.monthly.categories} compact pie />
+                        </span>
                       </Button>
-                    </CardHeader>
-                    <CardContent className="px-5 pb-5 pt-0">
-                      <TransactionList transactions={data.transactions.slice(0, 4)} hidden={hidden} />
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-
-            {tab === 'accounts' && (
-              <div className="space-y-6 max-w-4xl mx-auto">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-xl font-bold tracking-tight text-foreground">我的账户</h1>
-                    <p className="text-xs text-muted-foreground mt-0.5">每张卡独立记账，左右切换查看明细。</p>
-                  </div>
-                  <Button size="sm" onClick={() => setCardService({ id: 'new', mode: 'apply' })}>
-                    申请新卡
-                  </Button>
-                </div>
-
-                <AccountCarousel data={data} selectedId={selectedCard?.id} onSelect={setSelectedCardId} hidden={hidden} />
-
-                {selectedCard && (
-                  <Card className="border-border bg-card shadow-xs p-5 space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCard.kind === 'debit' ? (
-                        <>
-                          <Button size="sm" disabled={selectedCard.status !== 'active'} onClick={() => openPayment('transfer', selectedCard.accountId)}>转账</Button>
-                          <Button variant="secondary" size="sm" disabled={selectedCard.status !== 'active'} onClick={() => openPayment('receive', selectedCard.accountId)}>收款</Button>
-                        </>
-                      ) : (
-                        <Button size="sm" disabled={selectedCard.status !== 'active' || selectedCard.outstanding <= 0} onClick={() => openCardService('repay')}>信用卡还款</Button>
-                      )}
-                      <Button variant="outline" size="sm" onClick={() => openCardService('remark')}>修改备注</Button>
-                      <Button variant="outline" size="sm" onClick={() => openCardService('manage')}>管理</Button>
+                    </Reveal>
+                    <Reveal delay={220}>
+                      <section className="bank-recent">
+                        <div className="bank-section-heading">
+                          <h2>最近交易</h2>
+                          <Button
+                            className="bank-text-button bank-lift"
+                            onClick={() => setDetail('transactions')} type="button"
+                          >
+                            查看全部
+                            <ChevronRight size={13} />
+                          </Button>
+                        </div>
+                        <TransactionList
+                          transactions={data.transactions.slice(0, 3)}
+                          hidden={hidden}
+                        />
+                      </section>
+                    </Reveal>
+                  </>
+                )}
+                {tab === 'accounts' && (
+                  <>
+                    <div className="bank-section-heading">
+                      <h1>我的账户</h1>
+                      <span>{data.cards.length} 张银行卡</span>
+                      <Button className="bank-text-button bank-lift" onClick={() => setCardService({ id: 'new', mode: 'apply' })} type="button">申请新卡</Button>
                     </div>
-
-                    {selectedCard.kind === 'credit' && (
-                      <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-muted/30 border border-border/60 text-xs">
-                        <div>
-                          <span className="text-muted-foreground">当前待还</span>
-                          <div className="text-lg font-bold font-mono text-foreground mt-0.5">{hidden ? '••••••' : `¥ ${formatAmount(selectedCard.outstanding)}`}</div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">信用总额度</span>
-                          <div className="text-lg font-bold font-mono text-foreground mt-0.5">{hidden ? '••••••' : `¥ ${formatAmount(selectedCard.creditLimit)}`}</div>
-                        </div>
-                        <div className="col-span-2 text-muted-foreground text-[11px]">
-                          账单日每月 {selectedCard.billDay} 日 · 还款日每月 {selectedCard.dueDay} 日
-                        </div>
+                    <p className="bank-page-note">每张卡独立记账，左右滑动查看对应账单。</p>
+                    <AccountCarousel data={data} selectedId={selectedCard?.id} onSelect={setSelectedCardId} hidden={hidden} active={!agentOpen && !detail && !paymentView && !cardService} />
+                    {selectedCard && <>
+                      <div className="bank-card-actions">
+                        {selectedCard.kind === 'debit' ? <>
+                          <Button className="bank-primary bank-lift" disabled={selectedCard.status !== 'active'} onClick={() => openPayment('transfer', selectedCard.accountId)} type="button">转账</Button>
+                          <Button className="bank-payment-secondary bank-lift" disabled={selectedCard.status !== 'active'} onClick={() => openPayment('receive', selectedCard.accountId)} type="button">收款</Button>
+                        </> : <Button className="bank-primary bank-lift" disabled={selectedCard.status !== 'active' || selectedCard.outstanding <= 0} onClick={() => openCardService('repay')} type="button">信用卡还款</Button>}
+                        <Button className="bank-payment-secondary bank-lift" onClick={() => openCardService('remark')} type="button">修改备注</Button>
+                        <Button className="bank-payment-secondary bank-lift" onClick={() => openCardService('manage')} type="button">管理</Button>
+                      </div>
+                      {selectedCard.kind === 'credit' && <Reveal key={selectedCard.id}><div className="bank-credit-summary">
+                        <div><span>当前待还</span><strong>{hidden ? '••••••' : `¥ ${formatAmount(selectedCard.outstanding)}`}</strong></div>
+                        <div><span>信用总额度</span><strong>{hidden ? '••••••' : `¥ ${formatAmount(selectedCard.creditLimit)}`}</strong></div>
+                        <p>账单日每月 {selectedCard.billDay} 日 · 还款日每月 {selectedCard.dueDay} 日</p>
+                      </div></Reveal>}
+                    </>}
+                    {selectedAccount && activity && (
+                      <div key={selectedCard?.id} className="bank-account-activity" aria-label={`尾号${selectedCard?.last4}账单`}>
+                        <Reveal>
+                          <div className="bank-section-heading">
+                            <h2>{selectedCard?.accountName} · {selectedCard?.last4} 账单</h2>
+                            <span>{activity.monthly.period.replace('-', ' / ')}</span>
+                          </div>
+                          <div className="bank-account-summary">
+                            <div><span>{selectedCard?.kind === 'credit' ? '本月还款' : '本月收入'}</span><strong className="is-income">{hidden ? '••••••' : `+${formatAmount(activity.monthly.income)}`}</strong></div>
+                            <div><span>{selectedCard?.kind === 'credit' ? '本月消费' : '本月支出'}</span><strong>{hidden ? '••••••' : `−${formatAmount(activity.monthly.expense)}`}</strong></div>
+                          </div>
+                          <div className="bank-section-heading"><h3>交易明细</h3><span>最近 {activity.transactions.length} 笔</span></div>
+                          <TransactionList transactions={activity.transactions} hidden={hidden} />
+                        </Reveal>
                       </div>
                     )}
-                  </Card>
-                )}
-
-                {selectedAccount && activity && (
-                  <Card className="border-border bg-card shadow-xs p-5 space-y-4">
-                    <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                      <div>
-                        <h2 className="text-sm font-semibold text-foreground">{selectedCard?.accountName} · 尾号 {selectedCard?.last4}</h2>
-                        <span className="text-xs text-muted-foreground">{activity.monthly.period}</span>
-                      </div>
-                      <div className="flex gap-4 text-xs font-mono">
-                        <span>收入: <strong className="text-emerald-600 dark:text-emerald-400">+{formatAmount(activity.monthly.income)}</strong></span>
-                        <span>支出: <strong>−{formatAmount(activity.monthly.expense)}</strong></span>
-                      </div>
+                    {data.accounts.some((account) => !data.cards.some((card) => card.accountId === account.id)) && <>
+                    <div className="bank-section-heading">
+                      <h2>其他资金账户</h2>
+                      <Button
+                        className="bank-text-button bank-lift"
+                        onClick={() => setDetail('assets')} type="button"
+                      >
+                        查看资产
+                        <ChevronRight size={14} />
+                      </Button>
                     </div>
-                    <TransactionList transactions={activity.transactions} hidden={hidden} />
-                  </Card>
-                )}
-              </div>
-            )}
-
-            {tab === 'life' && (
-              <div className="space-y-6 max-w-4xl mx-auto">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-xl font-bold tracking-tight text-foreground">生活服务</h1>
-                    <p className="text-xs text-muted-foreground mt-0.5">照顾日常生活，也为重要日程做好资金安排。</p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => setDetail('tasks')}>
-                    任务中心
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Card
-                    onClick={() => openAgent('帮我查看生日计划和联系人')}
-                    className="cursor-pointer border-border bg-card shadow-xs hover:border-foreground/20 p-5 flex items-center gap-4 transition-all"
-                  >
-                    <div className="flex size-12 items-center justify-center rounded-full bg-secondary border border-border">
-                      <Gift className="size-6 text-foreground" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm text-foreground">生日计划</div>
-                      <div className="text-xs text-muted-foreground">为重要的人用心安排心愿与礼金</div>
-                    </div>
-                  </Card>
-
-                  <Card
-                    onClick={() => openAgent('我想发起一笔AA收款，请先帮我查看联系人')}
-                    className="cursor-pointer border-border bg-card shadow-xs hover:border-foreground/20 p-5 flex items-center gap-4 transition-all"
-                  >
-                    <div className="flex size-12 items-center justify-center rounded-full bg-secondary border border-border">
-                      <UsersRound className="size-6 text-foreground" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm text-foreground">AA 收款</div>
-                      <div className="text-xs text-muted-foreground">和朋友聚餐出行，轻松一键分账</div>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* 订阅与代扣 */}
-                <Card className="border-border bg-card shadow-xs p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm text-foreground">订阅与自动代扣</span>
-                    <Button variant="ghost" size="sm" onClick={() => openAgent('帮我查看所有订阅与自动扣费')} className="h-7 text-xs">
-                      管理 <ChevronRight className="size-3" />
-                    </Button>
-                  </div>
-                  <div className="divide-y divide-border/60">
-                    {data.subscriptions.map((item) => (
-                      <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
-                        <span className="font-medium text-foreground">{item.merchant}</span>
-                        <div className="flex items-center gap-3 font-mono">
-                          <span>¥ {formatAmount(item.amount)}</span>
-                          <Badge variant={item.status === 'active' ? 'default' : 'secondary'} className="text-[10px]">
-                            {item.status === 'active' ? '生效中' : '已暂停'}
-                          </Badge>
+                    {data.accounts.filter((account) => !data.cards.some((card) => card.accountId === account.id)).map((account, index) => (
+                      <Reveal key={account.id} delay={index * 70}>
+                        <div className="bank-cash-account bank-lift">
+                          <span className="bank-transaction-icon">
+                            <Wallet size={20} />
+                          </span>
+                          <span>
+                            {account.name}
+                            <small>{account.currency} 活期账户</small>
+                          </span>
+                          <strong>
+                            {hidden ? '••••••' : `¥ ${formatAmount(account.balance)}`}
+                          </strong>
                         </div>
-                      </div>
+                      </Reveal>
                     ))}
-                  </div>
-                </Card>
-              </div>
-            )}
-
-            {tab === 'profile' && (
-              <div className="space-y-6 max-w-2xl mx-auto">
-                <Card className="border-border bg-card shadow-xs p-6 flex items-center gap-4">
-                  <div className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xl">
-                    {user.name.slice(0, 1)}
-                  </div>
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-foreground">{user.name}</h2>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>用户 ID: {user.id}</span>
-                      <Badge variant="outline" className="text-[10px]">个人尊享账户</Badge>
+                    </>}
+                    <div className="bank-payment-entry"><Button className="bank-payment-secondary bank-lift" onClick={() => openPayment('payees')} type="button"><UsersRound size={16} />收款人</Button><Button className="bank-payment-secondary bank-lift" onClick={() => openPayment('transfer', selectedCard?.kind === 'debit' ? selectedCard.accountId : undefined)} type="button">账户互转</Button></div>
+                  </>
+                )}
+                {tab === 'life' && (
+                  <>
+                    <Button className="bank-payment-secondary bank-full-width" onClick={() => setDetail('tasks')} type="button">任务中心 · 暂停 / 恢复 / 人工处理</Button>
+                    <h1 className="bank-page-title">生活服务</h1>
+                    <p className="bank-page-note">照顾日常，也为重要的日子做好准备。</p>
+                    <div className="bank-life-actions">
+                      <Button
+                        className="bank-lift"
+                        onClick={() => openAgent('帮我查看生日计划和联系人')} type="button"
+                      >
+                        <Gift size={26} />
+                        <strong>生日计划</strong>
+                        <span>
+                          为重要的人用心安排
+                          <ChevronRight size={14} />
+                        </span>
+                      </Button>
+                      <Button
+                        className="bank-lift"
+                        onClick={() => openAgent('我想发起一笔AA收款，请先帮我查看联系人')} type="button"
+                      >
+                        <UsersRound size={26} />
+                        <strong>AA 收款</strong>
+                        <span>
+                          和朋友轻松分账
+                          <ChevronRight size={14} />
+                        </span>
+                      </Button>
                     </div>
-                  </div>
-                </Card>
-
-                <Card className="border-border bg-card shadow-xs divide-y divide-border/60">
-                  <a href="/settings" className="flex items-center justify-between p-4 text-sm font-medium hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Settings className="size-4 text-muted-foreground" />
-                      <span>安全与设置</span>
+                    <div className="bank-section-heading">
+                      <h2>订阅与代扣</h2>
+                      <Button
+                        className="bank-text-button bank-lift"
+                        onClick={() => openAgent('帮我查看所有订阅与自动扣费')} type="button"
+                      >
+                        管理
+                        <ChevronRight size={14} />
+                      </Button>
                     </div>
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </a>
-                  <button onClick={() => setDetail('assets')} className="w-full flex items-center justify-between p-4 text-sm font-medium hover:bg-muted/30 transition-colors text-left">
-                    <div className="flex items-center gap-3">
-                      <Wallet className="size-4 text-muted-foreground" />
-                      <span>资产详情</span>
+                    <SubscriptionList subscriptions={data.subscriptions} hidden={hidden} />
+                  </>
+                )}
+                {tab === 'profile' && (
+                  <>
+                    <div className="bank-profile-card">
+                      <span className="bank-user-avatar">{user.name.slice(0, 1)}</span>
+                      <h1>{user.name}</h1>
+                      <span>
+                        <ShieldCheck size={14} />
+                        账户已安全登录
+                      </span>
                     </div>
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </button>
-                  <button onClick={() => openAgent()} className="w-full flex items-center justify-between p-4 text-sm font-medium hover:bg-muted/30 transition-colors text-left">
-                    <div className="flex items-center gap-3">
-                      <AgentAvatar small />
-                      <span>问文财 Agent</span>
+                    <div className="bank-profile-links">
+                      <a className="bank-lift" href="/settings">
+                        <Settings size={21} />
+                        <span>
+                          安全与设备管理<small>交易密码、指纹、人脸与登录设备</small>
+                        </span>
+                        <ChevronRight size={17} />
+                      </a>
+                      <Button className="bank-lift" onClick={() => setDetail('assets')} type="button">
+                        <Wallet size={21} />
+                        <span>
+                          我的资产<small>查看账户余额与理财持仓</small>
+                        </span>
+                        <ChevronRight size={17} />
+                      </Button>
+                      <Button className="bank-lift" onClick={() => openAgent()} type="button">
+                        <AgentAvatar small />
+                        <span>
+                          文财 Agent<small>查账户、转账、看账单</small>
+                        </span>
+                        <ChevronRight size={17} />
+                      </Button>
+                      <Button
+                        className="bank-lift"
+                        disabled={signingOut}
+                        onClick={() => void signOut()} type="button"
+                      >
+                        <LogOut size={21} />
+                        <span>{signingOut ? '正在退出…' : '退出登录'}</span>
+                        <ChevronRight size={17} />
+                      </Button>
                     </div>
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </button>
-                </Card>
-
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  disabled={signingOut}
-                  onClick={() => void signOut()}
-                >
-                  <LogOut className="size-4 mr-2" />
-                  {signingOut ? '正在安全退出…' : '退出登录'}
-                </Button>
-
-                {profileError && <p className="text-xs text-destructive text-center" role="alert">{profileError}</p>}
-              </div>
-            )}
-          </main>
-        ) : null}
-      </div>
-
-      {/* 移动端底部导航栏 */}
-      <nav className="md:hidden fixed bottom-4 inset-x-4 z-40 flex items-center justify-around p-1.5 rounded-full border border-border bg-background/90 backdrop-blur-lg shadow-lg">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => selectTab(id)}
-            className={cn(
-              "flex-1 flex flex-col items-center justify-center py-1.5 rounded-full text-xs transition-colors",
-              tab === id ? "bg-primary text-primary-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Icon className="size-4" />
-            <span className="text-[10px] mt-0.5">{label}</span>
-          </button>
-        ))}
-      </nav>
-
-      {/* 右下角悬浮智能助手球 */}
-      <DraggableFloatingButton
-        hidden={agentOpen || !!detail || !!paymentView}
-        expanded={agentOpen}
-        onActivate={() => openAgent()}
-        label="打开文财 Agent"
-        controls="bank-agent-conversation"
-      >
-        <AgentAvatar small />
-      </DraggableFloatingButton>
-
-      {/* 底部升起的 Base UI Drawer 抽屉组 */}
-      <Drawer open={agentOpen} onClose={closeAgent} title="文财 Agent">
-        <div id="bank-agent-conversation" className="h-[75vh] flex flex-col">
-          <ChatView request={request} active={agentOpen} userId={user.id} />
-        </div>
-      </Drawer>
-
-      <Drawer open={!!paymentView} onClose={closePayment} title="转账与收款">
-        {paymentView && <PaymentCenter userId={user.id} initialView={paymentView} initialAccountId={paymentAccountId} />}
-      </Drawer>
-
-      <Drawer
-        open={!!cardService}
-        onClose={() => setCardService(null)}
-        title={cardService?.mode === 'apply' ? '申请新卡' : cardService?.mode === 'remark' ? '卡片备注' : cardService?.mode === 'repay' ? '信用卡还款' : '卡片管理'}
-      >
-        {cardService?.mode === 'apply' ? (
-          <CardApplication />
-        ) : (
-          cardService && data && <CardServices key={`${cardService.id}-${cardService.mode}`} data={data} cardId={cardService.id} mode={cardService.mode} userId={user.id} />
-        )}
-      </Drawer>
-
-      <Drawer open={!!detail} onClose={() => setDetail(null)} title={title}>
-        <div className="space-y-4">
-          {data && detail === 'bill' && (
-            <>
-              <p className="text-xs text-muted-foreground">
-                {data.monthly.period} · 账户真实收支明细
-              </p>
-              <FinancialReport data={data.monthly.categories} total={data.monthly.expense} />
-              <Card className="p-4 border-border bg-card">
-                <AnimatedBarChart title="近六个月支出趋势" data={data.trend} />
-              </Card>
-              <Button
-                className="w-full"
-                onClick={() => openAgent('帮我分析本月的消费，按分类展示支出，并给一些建议')}
-              >
-                让文财 Agent 深度分析
-              </Button>
-            </>
+                    {profileError && (
+                      <p className="bank-error" role="alert">
+                        {profileError}
+                      </p>
+                    )}
+                  </>
+                )}
+                </motion.main>
+              </TabsContent>
+            )
           )}
-
-          {data && detail === 'assets' && (
-            <div className="space-y-4">
-              <Card className="p-4 border-border bg-card">
-                <span className="text-xs text-muted-foreground">总资产</span>
-                <div className="text-2xl font-bold font-mono mt-1">¥ {formatAmount(data.totalAssets)}</div>
-              </Card>
-              <div className="divide-y divide-border/60">
-                {data.accounts.map((a) => (
-                  <div key={a.id} className="py-3 flex justify-between text-xs">
-                    <div>
-                      <div className="font-semibold">{a.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{a.currency} 活期</div>
-                    </div>
-                    <span className="font-mono font-medium">¥ {formatAmount(a.balance)}</span>
+          <p className="bank-service-note">文财银行 · 模拟银行服务</p>
+        </div>
+        <TabsList className="bank-bottom-nav" aria-label="底部导航" inert={agentOpen || !!detail || !!paymentView || !!cardService}>
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <TabsTrigger
+              key={id}
+              value={id}
+              className={`bank-lift${tab === id ? ' is-active' : ''}`}
+              aria-current={tab === id ? 'page' : undefined}
+              type="button"
+            >
+              <Icon size={19} strokeWidth={tab === id ? 2.4 : 1.8} />
+              <span>{label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <DraggableFloatingButton
+          hidden={agentOpen || !!detail || !!paymentView}
+          expanded={agentOpen}
+          onActivate={() => openAgent()}
+          label="打开文财 Agent"
+          controls="bank-agent-conversation"
+        >
+          <span className="bank-fab-label">问文财</span>
+          <AgentAvatar small />
+        </DraggableFloatingButton>
+        <Sheet
+          open={agentOpen}
+          onClose={closeAgent}
+          title="文财 Agent"
+          className="bank-agent-sheet"
+          header={
+            <span className="bank-agent-heading">
+              <AgentAvatar small />
+              <strong>文财 Agent</strong>
+              <small>
+                <i />
+                在线
+              </small>
+            </span>
+          }
+        >
+          <div id="bank-agent-conversation" className="bank-agent-conversation">
+            <ChatView request={request} active={agentOpen} userId={user.id} />
+          </div>
+        </Sheet>
+        <Sheet open={!!paymentView} onClose={closePayment} title="转账与收款" className="bank-payment-sheet">
+          {paymentView && <PaymentCenter userId={user.id} initialView={paymentView} initialAccountId={paymentAccountId} />}
+        </Sheet>
+        <Sheet open={!!cardService} onClose={() => setCardService(null)} title={cardService?.mode === 'apply' ? '申请新卡' : cardService?.mode === 'remark' ? '卡片备注' : cardService?.mode === 'repay' ? '信用卡还款' : '卡片管理'} className="bank-payment-sheet">
+          {cardService?.mode === 'apply' ? <CardApplication /> : cardService && data && <CardServices key={`${cardService.id}-${cardService.mode}`} data={data} cardId={cardService.id} mode={cardService.mode} userId={user.id} />}
+        </Sheet>
+        <Sheet
+          open={!!detail}
+          onClose={() => setDetail(null)}
+          title={title}
+          className="bank-detail-sheet"
+        >
+          <div className="bank-detail-scroll">
+            {data && detail === 'bill' && (
+              <>
+                <p className="bank-page-note">
+                  {data.monthly.period.replace('-', ' 年 ')} 月 · 账户真实收支
+                </p>
+                <FinancialReport data={data.monthly.categories} total={data.monthly.expense} />
+                <div className="bank-trend-panel">
+                  <AnimatedBarChart title="近六个月支出" data={data.trend} />
+                </div>
+                <Button
+                  className="bank-primary bank-lift bank-full-width"
+                  onClick={() => openAgent('帮我分析本月的消费，按分类展示支出，并给一些建议')} type="button"
+                >
+                  让文财帮我分析
+                  <ArrowUpRight size={17} />
+                </Button>
+              </>
+            )}
+            {data && detail === 'assets' && (
+              <>
+                <div className="bank-detail-total">
+                  <span>账户总资产</span>
+                  <AnimatedAmount value={data.totalAssets} prefix="¥ " />
+                </div>
+                {[
+                  { label: '可用余额', value: data.availableBalance },
+                  { label: '理财持仓本金', value: data.investmentPrincipal },
+                  { label: '生日计划预留资金', value: data.reservedBalance ?? 0 },
+                ].map((item) => (
+                  <div key={item.label} className="bank-detail-row">
+                    <span>{item.label}</span>
+                    <strong>¥ {formatAmount(item.value)}</strong>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {data && detail === 'transactions' && (
-            <div className="space-y-2">
+                <p className="bank-page-note">理财按持仓本金统计，不包含预计收益。</p>
+                {data.accounts.map((account) => (
+                  <div key={account.id} className="bank-detail-row">
+                    <span>{account.name}</span>
+                    <strong>¥ {formatAmount(account.balance)}</strong>
+                  </div>
+                ))}
+              </>
+            )}
+            {data && detail === 'receive' && (
+              <>
+                <div className="bank-receive-icon">
+                  <ArrowDownLeft size={32} />
+                </div>
+                <h3 className="bank-receive-title">{user.name}的收款账户</h3>
+                <p className="bank-page-note">AA 收款可以交给文财处理。</p>
+                {data.accounts.map((account) => (
+                  <div className="bank-detail-row" key={account.id}>
+                    <span>
+                      {account.name}
+                      <small>{account.currency}</small>
+                    </span>
+                    <strong>¥ {formatAmount(account.balance)}</strong>
+                  </div>
+                ))}
+                {!data.accounts.length && <p className="bank-empty">暂无可用收款账户</p>}
+                <Button
+                  className="bank-primary bank-lift bank-full-width"
+                  onClick={() => openAgent('我想发起一笔AA收款，请帮我准备')} type="button"
+                >
+                  发起 AA 收款
+                  <ChevronRight size={17} />
+                </Button>
+              </>
+            )}
+            {data && detail === 'transactions' && (
               <TransactionList transactions={data.transactions} hidden={hidden} />
-            </div>
-          )}
-
-          {data && detail === 'tasks' && <TaskCenter onFollowUp={(text) => openAgent(text)} />}
-        </div>
-      </Drawer>
+            )}
+            {data && detail === 'notifications' && (
+              <>
+                {data.notifications?.map((notice) => <article key={notice.id} className="bank-payment-address"><strong>{notice.title}</strong><p>{notice.body}</p>{notice.actionId && <a className="bank-text-button" href={`/confirm/${encodeURIComponent(notice.actionId)}`}>核对并确认</a>}</article>)}
+                <div className="bank-notice">
+                  <Bell size={20} />
+                  <span>
+                    订阅服务提醒<small>查看正在生效的订阅，提前安排支出。</small>
+                  </span>
+                </div>
+                <SubscriptionList
+                  subscriptions={data.subscriptions.filter((item) => item.status === 'active')}
+                  hidden={hidden}
+                />
+                <Button
+                  className="bank-primary bank-lift bank-full-width"
+                  onClick={() => openAgent('帮我查看订阅扣费时间和提醒设置')} type="button"
+                >
+                  管理订阅提醒
+                  <ChevronRight size={17} />
+                </Button>
+              </>
+            )}
+            {detail === 'tasks' && <TaskCenter onFollowUp={openAgent} />}
+          </div>
+        </Sheet>
+      </Tabs>
     </div>
   )
 }
@@ -704,11 +652,8 @@ function TransactionList({
   transactions: DashboardData['transactions']
   hidden: boolean
 }) {
-  if (transactions.length === 0) {
-    return <div className="text-center py-6 text-xs text-muted-foreground">暂无交易记录</div>
-  }
   return (
-    <div className="divide-y divide-border/60">
+    <div className="bank-transaction-list">
       {transactions.map((transaction, index) => {
         const Icon =
           transaction.amount > 0
@@ -720,46 +665,66 @@ function TransactionList({
                 : ReceiptText
         return (
           <Reveal key={transaction.id} delay={Math.min(index, 8) * 50}>
-            <div className="flex items-center justify-between py-3 hover:bg-muted/40 px-2 rounded-lg transition-colors">
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "flex size-9 items-center justify-center rounded-full text-xs font-medium",
-                    transaction.amount > 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  <Icon className="size-4" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-foreground">{transaction.counterparty}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {new Intl.DateTimeFormat('zh-CN', {
-                      timeZone: 'Asia/Shanghai',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    }).format(new Date(transaction.occurredAt))}
-                  </div>
-                </div>
+            <article className="bank-transaction-row bank-lift" tabIndex={0}>
+              <span
+                className={`bank-transaction-icon${transaction.amount > 0 ? ' is-income' : ''}`}
+              >
+                <Icon size={20} />
+              </span>
+              <div>
+                <strong>{transaction.counterparty}</strong>
+                <small>
+                  {new Intl.DateTimeFormat('zh-CN', {
+                    timeZone: 'Asia/Shanghai',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                  }).format(new Date(transaction.occurredAt))}
+                </small>
               </div>
-              <div className="text-right">
-                <span
-                  className={cn(
-                    "font-mono font-medium text-sm",
-                    transaction.amount > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
-                  )}
-                >
-                  {hidden
-                    ? '••••••'
-                    : `${transaction.amount > 0 ? '+' : '−'}${formatAmount(Math.abs(transaction.amount))}`}
-                </span>
-              </div>
-            </div>
+              <b className={transaction.amount > 0 ? 'is-income' : ''}>
+                {hidden
+                  ? '••••••'
+                  : `${transaction.amount > 0 ? '+' : '−'}${formatAmount(Math.abs(transaction.amount))}`}
+              </b>
+            </article>
           </Reveal>
         )
       })}
+      {!transactions.length && <p className="bank-empty">暂无交易记录</p>}
+    </div>
+  )
+}
+
+function SubscriptionList({
+  subscriptions,
+  hidden,
+}: {
+  subscriptions: DashboardData['subscriptions']
+  hidden: boolean
+}) {
+  return (
+    <div className="bank-subscription-list">
+      {subscriptions.map((item, i) => (
+        <Reveal key={item.id} delay={i * 70}>
+          <div className="bank-subscription bank-lift">
+            <span className="bank-transaction-icon">
+              <ShoppingBag size={20} />
+            </span>
+            <span>
+              <strong>{item.merchant}</strong>
+              <small>
+                {item.status === 'active' ? '订阅生效中' : '已取消'} ·{' '}
+                {item.cycle === 'monthly' ? '每月' : '每年'}
+              </small>
+            </span>
+            <b>{hidden ? '••••' : `¥ ${formatAmount(item.amount)}`}</b>
+          </div>
+        </Reveal>
+      ))}
+      {!subscriptions.length && <p className="bank-empty">暂无订阅记录</p>}
     </div>
   )
 }
