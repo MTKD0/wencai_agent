@@ -1,4 +1,5 @@
 import { ShieldCheck, ArrowUpRight } from 'lucide-react'
+import { Button } from '#/components/ui/button'
 import { Panel, Empty, type ViewProps } from '../shared'
 import { money, dateTime } from '../utils'
 
@@ -16,10 +17,10 @@ export function AdminInvestments({ s, actions }: ViewProps) {
           <h2>{userRating ? `${userRating} · ${['', '谨慎型', '稳健型', '平衡型', '积极型', '进取型'][parseInt(userRating.replace('R', ''))] ?? userRating}` : '尚未完成风险测评'}</h2>
           <p>{userRating ? `当前风险等级 ${userRating}` : '先完成五项风险问卷，再选择适合自己的模拟产品。'}</p>
         </div>
-        <button className="button button-primary" onClick={actions.risk}>
+        <Button onClick={actions.risk}>
           {userRating ? '重新测评' : '开始风险测评'}
           <ArrowUpRight size={15} />
-        </button>
+        </Button>
       </div>
 
       <div className="section-caption">
@@ -44,9 +45,9 @@ export function AdminInvestments({ s, actions }: ViewProps) {
                 <div><span>起购金额</span><b>{money(p.minAmount)}</b></div>
                 <div><span>申购状态</span><b className={eligible ? 'text-green' : ''}>{eligible ? '风险匹配' : !userRating ? '待风险测评' : '超出风险等级'}</b></div>
               </div>
-              <button className={`button ${eligible ? 'button-primary' : 'button-outline'}`} disabled={!eligible} onClick={() => actions.purchase(p.id)}>
+              <Button variant={eligible ? 'default' : 'outline'} disabled={!eligible} onClick={() => actions.purchase(p.id)}>
                 申购产品<ArrowUpRight size={15} />
-              </button>
+              </Button>
             </div>
           )
         })}
@@ -66,13 +67,14 @@ export function AdminInvestments({ s, actions }: ViewProps) {
                     <td className="amount">{money(h.principal)}</td>
                     <td>{dateTime(h.redeemableAt)}</td>
                     <td>
-                      <button
-                        className="button button-outline button-sm"
+                      <Button
+                        variant="outline"
+                        size="sm"
                         disabled={h.principal === 0 || h.redeemableAt > s.now}
                         onClick={() => actions.redeem(h.id)}
                       >
                         {h.principal === 0 ? '已全部赎回' : h.redeemableAt > s.now ? '锁定中' : '赎回'}
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}

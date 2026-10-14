@@ -1,4 +1,5 @@
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '#/components/ui/table'
+import { Button } from '#/components/ui/button'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -71,14 +72,14 @@ export function AdminSecurity({ s }: ViewProps) {
   return (
     <>
       {toast && (
-        <div className="load-error" role="status" style={{ borderColor: '#cfe3ff', background: '#f4f8ff' }}>
+        <div className="load-error" role="status" style={{ borderColor: 'color-mix(in oklab, var(--primary) 25%, transparent)', background: 'color-mix(in oklab, var(--primary) 6%, transparent)' }}>
           <CheckCircle2 size={18} className="text-green" />
           <div>
             <strong>{toast}</strong>
           </div>
-          <button type="button" className="button button-outline button-sm" onClick={() => setToast('')}>
+          <Button variant="outline" size="sm" type="button" onClick={() => setToast('')}>
             知道了
-          </button>
+          </Button>
         </div>
       )}
 
@@ -98,16 +99,14 @@ export function AdminSecurity({ s }: ViewProps) {
         {chain ? (
           <>
             <div className="chain-actions">
-              <button type="button"
-                className="button button-outline button-sm"
+              <Button variant="outline" size="sm" type="button"
                 onClick={() => client.invalidateQueries({ queryKey: ['admin', 'security'] })}
                 disabled={security.isFetching}
               >
                 <Eye size={14} />
                 校验整链
-              </button>
-              <button type="button"
-                className="button button-outline button-sm"
+              </Button>
+              <Button variant="outline" size="sm" type="button"
                 onClick={() => {
                   // 选一条较早的记录：链尾容易被后续写入掩盖，中间位置最能说明问题
                   const target = chain.entries.filter((e) => e.seq > 1)[Math.floor(Math.max(chain.entries.length - 8, 0) / 2)]
@@ -117,16 +116,15 @@ export function AdminSecurity({ s }: ViewProps) {
               >
                 <Bug size={14} />
                 模拟篡改一条记录
-              </button>
+              </Button>
               {chain.entries.some((e) => e.tampered) && (
-                <button type="button"
-                  className="button button-primary button-sm"
+                <Button variant="default" size="sm" type="button"
                   onClick={() => command.mutate({ type: 'restoreAudit' })}
                   disabled={command.isPending}
                 >
                   <Link2 size={14} />
                   还原并重新校验
-                </button>
+                </Button>
               )}
             </div>
             <div className="chain-list">
@@ -341,10 +339,10 @@ export function AdminSecurity({ s }: ViewProps) {
         title="代码沙箱监控"
         subtitle="模型生成的 JavaScript 在 QuickJS WASM 中执行：无文件系统、无网络、限时 1 秒、限内存 32MB"
         action={
-          <button type="button" className="button button-outline button-sm" onClick={() => sandbox.refetch()} disabled={sandbox.isFetching}>
+          <Button variant="outline" size="sm" type="button" onClick={() => sandbox.refetch()} disabled={sandbox.isFetching}>
             {sandbox.isFetching ? <Loader2 size={14} className="spin" /> : <Play size={14} />}
             运行沙箱样本
-          </button>
+          </Button>
         }
       >
         {sandbox.data ? (

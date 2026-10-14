@@ -54,7 +54,7 @@ export function AdminHome({ onSelect }: { onSelect: (userId: string) => void }) 
             </div>
           </div>
           {query.isError ? (
-            <div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法读取用户列表</strong><p>{query.error.message}</p></div><button className="button button-outline button-sm" onClick={() => void query.refetch()}>重试</button></div>
+            <div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法读取用户列表</strong><p>{query.error.message}</p></div><Button variant="outline" size="sm" onClick={() => void query.refetch()}>重试</Button></div>
           ) : query.isPending ? (
             <div className="loading-workspace"><Loader2 size={28} className="spin" /><strong>正在读取用户列表</strong></div>
           ) : filtered.length === 0 ? (

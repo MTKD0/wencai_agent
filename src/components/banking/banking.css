@@ -1,7 +1,7 @@
 .bank-stage {
   min-height: 100dvh;
   background:
-    radial-gradient(ellipse at 50% 0%, oklch(0.96 0 0), transparent 60%),
+    radial-gradient(ellipse at 50% 0%, var(--muted), transparent 60%),
     var(--background);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -140,8 +140,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #ff526c;
-  border: 1.5px solid #eaf4ff;
+  background: var(--destructive);
+  border: 1.5px solid var(--card);
 }
 .bank-page-content {
   animation: bank-enter 500ms var(--bank-ease) backwards;
@@ -160,9 +160,13 @@
   height: 150px;
   right: -135px;
   top: -10px;
-  border-top: 1px solid #ffffffa6;
+  border-top: 1px solid color-mix(in oklab, var(--card) 65%, transparent);
   border-radius: 50%;
-  background: linear-gradient(160deg, #ffffff70, #c4e2ff36);
+  background: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--accent) 70%, transparent),
+    color-mix(in oklab, var(--primary) 14%, transparent)
+  );
   transform: rotate(-18deg);
   pointer-events: none;
 }
@@ -170,7 +174,7 @@
   top: 40px;
   right: -140px;
   transform: rotate(-28deg);
-  background: #ffffff33;
+  background: color-mix(in oklab, var(--accent) 40%, transparent);
 }
 .bank-asset-label {
   display: flex;
@@ -207,7 +211,7 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  color: #1264ff;
+  color: var(--primary);
   background: none;
   border: none;
   padding: 5px 1px;
@@ -346,11 +350,11 @@
   position: relative;
   margin-top: 11px;
   border-radius: 17px;
-  border: 1px solid #fff;
+  border: 1px solid var(--border);
   padding: 15px;
   overflow: hidden;
-  background: linear-gradient(125deg, #fff 50%, #edf6ff);
-  box-shadow: 0 5px 20px #315e9410;
+  background: linear-gradient(125deg, var(--card) 50%, color-mix(in oklab, var(--primary) 6%, var(--card)));
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
 }
 .bank-analysis-tile > span:first-child {
   z-index: 1;
@@ -372,8 +376,8 @@
   height: 33px;
   width: 33px;
   border-radius: 50%;
-  color: #0962ff;
-  background: #e6f2ff;
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
   margin-left: 18px;
   z-index: 1;
 }
@@ -418,7 +422,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #eaf0fa;
+  border-bottom: 1px solid var(--border);
   border-radius: 7px;
   padding: 9px 3px;
 }
@@ -428,13 +432,13 @@
   flex-shrink: 0;
   width: 39px;
   height: 39px;
-  background: #eaf4ff;
-  color: #1267ff;
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  color: var(--primary);
   border-radius: 50%;
 }
 .bank-transaction-icon.is-income {
-  color: white;
-  background: linear-gradient(140deg, #67c8ff, #1681ff);
+  color: var(--primary-foreground);
+  background: linear-gradient(140deg, color-mix(in oklab, var(--primary) 80%, white), var(--primary));
   box-shadow: inset 0 0 0 4px #ffffff15;
 }
 .bank-transaction-row > div {
@@ -459,11 +463,11 @@
   font-variant-numeric: tabular-nums;
 }
 .bank-transaction-row > b.is-income {
-  color: #0962ff;
+  color: var(--primary);
 }
 .bank-service-note {
   text-align: center;
-  color: #8da2c4;
+  color: var(--muted-foreground);
   font-size: 10px;
   margin-top: 21px !important;
 }
@@ -525,12 +529,12 @@
   cursor: grab !important;
   display: grid;
   place-items: center;
-  border: 2px solid #82c5ff;
+  border: 2px solid color-mix(in oklab, var(--primary) 45%, var(--border));
   border-radius: 50%;
-  background: linear-gradient(140deg, #fff, #cdeaff);
+  background: linear-gradient(140deg, var(--card), color-mix(in oklab, var(--primary) 18%, var(--card)));
   box-shadow:
-    0 4px 16px #146bff45,
-    inset 0 0 0 3px #fff;
+    0 4px 16px color-mix(in oklab, var(--primary) 28%, transparent),
+    inset 0 0 0 3px var(--card);
   transition:
     opacity 200ms,
     transform 280ms var(--bank-ease),
@@ -548,20 +552,20 @@
   cursor: grabbing !important;
   transform: scale(1.06);
   transition: box-shadow 200ms;
-  box-shadow: 0 9px 24px #146bff55, inset 0 0 0 3px #fff;
+  box-shadow: 0 9px 24px color-mix(in oklab, var(--primary) 34%, transparent), inset 0 0 0 3px var(--card);
 }
 .bank-fab-label {
   position: absolute;
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(120deg, #51b6ff, #1366ff);
-  color: white;
+  background: linear-gradient(120deg, color-mix(in oklab, var(--primary) 82%, white), var(--primary));
+  color: var(--primary-foreground);
   font-size: 10px;
   padding: 2px 7px;
   white-space: nowrap;
   border-radius: 9px;
-  box-shadow: 0 4px 10px #146bff30;
+  box-shadow: 0 4px 10px color-mix(in oklab, var(--primary) 20%, transparent);
 }
 .bank-fab-label::after {
   content: '';
@@ -569,7 +573,7 @@
   top: 100%;
   left: 45%;
   border: 4px solid transparent;
-  border-top-color: #2183ff;
+  border-top-color: var(--primary);
 }
 .bank-agent-avatar {
   display: inline-flex;
@@ -579,10 +583,15 @@
   width: 43px;
   height: 43px;
   flex-shrink: 0;
-  border: 1px solid #8ecaff;
+  border: 1px solid color-mix(in oklab, var(--primary) 50%, var(--border));
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 20%, #fff, #e8f6ff 65%, #b4d9ff);
-  box-shadow: inset 0 0 0 3px #ffffffd0;
+  background: radial-gradient(
+    circle at 30% 20%,
+    var(--card),
+    color-mix(in oklab, var(--primary) 14%, var(--card)) 65%,
+    color-mix(in oklab, var(--primary) 40%, var(--card))
+  );
+  box-shadow: inset 0 0 0 3px color-mix(in oklab, var(--card) 82%, transparent);
 }
 .bank-agent-avatar::after {
   content: '+';
@@ -591,7 +600,7 @@
   right: 5px;
   font-size: 17px;
   font-weight: bold;
-  color: #1879ff;
+  color: var(--primary);
 }
 .bank-agent-avatar.is-small {
   width: 35px;
@@ -604,15 +613,15 @@
   gap: 7px;
   width: 29px;
   height: 21px;
-  border: 3px solid white;
+  border: 3px solid var(--card);
   border-radius: 10px;
-  background: linear-gradient(130deg, #4aa8ff, #0754fc);
-  box-shadow: 0 2px 4px #146bff25;
+  background: linear-gradient(130deg, color-mix(in oklab, var(--primary) 75%, white), color-mix(in oklab, var(--primary) 90%, black));
+  box-shadow: 0 2px 4px color-mix(in oklab, var(--primary) 15%, transparent);
 }
 .bank-robot-face i {
   width: 4px;
   height: 5px;
-  background: white;
+  background: var(--card);
   border-radius: 50%;
 }
 .bank-agent-avatar.is-small .bank-robot-face {
@@ -628,7 +637,7 @@
   inset: 0;
   z-index: 9;
   border: 0;
-  background: #3066ab12;
+  background: color-mix(in oklab, var(--foreground) 7%, transparent);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -651,11 +660,11 @@
   min-height: 300px;
   display: flex;
   flex-direction: column;
-  border: 1px solid #dfebff;
-  border-top: 2px solid #176bff;
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--primary);
   border-radius: 29px 29px 0 0;
-  background: linear-gradient(160deg, #fff, #f7faff);
-  box-shadow: 0 -8px 45px #2066cb12;
+  background: linear-gradient(160deg, var(--card), color-mix(in oklab, var(--primary) 4%, var(--card)));
+  box-shadow: 0 -8px 45px rgba(0, 0, 0, 0.07);
   transform: translateY(105%);
   visibility: hidden;
   pointer-events: none;
@@ -688,12 +697,12 @@
   cursor: grab !important;
 }
 .bank-sheet-grip:active { cursor: grabbing !important; }
-.bank-sheet-grip:focus-visible { outline: 2px solid #176bff; outline-offset: -4px; border-radius: 20px; }
+.bank-sheet-grip:focus-visible { outline: 2px solid var(--ring); outline-offset: -4px; border-radius: 20px; }
 .bank-sheet-handle {
   display: block;
   height: 5px;
   width: 42px;
-  background: #cfdaed;
+  background: var(--border);
   border-radius: 5px;
 }
 .bank-sheet-heading {
@@ -709,7 +718,7 @@
   font-weight: 750;
 }
 .bank-sheet-heading > .bank-icon-button {
-  color: #7d8cad;
+  color: var(--muted-foreground);
 }
 .bank-agent-heading {
   display: flex;
@@ -725,12 +734,12 @@
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: #1678dd;
+  color: var(--primary);
 }
 .bank-agent-heading small i {
   width: 6px;
   height: 6px;
-  background: #00b5ab;
+  background: var(--primary);
   border-radius: 50%;
 }
 .bank-agent-conversation {
@@ -746,7 +755,7 @@
   overscroll-behavior: contain;
   padding: 1px 18px 12px;
   scrollbar-width: thin;
-  scrollbar-color: #d9e6fc transparent;
+  scrollbar-color: var(--border) transparent;
 }
 .bank-agent-welcome {
   padding: 1px 2px 17px;
@@ -775,15 +784,16 @@
   justify-content: center;
   align-items: center;
   gap: 8px;
-  border: 1px solid #e3ecff;
+  border: 1px solid var(--border);
   border-radius: 14px;
-  background: linear-gradient(130deg, #fff, #f1f6ff);
+  background: linear-gradient(130deg, var(--card), color-mix(in oklab, var(--primary) 5%, var(--card)));
+  color: var(--card-foreground);
   padding: 10px 5px;
   font-size: 12px;
   white-space: nowrap;
 }
 .bank-agent-suggestions svg {
-  color: #1267ff;
+  color: var(--primary);
   flex-shrink: 0;
 }
 .bank-message {
@@ -864,7 +874,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #6693d0;
+  background: var(--muted-foreground);
   animation: bank-dot 1000ms ease-in-out infinite;
 }
 .bank-thinking i:nth-child(2) {
@@ -940,19 +950,19 @@
 }
 .bank-agent-disclaimer {
   padding: 6px 10px max(8px, env(safe-area-inset-bottom));
-  color: #92a3bf;
+  color: var(--muted-foreground);
   font-size: 9px;
   text-align: center;
   flex-shrink: 0;
 }
 .bank-chat-error,
 .bank-verification-note {
-  border: 1px solid #f5d4c6;
-  background: #fff5ed;
+  border: 1px solid color-mix(in oklab, var(--destructive) 35%, transparent);
+  background: color-mix(in oklab, var(--destructive) 8%, transparent);
   padding: 10px;
   border-radius: 12px;
   font-size: 12px;
-  color: #94613c;
+  color: color-mix(in oklab, var(--destructive) 65%, var(--foreground));
   margin-top: 12px !important;
 }
 .bank-chat-error small {
@@ -1002,22 +1012,22 @@
 .bank-card-controls > button { width: 30px; height: 30px; }
 .bank-card-dots { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; max-width: 65%; }
 .bank-card-dots button { padding: 10px 5px; background: transparent; border: 0; }
-.bank-card-dots span { display: block; width: 6px; height: 6px; border-radius: 6px; background: #cbdcf5; transition: width 250ms, background 250ms; }
-.bank-card-dots [aria-current="true"] span { width: 20px; background: #176bff; }
-.bank-card-count { color: #7184a9; font-size: 11px; min-width: 32px; text-align: center; }
+.bank-card-dots span { display: block; width: 6px; height: 6px; border-radius: 6px; background: var(--border); transition: width 250ms, background 250ms; }
+.bank-card-dots [aria-current="true"] span { width: 20px; background: var(--primary); }
+.bank-card-count { color: var(--muted-foreground); font-size: 11px; min-width: 32px; text-align: center; }
 .bank-account-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 22px; }
-.bank-account-summary > div { padding: 16px 14px; background: linear-gradient(145deg, #fff, #eff6ff); border: 1px solid #e0ebff; border-radius: 18px; }
-.bank-account-summary span { display: block; color: #7184a9; font-size: 12px; margin-bottom: 8px; }
+.bank-account-summary > div { padding: 16px 14px; background: linear-gradient(145deg, var(--card), color-mix(in oklab, var(--primary) 6%, var(--card))); border: 1px solid var(--border); border-radius: 18px; }
+.bank-account-summary span { display: block; color: var(--muted-foreground); font-size: 12px; margin-bottom: 8px; }
 .bank-account-summary strong { font-size: 19px; font-variant-numeric: tabular-nums; }
-.bank-account-summary .is-income { color: #176bff; }
+.bank-account-summary .is-income { color: var(--primary); }
 .bank-card-actions { display: flex; gap: 7px; margin: 13px 0 20px; }
 .bank-card-actions button { flex: 1; padding: 11px 7px; font-size: 12px; white-space: nowrap; }
 .bank-card-actions button:disabled { opacity: .45; cursor: default; }
-.bank-credit-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border: 1px solid #e0e6f4; background: linear-gradient(135deg, #f6f8ff, #edf1fa); padding: 18px; border-radius: 18px; }
-.bank-credit-summary span { display: block; color: #7885a5; font-size: 12px; margin-bottom: 8px; }
-.bank-credit-summary strong { font-size: 18px; color: #344774; }
-.bank-credit-summary p { grid-column: 1 / -1; margin: 0; color: #7d8ba9; font-size: 11px; }
-.bank-credit-overview { display: flex; align-items: center; gap: 14px; background: #eff3fc; color: #344774; border-radius: 16px; padding: 20px; }
+.bank-credit-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border: 1px solid var(--border); background: linear-gradient(135deg, var(--card), var(--muted)); padding: 18px; border-radius: 18px; }
+.bank-credit-summary span { display: block; color: var(--muted-foreground); font-size: 12px; margin-bottom: 8px; }
+.bank-credit-summary strong { font-size: 18px; color: var(--foreground); }
+.bank-credit-summary p { grid-column: 1 / -1; margin: 0; color: var(--muted-foreground); font-size: 11px; }
+.bank-credit-overview { display: flex; align-items: center; gap: 14px; background: var(--muted); color: var(--foreground); border-radius: 16px; padding: 20px; }
 .bank-credit-overview span { font-size: 12px; }
 .bank-credit-overview strong { display: block; font-size: 26px; margin-top: 8px; }
 .bank-cash-account,
@@ -1061,12 +1071,12 @@
   gap: 10px;
   padding: 17px 13px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--line);
   text-align: left;
 }
 .bank-life-actions button > svg {
-  color: #1671ff;
+  color: var(--primary);
 }
 .bank-life-actions strong {
   font-size: 15px;
@@ -1096,7 +1106,7 @@
   gap: 4px;
   align-items: center;
   font-size: 11px;
-  color: #6d8eb1;
+  color: var(--muted-foreground);
   margin-top: 8px;
 }
 .bank-profile-links {
@@ -1108,7 +1118,7 @@
   gap: 12px;
   align-items: center;
   padding: 17px 14px;
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 17px;
   text-decoration: none;
@@ -1116,7 +1126,7 @@
   color: var(--sea-ink);
 }
 .bank-profile-links > * > svg:first-child {
-  color: #246dff;
+  color: var(--primary);
 }
 .bank-profile-links > * > span:not(.bank-agent-avatar) {
   flex: 1;
@@ -1195,7 +1205,7 @@
   display: flex;
   gap: 3px;
   border-radius: 8px;
-  background: #f0f5fd;
+  background: var(--muted);
   padding: 3px;
 }
 .bank-chart-switch button {
@@ -1205,13 +1215,13 @@
   height: 25px;
   border: 0;
   border-radius: 6px;
-  color: #859ac2;
+  color: var(--muted-foreground);
   background: none;
 }
 .bank-chart-switch button[aria-pressed='true'] {
-  background: #fff;
-  color: #1267ff;
-  box-shadow: 0 2px 5px #315e9410;
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
 }
 .bank-detail-total {
   display: grid;
@@ -1242,8 +1252,8 @@
   width: 66px;
   height: 66px;
   border-radius: 50%;
-  color: #1267ff;
-  background: #eaf3ff;
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
   margin: 17px auto;
 }
 .bank-receive-title {
@@ -1257,10 +1267,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #176bff;
+  color: var(--primary);
   padding: 15px;
-  border: 1px solid #e3ecff;
-  background: #f1f7ff;
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
   border-radius: 16px;
   font-size: 13px;
   margin: 8px 0 12px;
@@ -1278,7 +1288,7 @@
   font-size: 12px;
 }
 .bank-error {
-  color: #bf4b3a;
+  color: var(--destructive);
   font-size: 12px;
   margin: 10px 0 !important;
 }
@@ -1316,8 +1326,8 @@
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  background: #eff6ff;
-  color: #647b9e;
+  background: var(--muted);
+  color: var(--muted-foreground);
 }
 .bank-spin {
   animation: bank-spin 900ms linear infinite;
@@ -1381,12 +1391,12 @@
   transition: background 200ms;
 }
 .bank-gen-table tbody tr:hover {
-  background: #eff6ff;
+  background: var(--accent);
 }
 .bank-follow-up {
   font-size: 12px;
-  color: #1267ff;
-  background: #f1f7ff;
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
   border: 1px solid var(--chip-line);
   border-radius: 20px;
   padding: 8px 12px;
@@ -1421,7 +1431,7 @@
     inset: 0;
     border-radius: inherit;
     pointer-events: none;
-    box-shadow: inset 0 0 0 1px #fff;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ring) 40%, transparent);
   }
 }
 @media (max-width: 519px) {
@@ -1490,51 +1500,51 @@
 }
 .bank-payment-sheet { height: calc(100% - max(12px, env(safe-area-inset-top))); }
 .bank-payment-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px max(24px, env(safe-area-inset-bottom)); }
-.bank-payment-caption { display: flex; align-items: center; gap: 6px; color: #7384a9; font-size: 11px; margin: 0 0 16px; }
-.bank-payment-tabs, .bank-payment-switch { display: flex; gap: 4px; padding: 4px; background: #ecf3ff; border-radius: 14px; margin-bottom: 20px; }
-.bank-payment-tabs button, .bank-payment-switch button { display: flex; justify-content: center; align-items: center; gap: 5px; flex: 1; border: 0; border-radius: 10px; background: transparent; padding: 10px 4px; font-size: 12px; color: #64779f; cursor: pointer; }
-.bank-payment-tabs .is-active, .bank-payment-switch .is-active { background: #fff; color: #0864ff; box-shadow: 0 3px 10px #1769ee12; font-weight: 650; }
+.bank-payment-caption { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: 11px; margin: 0 0 16px; }
+.bank-payment-tabs, .bank-payment-switch { display: flex; gap: 4px; padding: 4px; background: var(--muted); border-radius: 14px; margin-bottom: 20px; }
+.bank-payment-tabs button, .bank-payment-switch button { display: flex; justify-content: center; align-items: center; gap: 5px; flex: 1; border: 0; border-radius: 10px; background: transparent; padding: 10px 4px; font-size: 12px; color: var(--muted-foreground); cursor: pointer; }
+.bank-payment-tabs .is-active, .bank-payment-switch .is-active { background: var(--card); color: var(--primary); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07); font-weight: 650; }
 .bank-payment-form { display: grid; gap: 16px; }
 .bank-payment-form h2, .bank-payment-scroll h2 { font-size: 20px; margin: 0 0 8px; }
 .bank-payment-form .bank-payment-switch { margin: 0; }
-.bank-payment-form > label { display: grid; gap: 8px; font-size: 13px; font-weight: 550; color: #273866; }
-.bank-payment-form input:not([type=radio]), .bank-payment-form select { width: 100%; min-width: 0; border: 1px solid #dce7fa; border-radius: 12px; padding: 13px 12px; background: #f8fbff; color: #10234e; font-family: inherit; font-size: 16px; outline: none; transition: border-color .2s, box-shadow .2s, background .2s; }
-.bank-payment-form input:focus, .bank-payment-form select:focus { border-color: #2675ff; background: #fff; box-shadow: 0 0 0 3px #2675ff17; }
-.bank-payment-form small, .bank-payment-balance { color: #7384a9; font-size: 12px; font-weight: 400; }
+.bank-payment-form > label { display: grid; gap: 8px; font-size: 13px; font-weight: 550; color: var(--foreground); }
+.bank-payment-form input:not([type=radio]), .bank-payment-form select { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: 12px; padding: 13px 12px; background: var(--muted); color: var(--foreground); font-family: inherit; font-size: 16px; outline: none; transition: border-color .2s, box-shadow .2s, background .2s; }
+.bank-payment-form input:focus, .bank-payment-form select:focus { border-color: var(--ring); background: var(--card); box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 12%, transparent); }
+.bank-payment-form small, .bank-payment-balance { color: var(--muted-foreground); font-size: 12px; font-weight: 400; }
 .bank-payment-balance { margin-top: -9px; }
-.bank-payment-amount > div { display: flex; align-items: center; border-bottom: 1px solid #dce7fa; gap: 10px; padding: 8px 0; }
-.bank-payment-amount > div > span { font-size: 30px; color: #1168ff; }
+.bank-payment-amount > div { display: flex; align-items: center; border-bottom: 1px solid var(--border); gap: 10px; padding: 8px 0; }
+.bank-payment-amount > div > span { font-size: 30px; color: var(--primary); }
 .bank-payment-form .bank-payment-amount input { background: transparent; border: 0; font-size: 36px; font-weight: 650; padding: 5px; box-shadow: none; }
-.bank-payment-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #dbe7fc; border-radius: 13px; background: #f4f8ff; color: #1865e4; padding: 12px 15px; cursor: pointer; font-size: 13px; }
+.bank-payment-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--border); border-radius: 13px; background: var(--muted); color: var(--primary); padding: 12px 15px; cursor: pointer; font-size: 13px; }
 .bank-payment-scroll button:disabled { opacity: .5; cursor: default; }
 .bank-payment-entry { display: flex; gap: 10px; margin: 16px 0; }
 .bank-payment-entry > button { flex: 1; font-size: 12px; padding: 12px 8px; }
 .bank-payment-candidates { border: 0; padding: 0; margin: 0; display: grid; gap: 9px; min-width: 0; }
-.bank-payment-candidates legend { color: #7080a0; font-size: 12px; margin-bottom: 10px; }
-.bank-payment-candidate { display: flex; align-items: center; gap: 9px; border: 1px solid #e1eafa; padding: 14px 10px; border-radius: 13px; background: #fff; cursor: pointer; }
-.bank-payment-candidate.is-selected { border-color: #287aff; background: #f2f7ff; }
+.bank-payment-candidates legend { color: var(--muted-foreground); font-size: 12px; margin-bottom: 10px; }
+.bank-payment-candidate { display: flex; align-items: center; gap: 9px; border: 1px solid var(--border); padding: 14px 10px; border-radius: 13px; background: var(--card); cursor: pointer; }
+.bank-payment-candidate.is-selected { border-color: var(--primary); background: color-mix(in oklab, var(--primary) 6%, var(--card)); }
 .bank-payment-candidate span { flex: 1; min-width: 0; }
 .bank-payment-candidate strong { font-size: 13px; }
 .bank-payment-candidate small { display: block; margin-top: 5px; }
 .bank-payment-payees { display: grid; gap: 10px; }
-.bank-payment-payee { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid #e6edfa; border-radius: 15px; background: #fff; color: #152450; padding: 14px 11px; cursor: pointer; }
+.bank-payment-payee { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--border); border-radius: 15px; background: var(--card); color: var(--foreground); padding: 14px 11px; cursor: pointer; }
 .bank-payment-payee > span:nth-child(2) { flex: 1; min-width: 0; }
 .bank-payment-payee strong { font-size: 14px; }
-.bank-payment-payee small { color: #7889ab; font-size: 11px; font-weight: 400; }
+.bank-payment-payee small { color: var(--muted-foreground); font-size: 11px; font-weight: 400; }
 .bank-payment-payee > span > small { display: block; margin-top: 5px; }
-.bank-payment-payee > svg { color: #287aff; flex-shrink: 0; }
-.bank-payment-address { background: linear-gradient(130deg, #f5faff, #e2efff); border: 1px solid #dceaff; border-radius: 20px; padding: 20px; margin: 16px 0; }
+.bank-payment-payee > svg { color: var(--primary); flex-shrink: 0; }
+.bank-payment-address { background: linear-gradient(130deg, var(--muted), color-mix(in oklab, var(--primary) 10%, var(--muted))); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin: 16px 0; }
 .bank-payment-address > span { display: flex; justify-content: space-between; font-size: 14px; }
-.bank-payment-address small { font-size: 12px; color: #7188b4; }
+.bank-payment-address small { font-size: 12px; color: var(--muted-foreground); }
 .bank-payment-address > strong { display: block; font-size: clamp(17px, 4.8vw, 23px); letter-spacing: .8px; padding-top: 25px; user-select: text; }
-.bank-payment-address p { color: #6079a8; font-size: 13px; }
+.bank-payment-address p { color: var(--muted-foreground); font-size: 13px; }
 .bank-payment-receipt { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 24px 0; }
-.bank-payment-receipt > svg { color: #1cb79b; margin-bottom: 10px; }
+.bank-payment-receipt > svg { color: var(--primary); margin-bottom: 10px; }
 .bank-payment-receipt > strong { font-size: 34px; }
-.bank-payment-receipt p { margin: 0; color: #6d80a6; font-size: 14px; }
-.bank-payment-receipt > small { color: #90a0be; font-size: 10px; overflow-wrap: anywhere; }
-.bank-payment-approval { --sea-ink: #142653; --sea-ink-soft: #7184a9; --surface-strong: #fff; --line: #dae5fa; }
-.bank-payment-approval input { background: #fff; color: #142653; font-size: 16px; }
+.bank-payment-receipt p { margin: 0; color: var(--muted-foreground); font-size: 14px; }
+.bank-payment-receipt > small { color: var(--muted-foreground); font-size: 10px; overflow-wrap: anywhere; }
+.bank-payment-approval { --sea-ink: var(--foreground); --sea-ink-soft: var(--muted-foreground); --surface-strong: var(--card); --line: var(--border); }
+.bank-payment-approval input { background: var(--card); color: var(--foreground); font-size: 16px; }
 @media (prefers-reduced-motion: reduce) {
   .bank-shell *,
   .bank-shell *::before,

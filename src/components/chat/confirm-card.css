@@ -1,29 +1,28 @@
 .bank-confirm-card {
-  --sea-ink: #142653;
-  --sea-ink-soft: #7184a9;
-  --line: #dce8fc;
-  --lagoon-deep: #0756ee;
+  --sea-ink: var(--foreground);
+  --sea-ink-soft: var(--muted-foreground);
+  --line: var(--border);
+  --lagoon-deep: var(--primary);
   padding: 18px;
-  border: 1px solid #c7dcff;
+  border: 1px solid var(--border);
   border-radius: 20px;
-  background: linear-gradient(145deg, #fff, #f0f6ff);
-  color: #142653;
-  box-shadow: 0 5px 20px #176bff08;
-  color-scheme: light;
+  background: linear-gradient(145deg, var(--card), color-mix(in oklab, var(--primary) 5%, var(--card)));
+  color: var(--foreground);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
   transition: border-color 250ms, box-shadow 250ms;
 }
-.bank-confirm-card.is-strong { border-color: #e6cfd5; background: linear-gradient(145deg, #fff, #f8f5fc); }
-.bank-confirm-card.is-success { border-color: #c3e4e1; background: linear-gradient(145deg, #fff, #f0f9fa); }
+.bank-confirm-card.is-strong { border-color: color-mix(in oklab, var(--destructive) 25%, var(--border)); background: linear-gradient(145deg, var(--card), color-mix(in oklab, var(--destructive) 4%, var(--card))); }
+.bank-confirm-card.is-success { border-color: color-mix(in oklab, var(--primary) 25%, var(--border)); background: linear-gradient(145deg, var(--card), color-mix(in oklab, var(--primary) 5%, var(--card))); }
 .bank-confirm-card.is-cancelled,
-.bank-confirm-card.is-failed { border-color: #dce4ef; background: #f8faff; }
-.bank-confirm-badge { flex-shrink: 0; margin-left: 8px; padding: 4px 9px; border-radius: 12px; background: #e4efff; color: #1761d4; font-size: 11px; font-weight: 650; }
-.is-strong > div > .bank-confirm-badge { background: #fff0f0; color: #bc3e52; }
-.is-success > div > .bank-confirm-badge { background: #e2f3ef; color: #168474; }
+.bank-confirm-card.is-failed { border-color: var(--border); background: var(--muted); }
+.bank-confirm-badge { flex-shrink: 0; margin-left: 8px; padding: 4px 9px; border-radius: 12px; background: color-mix(in oklab, var(--primary) 10%, transparent); color: var(--primary); font-size: 11px; font-weight: 650; }
+.is-strong > div > .bank-confirm-badge { background: color-mix(in oklab, var(--destructive) 10%, transparent); color: var(--destructive); }
+.is-success > div > .bank-confirm-badge { background: color-mix(in oklab, var(--primary) 10%, transparent); color: var(--primary); }
 .is-cancelled > div > .bank-confirm-badge,
-.is-failed > div > .bank-confirm-badge { background: #e9eef6; color: #64748b; }
-.bank-confirm-status { margin: 14px 0 0; text-align: center; font-size: 13px; font-weight: 600; color: #168474; }
-.is-cancelled > .bank-confirm-status { color: #64748b; }
-.is-failed > .bank-confirm-status { color: #b14757; }
-.bank-confirm-submit { background: #0756ee; border: 1px solid #0756ee; box-shadow: 0 3px 10px #0756ee15; }
-.bank-confirm-cancel { background: #fff; color: #52668f; }
-.bank-confirm-card input { color: #142653; background: #fff; font-size: 16px; }
+.is-failed > div > .bank-confirm-badge { background: var(--muted); color: var(--muted-foreground); }
+.bank-confirm-status { margin: 14px 0 0; text-align: center; font-size: 13px; font-weight: 600; color: var(--primary); }
+.is-cancelled > .bank-confirm-status { color: var(--muted-foreground); }
+.is-failed > .bank-confirm-status { color: var(--destructive); }
+.bank-confirm-submit { background: var(--primary); border: 1px solid var(--primary); box-shadow: 0 3px 10px color-mix(in oklab, var(--primary) 10%, transparent); }
+.bank-confirm-cancel { background: var(--card); color: var(--foreground); }
+.bank-confirm-card input { color: var(--foreground); background: var(--card); font-size: 16px; }

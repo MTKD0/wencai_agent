@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleAlert, Loader2, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react'
+import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '#/components/ui/dialog'
 import { SelectControl, SelectOption } from '#/components/ui/select'
@@ -91,9 +92,9 @@ export function AdminRiskReview() {
       <Metric label="已解除标记" value={String(query.data.summary.cleared)} note="常规安全规则继续生效" icon={ShieldCheck} />
     </div>}
     <Panel title="收款账户风险复核" subtitle="全局收款风险记录；自动检测只提供线索，高危确认与解除标记由管理员完成。" action={
-      <button className="button button-outline button-sm" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}>
+      <Button variant="outline" size="sm" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}>
         <RefreshCw size={14} className={query.isFetching ? 'spin' : ''} />刷新
-      </button>
+      </Button>
     }>
       <div className="risk-review-filters">
         <label className="risk-review-search"><span>查找账户</span><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="户名、账户名称或账户编号" /></label>
@@ -104,7 +105,7 @@ export function AdminRiskReview() {
           <SelectOption value="cleared">已解除标记</SelectOption>
         </SelectControl></label>
       </div>
-      {query.isError && <div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法读取风险记录</strong><p>{query.error.message}</p></div><button type="button" className="button button-outline button-sm" onClick={() => void query.refetch()}>重新加载</button></div>}
+      {query.isError && <div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法读取风险记录</strong><p>{query.error.message}</p></div><Button variant="outline" size="sm" type="button" onClick={() => void query.refetch()}>重新加载</Button></div>}
       {query.isPending ? <div className="loading-workspace" role="status"><Loader2 className="spin" size={24} /><span>正在读取收款账户风险记录</span></div> : rows.length ? <div className="table-scroll">
         <Table className="data-table risk-review-table">
           <TableHeader><TableRow><TableHead>收款账户</TableHead><TableHead>状态 / 更新时间</TableHead><TableHead>检测依据</TableHead><TableHead>人工复核</TableHead><TableHead>操作</TableHead></TableRow></TableHeader>
@@ -113,7 +114,7 @@ export function AdminRiskReview() {
             <TableCell><div className="risk-review-account"><Badge status={STATUS[row.status].badge}>{STATUS[row.status].label}</Badge><small>{dateTime(row.updatedAt)}</small></div></TableCell>
             <TableCell><ul className="risk-review-reasons">{row.reasons.length ? row.reasons.map((reason, index) => <li key={index}>{reason}</li>) : <li>等待人工核对</li>}</ul></TableCell>
             <TableCell><div className="risk-review-account"><span>{row.reviewedBy ? '已由管理员复核' : '尚未复核'}</span><small>{row.reviewedAt ? dateTime(row.reviewedAt) : '—'}</small></div></TableCell>
-            <TableCell><button type="button" className="button button-outline button-sm" onClick={() => open(row)} aria-label={`${row.status === 'cleared' ? '查看' : '复核'}${row.ownerName}的${row.accountName}`}>{row.status === 'cleared' ? '查看记录' : '查看并复核'}</button></TableCell>
+            <TableCell><Button variant="outline" size="sm" type="button" onClick={() => open(row)} aria-label={`${row.status === 'cleared' ? '查看' : '复核'}${row.ownerName}的${row.accountName}`}>{row.status === 'cleared' ? '查看记录' : '查看并复核'}</Button></TableCell>
           </TableRow>)}</TableBody>
         </Table>
       </div> : !query.isError && <Empty icon={ShieldCheck} title="暂无匹配的风险记录" text={filter === 'suspected' && !keyword ? '当前没有待人工复核的收款账户。可切换状态查看已处理记录。' : '请调整查找内容或复核状态。'} />}
@@ -133,10 +134,10 @@ export function AdminRiskReview() {
           {error && <div className="form-error" role="alert"><CircleAlert size={16} /><span>{error}</span></div>}
         </div>
         <div className="dialog-foot risk-review-dialog-foot">
-          <button type="button" className="button button-ghost" disabled={mutation.isPending} onClick={() => { setSelected(null); setError('') }}>{selected.status === 'cleared' ? '关闭' : '暂不处理'}</button>
+          <Button variant="ghost" type="button" disabled={mutation.isPending} onClick={() => { setSelected(null); setError('') }}>{selected.status === 'cleared' ? '关闭' : '暂不处理'}</Button>
           {selected.status !== 'cleared' && <div>
-            <button type="button" className="button button-outline" disabled={mutation.isPending} onClick={() => review('cleared')}>{mutation.isPending && mutation.variables?.decision === 'cleared' && <Loader2 size={14} className="spin" />}解除标记</button>
-            {selected.status === 'suspected' && <button type="button" className="button button-danger" disabled={mutation.isPending} onClick={() => review('confirmed')}>{mutation.isPending && mutation.variables?.decision === 'confirmed' && <Loader2 size={14} className="spin" />}确认高危</button>}
+            <Button variant="outline" type="button" disabled={mutation.isPending} onClick={() => review('cleared')}>{mutation.isPending && mutation.variables?.decision === 'cleared' && <Loader2 size={14} className="spin" />}解除标记</Button>
+            {selected.status === 'suspected' && <Button variant="destructive" type="button" disabled={mutation.isPending} onClick={() => review('confirmed')}>{mutation.isPending && mutation.variables?.decision === 'confirmed' && <Loader2 size={14} className="spin" />}确认高危</Button>}
           </div>}
         </div>
       </DialogContent>

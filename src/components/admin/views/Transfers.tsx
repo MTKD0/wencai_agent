@@ -1,4 +1,5 @@
 import { Plus, Clock3, Users, ArrowUpRight } from 'lucide-react'
+import { Button } from '#/components/ui/button'
 import { Panel, Empty, Badge, type ViewProps } from '../shared'
 import { money, dateTime, taskNames } from '../utils'
 
@@ -10,10 +11,10 @@ export function AdminTransfers({ s, actions }: ViewProps) {
           title="常用收款人"
           subtitle="可通过姓名、手机号或备注转账"
           action={
-            <button className="button button-sm button-primary" onClick={() => actions.transfer()}>
+            <Button size="sm" onClick={() => actions.transfer()}>
               <Plus size={15} />
               新建转账
-            </button>
+            </Button>
           }
         >
           <div className="contacts-list">
@@ -29,10 +30,10 @@ export function AdminTransfers({ s, actions }: ViewProps) {
                     {c.phone} · {c.bank}
                   </small>
                 </div>
-                <button className="button button-outline button-sm" onClick={() => actions.transfer(c.id)}>
+                <Button variant="outline" size="sm" onClick={() => actions.transfer(c.id)}>
                   转账
                   <ArrowUpRight size={13} />
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -42,10 +43,10 @@ export function AdminTransfers({ s, actions }: ViewProps) {
           title="定时任务"
           subtitle="资金预留后，按模拟时间执行"
           action={
-            <button className="button button-outline button-sm" onClick={actions.runJobs}>
+            <Button variant="outline" size="sm" onClick={actions.runJobs}>
               <Clock3 size={14} />
               执行到期任务
-            </button>
+            </Button>
           }
         >
           {s.tasks.length ? (
@@ -67,9 +68,9 @@ export function AdminTransfers({ s, actions }: ViewProps) {
                   </div>
                   <Badge status={t.status} />
                   {t.kind === 'transfer' && t.status === 'pending' && (
-                    <button className="button button-ghost button-sm" onClick={() => actions.cancelTask(t.id)}>
+                    <Button variant="ghost" size="sm" onClick={() => actions.cancelTask(t.id)}>
                       取消
-                    </button>
+                    </Button>
                   )}
                 </div>
               ))}
@@ -84,10 +85,10 @@ export function AdminTransfers({ s, actions }: ViewProps) {
         title="AA 收款"
         subtitle="包含发起人，按人数分摊"
         action={
-          <button className="button button-sm button-primary" onClick={actions.split}>
+          <Button size="sm" onClick={actions.split}>
             <Plus size={15} />
             发起 AA
-          </button>
+          </Button>
         }
       >
         {s.splits.length ? (
@@ -117,12 +118,13 @@ export function AdminTransfers({ s, actions }: ViewProps) {
                     {p.status === 'paid' ? (
                       <Badge status="paid" />
                     ) : (
-                      <button
-                        className="button button-outline button-sm"
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => actions.settle(split.id, p.contactId)}
                       >
                         模拟付款
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ))}
@@ -135,9 +137,9 @@ export function AdminTransfers({ s, actions }: ViewProps) {
             title="轻松分账，清晰收款"
             text="聚餐、旅行或共同购物，创建第一笔 AA 收款。"
             action={
-              <button className="button button-outline" onClick={actions.split}>
+              <Button variant="outline" onClick={actions.split}>
                 创建 AA 收款
-              </button>
+              </Button>
             }
           />
         )}

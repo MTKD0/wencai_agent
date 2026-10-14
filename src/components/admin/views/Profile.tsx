@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CircleAlert, Loader2, RefreshCw, Sparkles, UserRound, Wallet, PiggyBank, ShieldCheck } from 'lucide-react'
+import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '#/components/ui/table'
 import { AnimatedBarChart, AnimatedDonutChart } from '#/components/ui/charts'
@@ -41,14 +42,14 @@ function ProfileList({ search, setSearch, onOpen }: { search: string; setSearch:
   const rows = (query.data?.users ?? []).filter((row) => !keyword || row.userName.toLocaleLowerCase().includes(keyword) || row.userId.toLocaleLowerCase().includes(keyword))
   return (
     <Panel title="用户画像" subtitle="按近 6 个月的真实流水、持仓与卡片计算；列表不调用模型，点开用户查看完整画像。" action={
-      <button className="button button-outline button-sm" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}>
+      <Button variant="outline" size="sm" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}>
         <RefreshCw size={14} className={query.isFetching ? 'spin' : ''} />刷新
-      </button>
+      </Button>
     }>
       <div className="risk-review-filters">
         <label className="risk-review-search"><span>查找用户</span><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="姓名或用户 ID" /></label>
       </div>
-      {query.isError && <div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法读取用户画像</strong><p>{query.error.message}</p></div><button className="button button-outline button-sm" type="button" onClick={() => void query.refetch()}>重新加载</button></div>}
+      {query.isError && <div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法读取用户画像</strong><p>{query.error.message}</p></div><Button variant="outline" size="sm" type="button" onClick={() => void query.refetch()}>重新加载</Button></div>}
       {query.isPending ? <div className="loading-workspace" role="status"><Loader2 className="spin" size={24} /><span>正在计算用户画像</span></div> : rows.length ? (
         <div className="table-scroll">
           <Table className="data-table">
@@ -60,7 +61,7 @@ function ProfileList({ search, setSearch, onOpen }: { search: string; setSearch:
                 <TableCell>{pct(row.savingsRate)}</TableCell>
                 <TableCell>{money(row.totalAssetsCents)}</TableCell>
                 <TableCell><TagList tags={row.tags} /></TableCell>
-                <TableCell><button className="button button-outline button-sm" type="button" aria-label={`查看${row.userName}的画像`} onClick={() => onOpen(row.userId)}>查看画像</button></TableCell>
+                <TableCell><Button variant="outline" size="sm" type="button" aria-label={`查看${row.userName}的画像`} onClick={() => onOpen(row.userId)}>查看画像</Button></TableCell>
               </TableRow>
             ))}</TableBody>
           </Table>
@@ -83,16 +84,16 @@ function ProfileDetail({ userId, onBack }: { userId: string; onBack: () => void 
     } finally { setRefreshing(false) }
   }
   if (query.isPending) return <div className="loading-workspace" role="status"><Loader2 className="spin" size={24} /><span>正在生成画像，模型撰写摘要最多需要十几秒</span></div>
-  if (query.isError) return <Panel title="用户画像" subtitle=""><div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法生成画像</strong><p>{query.error.message}</p></div><button className="button button-outline button-sm" type="button" onClick={onBack}>返回列表</button></div></Panel>
+  if (query.isError) return <Panel title="用户画像" subtitle=""><div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法生成画像</strong><p>{query.error.message}</p></div><Button variant="outline" size="sm" type="button" onClick={onBack}>返回列表</Button></div></Panel>
   const p: UserProfile = query.data
   const m = p.metrics
   const enough = m.monthsObserved >= 3
   return <>
-    <div><button className="button button-ghost button-sm" type="button" onClick={onBack}><ArrowLeft size={14} />返回用户列表</button></div>
+    <div><Button variant="ghost" size="sm" type="button" onClick={onBack}><ArrowLeft size={14} />返回用户列表</Button></div>
     <Panel title={`${p.userName} 的画像`} subtitle={`按近 6 个月数据计算 · 生成于 ${dateTime(p.generatedAt)} · 观察到 ${m.monthsObserved} 个完整月份`} action={
-      <button className="button button-outline button-sm" type="button" onClick={() => void rewrite()} disabled={refreshing}>
+      <Button variant="outline" size="sm" type="button" onClick={() => void rewrite()} disabled={refreshing}>
         {refreshing ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />}重写摘要
-      </button>
+      </Button>
     }>
       <TagList tags={p.tags} />
       <blockquote className="profile-narrative">

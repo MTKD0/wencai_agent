@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '#/components/ui/button'
 import { Search, Download, AlertTriangle, ArrowUpRight, ArrowDownLeft, ChartNoAxesCombined } from 'lucide-react'
 import { Panel, Metric, TransactionTable, Empty, type ViewProps } from '../shared'
 import { money, categories, periodRows, exportLedger } from '../utils'
@@ -32,9 +33,9 @@ export function AdminTransactions({ ledger, period, report, anomalies }: ViewPro
         title="交易明细"
         subtitle={`${rows.length} 笔记录${anomalies.length ? ` · ${anomalies.length} 笔待复核` : ''}`}
         action={
-          <button className="button button-outline button-sm" onClick={() => exportLedger(periodLedger, period)}>
+          <Button variant="outline" size="sm" onClick={() => exportLedger(periodLedger, period)}>
             <Download size={15} />导出
-          </button>
+          </Button>
         }
       >
         <div className="table-toolbar">
@@ -65,9 +66,9 @@ export function AdminTransactions({ ledger, period, report, anomalies }: ViewPro
             <TransactionTable rows={rows} anomalyIds={ids} limit={(page + 1) * 15} />
             {rows.length > 15 && (
               <div className="pagination">
-                <button className="button button-ghost button-sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>上一页</button>
+                <Button variant="ghost" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>上一页</Button>
                 <span>{page + 1} / {count}</span>
-                <button className="button button-ghost button-sm" disabled={page >= count - 1} onClick={() => setPage(p => p + 1)}>下一页</button>
+                <Button variant="ghost" size="sm" disabled={page >= count - 1} onClick={() => setPage(p => p + 1)}>下一页</Button>
               </div>
             )}
           </>

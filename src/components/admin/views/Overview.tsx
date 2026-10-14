@@ -3,6 +3,7 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts'
 import { Wallet, ArrowUpRight, ArrowDownLeft, ShieldCheck, Plus, Clock3, Gift, AlertTriangle, CreditCard } from 'lucide-react'
+import { Button } from '#/components/ui/button'
 import { Panel, Metric, Empty, TransactionTable, More, Badge, type ViewProps } from '../shared'
 import { money, categories, monthlyTrend, dateTime, taskNames } from '../utils'
 
@@ -182,9 +183,9 @@ export function AdminOverview({ s, ledger, report, anomalies, actions, go }: Vie
               <p>检测到大额支出或短时间重复扣款。</p>
             </div>
           </div>
-          <button className="button button-outline button-sm" onClick={() => go('transactions')}>
+          <Button variant="outline" size="sm" onClick={() => go('transactions')}>
             查看异常<ArrowUpRight size={14} />
-          </button>
+          </Button>
         </div>
       )}
     </>

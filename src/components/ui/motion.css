@@ -2,10 +2,10 @@
 /* Color, shadows and decorative link states remain CSS; component transforms use Motion. */
 .bank-lift { transition: box-shadow var(--bank-duration) var(--bank-ease), background var(--bank-duration), border-color var(--bank-duration); }
 @media (hover: hover) {
-  .bank-lift:hover { box-shadow: 0 14px 32px #2471da16; }
+  .bank-lift:hover { box-shadow: 0 14px 32px color-mix(in oklab, var(--primary) 9%, transparent); }
   a.bank-lift:hover { transform: translateY(-4px); }
 }
-.bank-lift:focus-visible { outline: 3px solid #83baff; outline-offset: 4px; }
+.bank-lift:focus-visible { outline: 3px solid color-mix(in oklab, var(--primary) 55%, transparent); outline-offset: 4px; }
 a.bank-lift:focus-visible { transform: translateY(-3px); }
 a.bank-lift:active { transform: translateY(-1px) scale(.97); }
 .bank-lift:disabled { box-shadow: none; }

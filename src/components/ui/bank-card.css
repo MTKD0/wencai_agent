@@ -10,11 +10,11 @@
   display: block;
   width: 84px;
   height: 54px;
-  border: 1px solid #d1e7ff;
+  border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--border));
   border-radius: 8px;
-  background: linear-gradient(125deg, #70c4ff, #1674ff);
+  background: linear-gradient(125deg, color-mix(in oklab, var(--primary) 70%, white), var(--primary));
   box-shadow:
-    0 5px 9px #246cc735,
+    0 5px 9px color-mix(in oklab, var(--primary) 25%, transparent),
     inset 0 1px #ffffff99;
   transition: transform 500ms var(--bank-ease);
   transform: var(--stack-rest);
@@ -58,10 +58,10 @@
   width: 22px;
   height: 17px;
   border-radius: 4px;
-  border: 1px solid #f1d9a3;
+  border: 1px solid oklch(0.87 0.08 88);
   background:
-    repeating-linear-gradient(90deg, transparent 0 6px, #e6c98c 6px 7px),
-    repeating-linear-gradient(0deg, #ffedc7 0 5px, #e6c98c 5px 6px);
+    repeating-linear-gradient(90deg, transparent 0 6px, oklch(0.8 0.09 82) 6px 7px),
+    repeating-linear-gradient(0deg, oklch(0.93 0.06 90) 0 5px, oklch(0.8 0.09 82) 5px 6px);
 }
 .bank-stack-card .bank-chip {
   width: 14px;
@@ -73,7 +73,7 @@
   width: 32px;
   height: 4px;
   margin: 9px 0 0 10px;
-  background: #c6eaffaa;
+  background: rgb(255 255 255 / 67%);
   border-radius: 1px;
 }
 .bank-lift:hover .stack-0,
@@ -95,16 +95,16 @@
   padding: 22px;
   min-height: 202px;
   border-radius: 21px;
-  background: linear-gradient(120deg, #469eff, #1269f8 65%, #0751d6);
+  background: linear-gradient(120deg, color-mix(in oklab, var(--primary) 70%, white), color-mix(in oklab, var(--primary) 90%, black) 65%, var(--primary));
   color: white;
-  border: 1px solid #b7d7ff;
-  box-shadow: 0 16px 30px #1d6ae12b;
+  border: 1px solid color-mix(in oklab, var(--primary) 40%, white);
+  box-shadow: 0 16px 30px color-mix(in oklab, var(--primary) 22%, transparent);
   animation: bank-card-push 700ms var(--bank-ease) var(--card-delay, 0ms) backwards;
 }
 .bank-physical-card.is-credit {
-  background: linear-gradient(120deg, #606aab, #384878 60%, #253756);
-  border-color: #aebad5;
-  box-shadow: 0 16px 30px #34436525;
+  background: linear-gradient(120deg, color-mix(in oklab, var(--primary) 45%, black), color-mix(in oklab, var(--primary) 25%, black) 60%, color-mix(in oklab, var(--primary) 15%, black));
+  border-color: color-mix(in oklab, var(--primary) 35%, white);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.2);
 }
 .bank-card-value { text-align: right; }
 .bank-card-value small { margin: 0 0 5px; }

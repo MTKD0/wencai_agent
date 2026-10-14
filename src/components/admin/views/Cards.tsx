@@ -1,3 +1,4 @@
+import { Button } from '#/components/ui/button'
 import {
   Snowflake, UnlockKeyhole, TriangleAlert, SlidersHorizontal, CreditCard, Plus,
 } from 'lucide-react'
@@ -12,9 +13,9 @@ export function AdminCards({ s, actions }: ViewProps) {
           title="我的银行卡"
           subtitle="管理卡片状态与每日限额"
           action={
-            <button className="button button-sm button-primary" onClick={actions.applyCard}>
+            <Button size="sm" onClick={actions.applyCard}>
               <Plus size={15} />申请新卡
-            </button>
+            </Button>
           }
         >
           <div className="card-list">
@@ -29,26 +30,26 @@ export function AdminCards({ s, actions }: ViewProps) {
                   <Badge status={c.status} />
                 </div>
                 <div className="card-actions">
-                  <button className="button button-ghost button-sm" onClick={() => actions.cardRemark(c.id)}>修改备注</button>
-                  {c.kind === 'credit' && c.status === 'active' && <button className="button button-ghost button-sm" onClick={() => actions.creditSpend(c.id)}>模拟消费</button>}
+                  <Button variant="ghost" size="sm" onClick={() => actions.cardRemark(c.id)}>修改备注</Button>
+                  {c.kind === 'credit' && c.status === 'active' && <Button variant="ghost" size="sm" onClick={() => actions.creditSpend(c.id)}>模拟消费</Button>}
                   {c.status === 'active' && (
-                    <button className="button button-outline button-sm" onClick={() => actions.cardState(c.id, 'freeze')}>
+                    <Button variant="outline" size="sm" onClick={() => actions.cardState(c.id, 'freeze')}>
                       <Snowflake size={14} />冻结
-                    </button>
+                    </Button>
                   )}
                   {c.status === 'locked' && (
-                    <button className="button button-outline button-sm" onClick={() => actions.cardState(c.id, 'unlock')}>
+                    <Button variant="outline" size="sm" onClick={() => actions.cardState(c.id, 'unlock')}>
                       <UnlockKeyhole size={14} />解锁
-                    </button>
+                    </Button>
                   )}
                   {c.status !== 'lost' && (
-                    <button className="button button-ghost button-sm" onClick={() => actions.cardState(c.id, 'reportLost')}>
+                    <Button variant="ghost" size="sm" onClick={() => actions.cardState(c.id, 'reportLost')}>
                       <TriangleAlert size={14} />挂失
-                    </button>
+                    </Button>
                   )}
-                  <button className="button button-ghost button-sm" onClick={() => actions.cardLimits(c.id)}>
+                  <Button variant="ghost" size="sm" onClick={() => actions.cardLimits(c.id)}>
                     <SlidersHorizontal size={14} />调整限额
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}

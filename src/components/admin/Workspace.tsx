@@ -221,13 +221,15 @@ export function AdminWorkspace({
       <div className="workspace">
         <header className="topbar">
           <div>
-            <button
-              className="mobile-menu button button-ghost button-icon"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mobile-menu"
               aria-label="打开导航"
               onClick={() => setNavOpen(true)}
             >
               <Menu size={20} />
-            </button>
+            </Button>
             <span className="breadcrumb">
               管理后台
               <ChevronRight size={13} />
