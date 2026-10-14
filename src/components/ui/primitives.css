@@ -20,3 +20,17 @@
   display: flex;
   touch-action: pan-y pinch-zoom;
 }
+
+/*
+ * Embla drives the track with a transform, so the viewport must NOT also be a
+ * native scroll container. `.bank-card-viewport` predates the carousel and is
+ * still written for scroll-snap; this override wins on specificity so both the
+ * legacy and the carousel usage can share one class name.
+ */
+.bank-card-viewport[data-slot='carousel-content'] {
+  display: block;
+  overflow: hidden;
+  scroll-snap-type: none;
+  cursor: default;
+  touch-action: pan-y pinch-zoom;
+}

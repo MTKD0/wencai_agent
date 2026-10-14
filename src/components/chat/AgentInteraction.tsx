@@ -171,7 +171,7 @@ export function AgentCardPicker({ choices: inputChoices, title = '我的银行�
       </Carousel>
       <div className="bank-agent-choice-dots">
         {choices.map((item, i) => (
-          <Button key={item.id} type="button" variant="ghost" className="bank-choice-dot" aria-label={`切换到尾号${item.card?.last4}银行卡`} aria-current={index === i ? 'true' : undefined} onClick={() => setIndex(i)}><span /></Button>
+          <Button key={item.id} type="button" variant="ghost" className="ui-button-reset" aria-label={`切换到尾号${item.card?.last4}银行卡`} aria-current={index === i ? 'true' : undefined} onClick={() => setIndex(i)}><span /></Button>
         ))}
       </div>
       <p className="bank-agent-choice-hint">{choices.length === 1 ? '已确定此银行卡' : '左右滑动切换银行卡，确认后提交当前卡片'}</p>
