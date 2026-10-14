@@ -1,14 +1,12 @@
 import type { PolicyInput, RiskLevel } from './types'
 
 export const LIMITS = {
-  /** 日累计转出超过该值即为大额（分） */
-  dailyLargeCents: 100_000,
-  /** 夜间单笔超过该值升级（分） */
-  nightSingleCents: 50_000,
+  /** UTC+8 自然日跨本人所有账户累计（含本笔），严格超过 1000 元需强验证。 */
+  dailyOutgoingCents: 100_000,
+  /** 单笔超过 3000 元需密码与生物识别双重验证（分）。 */
+  singleLargeCents: 300_000,
   /** 10 分钟内转账笔数超过该值触发熔断 */
   burstTransfers: 5,
-  /** 新收款人观察期（天） */
-  newPayeeDays: 7,
 } as const
 
 export type RuleResult =
@@ -29,9 +27,18 @@ function amountCents(input: PolicyInput): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.round(v * 100) : 0
 }
 
-const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card', 'pay_split_request', 'create_birthday_plan', 'execute_birthday_order'].includes(i.tool)
+const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card', 'pay_split_request', 'create_birthday_plan', 'execute_birthday_order', 'create_standing_mandate', 'execute_standing_mandate'].includes(i.tool)
 
 export const RULES: Rule[] = [
+  {
+    id: 'recipient-account-risk',
+    applies: isTransfer,
+    evaluate: ({ facts }) => facts.payeeRiskFlag === 'confirmed'
+      ? { kind: 'deny', reason: '该收款账户经人工复核存在高风险，已阻止本次转账，请联系人工客服' }
+      : facts.payeeRiskFlag === 'suspected'
+        ? { kind: 'raise', to: 'red', reason: '该收款账户近期收款特征异常，请核实对方身份，并完成本次强验证' }
+        : null,
+  },
   {
     id: 'sensitive-card-operation',
     applies: (i) => i.tool === 'commit_card_change' && ['unlock', 'lost', 'limits'].includes(String(i.args.action)),
@@ -54,29 +61,18 @@ export const RULES: Rule[] = [
         : null,
   },
   {
-    id: 'transfer-daily-large',
+    id: 'transfer-daily-total',
+    applies: isTransfer,
+    evaluate: (input) => input.facts.dailyOutgoingCents + amountCents(input) > LIMITS.dailyOutgoingCents
+      ? { kind: 'raise', to: 'red', reason: '今日累计转账超过 1000 元，需要强验证' }
+      : null,
+  },
+  {
+    id: 'transfer-single-large',
     applies: isTransfer,
     evaluate: (input) =>
-      input.facts.dailyOutgoingCents + amountCents(input) > LIMITS.dailyLargeCents
-        ? { kind: 'raise', to: 'red', reason: '今日累计转账超过 1000 元，需要强验证' }
+      amountCents(input) > LIMITS.singleLargeCents
+        ? { kind: 'raise', to: 'red', reason: '单笔转账超过 3000 元，需要交易密码与指纹或人脸双重验证' }
         : null,
-  },
-  {
-    id: 'transfer-new-payee',
-    applies: (i) => isTransfer(i) && !['transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card', 'create_birthday_plan', 'execute_birthday_order'].includes(i.tool),
-    evaluate: ({ facts }) =>
-      facts.payeeAgeDays === undefined || facts.payeeAgeDays < LIMITS.newPayeeDays
-        ? { kind: 'raise', to: 'red', reason: '首次或近期新增的收款人，需要强验证' }
-        : null,
-  },
-  {
-    id: 'transfer-night',
-    applies: isTransfer,
-    evaluate: (input) => {
-      const hour = new Date(input.facts.now.getTime() + 8 * 3600_000).getUTCHours()
-      return hour < 6 && amountCents(input) > LIMITS.nightSingleCents
-        ? { kind: 'raise', to: 'red', reason: '夜间大额转账，需要强验证' }
-        : null
-    },
   },
 ]

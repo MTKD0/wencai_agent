@@ -6,6 +6,10 @@ import { auth, db, schema, type DB } from '#/server/db/client'
 import { env } from '#/server/env'
 import { ensurePaymentsSchema } from './migrate'
 import { assertDebitAccount, cardLabel, ensureUserCardAccounts, userCards } from '#/server/cards/service'
+import { ensureRiskSchema } from '#/server/risk/accounts'
+import { assertRecipientRisk } from '#/server/risk/recipient'
+import { ensureCardNumberSchema, numberFingerprint } from '#/server/cards/numbers'
+import { assertDailyTransferAuthorization } from '#/server/policy/transfer-activity'
 
 export const maskAccount = (no: string) => `${no.slice(0, 4)} **** ${no.slice(-4)}`
 export const lookupSchema = z.discriminatedUnion('method', [
@@ -166,12 +170,14 @@ export async function resolveRecipientReference(reference: string, userId: strin
 export async function searchBankAccounts(input: z.infer<typeof lookupSchema>, ctx: AgentContext) {
   await ensurePaymentsSchema()
   let ownerId: string | undefined
+  let cardAccountId: string | undefined
   if (input.method === 'phone') {
     const [owner] = await db
       .select({ id: auth.baUser.id })
       .from(auth.baUser)
       .where(eq(auth.baUser.phoneNumber, input.phoneNumber))
     ownerId = owner?.id
+
   } else {
     const [owner] = await db
       .select({ id: schema.accounts.userId })
@@ -185,6 +191,15 @@ export async function searchBankAccounts(input: z.infer<typeof lookupSchema>, ct
         ),
       )
     ownerId = owner?.id
+    if (!ownerId) {
+      await ensureCardNumberSchema()
+      const [cardOwner] = await db.select({ id: schema.cards.userId, accountId: schema.cards.accountId }).from(schema.bankCardNumbers)
+        .innerJoin(schema.cards, eq(schema.cards.id, schema.bankCardNumbers.cardId))
+        .innerJoin(schema.users, eq(schema.users.id, schema.cards.userId))
+        .where(and(eq(schema.bankCardNumbers.fingerprint, numberFingerprint(input.accountNo)), eq(schema.users.name, input.name), eq(schema.cards.kind, 'debit'), eq(schema.cards.status, 'active')))
+      ownerId = cardOwner?.id
+      cardAccountId = cardOwner?.accountId
+    }
   }
   if (!ownerId) return { candidates: [] }
   if (ownerId === ctx.userId) throw new Error('这是您本人的账户，请使用“本人互转”')
@@ -193,7 +208,7 @@ export async function searchBankAccounts(input: z.infer<typeof lookupSchema>, ct
     candidates: accounts
       .filter(
         (a) =>
-          a.currency === 'CNY' && (input.method === 'phone' || a.accountNo === input.accountNo),
+          a.currency === 'CNY' && (input.method === 'phone' || a.id === cardAccountId || a.accountNo === input.accountNo),
       )
       .map((a) => ({
         name: a.ownerName,
@@ -300,6 +315,7 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
   onSettled?: (tx: Parameters<Parameters<DB['transaction']>[0]>[0], transactionId: string) => Promise<void>
 }) {
   await ensurePaymentsSchema()
+  await ensureRiskSchema()
   await ensureUserCardAccounts(ctx.userId)
   if (ctx.authorization) await (await import('#/server/automation/service')).ensureAutomationSchema()
   if (
@@ -316,11 +332,13 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
       .where(and(eq(schema.accounts.id, a.fromAccountId), eq(schema.accounts.userId, ctx.userId)))
     const [sender] = await tx.select().from(schema.users).where(eq(schema.users.id, ctx.userId))
     if (!source) throw new Error('付款账户不存在')
+    await assertDailyTransferAuthorization(tx, ctx.userId, a.amountCents, occurredAt, ctx.authorization)
     await assertDebitAccount(tx, source.id, a.amountCents, occurredAt)
     if (sender?.lockedUntil && sender.lockedUntil > new Date()) throw new Error('账户已临时锁定')
     let targetId = a.toAccountId,
       payeeName = '',
       payeeAccount = ''
+    let riskTargetId = targetId
     if (a.payeeId) {
       const [payee] = await tx
         .select()
@@ -338,6 +356,8 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
         )
       if (payee.bank === '文财银行' && !link) throw new Error('收款账户已失效，请重新添加收款人')
       targetId = link?.targetAccountId
+      const [riskAddress] = await tx.select().from(schema.bankAccountAddresses).where(eq(schema.bankAccountAddresses.accountNo, payee.accountNo))
+      riskTargetId = riskAddress?.accountId ?? targetId
       payeeName = payee.name
       payeeAccount = maskAccount(payee.accountNo)
       if (targetId) {
@@ -372,6 +392,7 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
       if (!Number.isSafeInteger(target.balanceCents + a.amountCents))
         throw new Error('收款账户金额超出范围')
     }
+    await assertRecipientRisk(tx, riskTargetId, ctx.authorization)
     const [updated] = await tx
       .update(schema.accounts)
       .set({

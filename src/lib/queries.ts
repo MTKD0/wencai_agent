@@ -11,6 +11,7 @@ import { notifyConfirmation } from './confirmation-notices'
  */
 
 export interface SettingsData {
+  cards: { id: string; last4: string; name: string; hasPassword: boolean }[]
   user: { id: string; name: string }
   sessions: {
     id: string
@@ -115,6 +116,7 @@ export interface ConfirmResponse {
   actionId?: string
   userId?: string
   requiredLevel?: 'red'
+  reasons?: string[]
 }
 
 /** 服务端的确认失败。code 让 UI 判断能否重试（step_up_failed 可重试）。 */
@@ -133,7 +135,7 @@ export type StepUpPayload = import('#/server/auth/step-up').StrongStepUp
  * 其余（not_found / forbidden / tampered / expired / already_used / locked）都是终态：
  * 该操作已经不能被执行，重试只会再次被拒，UI 应该直接收起到结束态。
  */
-const RETRYABLE_CODES = new Set(['step_up_required', 'step_up_failed', 'plan_paused'])
+const RETRYABLE_CODES = new Set(['step_up_required', 'step_up_failed', 'plan_paused', 'card_password_required'])
 
 export function isRetryableConfirmError(error: unknown): boolean {
   return error instanceof ConfirmError && RETRYABLE_CODES.has(error.data.code ?? '')

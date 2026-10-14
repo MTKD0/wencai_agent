@@ -23,6 +23,8 @@ import { env } from '#/server/env'
 import { runDueJobs, scoreRisk } from '#/server/tools/jobs'
 import { adminUserExists, listAdminUsers } from '#/server/admin/users'
 import { adminAuthorized } from '#/server/admin/access'
+import { recentTraces, restoreAuditLog, runSandboxProbes, securityOverview, tamperAuditLog } from '#/server/security/kernel'
+import { buildTraces } from '#/server/security/trace'
 
 const disabled = () =>
   Response.json({ error: { code: 'ADMIN_DISABLED', message: '管理后台未启用（设置 ADMIN_ENABLED=true）' } }, { status: 403 })
@@ -321,6 +323,14 @@ const CommandSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('runJobs'),
   }),
+  /** 安全内核演示：故意改写一条审计记录，用于证明哈希链可发现篡改 */
+  z.object({
+    type: z.literal('tamperAudit'),
+    seq: z.number().int().positive(),
+  }),
+  z.object({
+    type: z.literal('restoreAudit'),
+  }),
 ])
 
 type Command = z.infer<typeof CommandSchema>
@@ -547,6 +557,15 @@ async function executeCommand(userId: string, command: Command) {
       const jobs = await runDueJobs(userId, current)
       return { jobs }
     }
+    case 'tamperAudit': {
+      // 只改载荷、不动 hash 列——攻击者的真实做法。用于演示整链校验能定位到这一条。
+      const result = await tamperAuditLog(command.seq)
+      return { ...result, message: `已改写审计记录 #${result.seq} 的载荷，哈希列保持不变` }
+    }
+    case 'restoreAudit': {
+      const result = await restoreAuditLog()
+      return { ...result, message: result.restored.length ? `已还原 ${result.restored.length} 条记录` : '没有需要还原的记录' }
+    }
   }
 }
 
@@ -605,6 +624,10 @@ export const Route = createFileRoute('/api/admin')({
 
         try {
           if (action === 'users') return Response.json({ data: await listAdminUsers() })
+          // 安全内核与决策链是全局视图（跨用户），不依赖所选账户
+          if (action === 'security') return Response.json({ data: await securityOverview() })
+          if (action === 'trace') return Response.json({ data: buildTraces(await recentTraces()) })
+          if (action === 'sandbox') return Response.json({ data: await runSandboxProbes() })
           if (!(await adminUserExists(userId))) {
             return Response.json({ error: { code: 'USER_NOT_FOUND', message: '用户不存在，请返回首页选择账户' } }, { status: 404 })
           }

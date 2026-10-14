@@ -14,6 +14,7 @@ export interface AuditEntry {
 
 export type AuditType =
   | 'user_input'
+  | 'agent_interaction'
   | 'guard_verdict'
   | 'plan_created'
   | 'plan_control'
@@ -39,6 +40,16 @@ export type AuditType =
   | 'passkey_registered'
   | 'passkey_deleted'
   | 'login_failed'
+  // 常设授权
+  | 'mandate_created'
+  | 'mandate_executed'
+  | 'mandate_failed'
+  | 'mandate_ended'
+  | 'mandate_revoked'
+  | 'risk_flag_added'
+  | 'risk_flag_reviewed'
+  | 'risk_analysis_failed'
+  | 'profile_generated'
 
 export function hashEntry(prevHash: string, entry: AuditEntry): string {
   return createHash('sha256').update(prevHash).update(stableStringify(entry)).digest('hex')

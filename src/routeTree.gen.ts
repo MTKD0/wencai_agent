@@ -15,12 +15,18 @@ import { Route as BindRouteImport } from './routes/bind'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
+import { Route as ApiAdminProfileRouteImport } from './routes/api/admin-profile'
+import { Route as ApiAdminRiskRouteImport } from './routes/api/admin-risk'
 import { Route as ApiBindRouteImport } from './routes/api/bind'
+import { Route as ApiCardNumberRouteImport } from './routes/api/card-number'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiConfirmRouteImport } from './routes/api/confirm'
 import { Route as ApiDashboardRouteImport } from './routes/api/dashboard'
+import { Route as ApiMandatesRouteImport } from './routes/api/mandates'
+import { Route as ApiOnboardingRouteImport } from './routes/api/onboarding'
 import { Route as ApiPaymentsRouteImport } from './routes/api/payments'
 import { Route as ApiPlansRouteImport } from './routes/api/plans'
+import { Route as ApiSecureOperationRouteImport } from './routes/api/secure-operation'
 import { Route as ApiSecurityRouteImport } from './routes/api/security'
 import { Route as ApiSettingsRouteImport } from './routes/api/settings'
 import { Route as ApiStepUpRouteImport } from './routes/api/step-up'
@@ -60,9 +66,24 @@ const ApiAdminRoute = ApiAdminRouteImport.update({
   path: '/api/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminProfileRoute = ApiAdminProfileRouteImport.update({
+  id: '/api/admin-profile',
+  path: '/api/admin-profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminRiskRoute = ApiAdminRiskRouteImport.update({
+  id: '/api/admin-risk',
+  path: '/api/admin-risk',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBindRoute = ApiBindRouteImport.update({
   id: '/api/bind',
   path: '/api/bind',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCardNumberRoute = ApiCardNumberRouteImport.update({
+  id: '/api/card-number',
+  path: '/api/card-number',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -80,6 +101,16 @@ const ApiDashboardRoute = ApiDashboardRouteImport.update({
   path: '/api/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMandatesRoute = ApiMandatesRouteImport.update({
+  id: '/api/mandates',
+  path: '/api/mandates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOnboardingRoute = ApiOnboardingRouteImport.update({
+  id: '/api/onboarding',
+  path: '/api/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPaymentsRoute = ApiPaymentsRouteImport.update({
   id: '/api/payments',
   path: '/api/payments',
@@ -88,6 +119,11 @@ const ApiPaymentsRoute = ApiPaymentsRouteImport.update({
 const ApiPlansRoute = ApiPlansRouteImport.update({
   id: '/api/plans',
   path: '/api/plans',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecureOperationRoute = ApiSecureOperationRouteImport.update({
+  id: '/api/secure-operation',
+  path: '/api/secure-operation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSecurityRoute = ApiSecurityRouteImport.update({
@@ -138,12 +174,18 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-profile': typeof ApiAdminProfileRoute
+  '/api/admin-risk': typeof ApiAdminRiskRoute
   '/api/bind': typeof ApiBindRoute
+  '/api/card-number': typeof ApiCardNumberRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/mandates': typeof ApiMandatesRoute
+  '/api/onboarding': typeof ApiOnboardingRoute
   '/api/payments': typeof ApiPaymentsRoute
   '/api/plans': typeof ApiPlansRoute
+  '/api/secure-operation': typeof ApiSecureOperationRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
   '/api/step-up': typeof ApiStepUpRoute
@@ -160,12 +202,18 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-profile': typeof ApiAdminProfileRoute
+  '/api/admin-risk': typeof ApiAdminRiskRoute
   '/api/bind': typeof ApiBindRoute
+  '/api/card-number': typeof ApiCardNumberRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/mandates': typeof ApiMandatesRoute
+  '/api/onboarding': typeof ApiOnboardingRoute
   '/api/payments': typeof ApiPaymentsRoute
   '/api/plans': typeof ApiPlansRoute
+  '/api/secure-operation': typeof ApiSecureOperationRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
   '/api/step-up': typeof ApiStepUpRoute
@@ -183,12 +231,18 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-profile': typeof ApiAdminProfileRoute
+  '/api/admin-risk': typeof ApiAdminRiskRoute
   '/api/bind': typeof ApiBindRoute
+  '/api/card-number': typeof ApiCardNumberRoute
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/mandates': typeof ApiMandatesRoute
+  '/api/onboarding': typeof ApiOnboardingRoute
   '/api/payments': typeof ApiPaymentsRoute
   '/api/plans': typeof ApiPlansRoute
+  '/api/secure-operation': typeof ApiSecureOperationRoute
   '/api/security': typeof ApiSecurityRoute
   '/api/settings': typeof ApiSettingsRoute
   '/api/step-up': typeof ApiStepUpRoute
@@ -207,12 +261,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/api/admin'
+    | '/api/admin-profile'
+    | '/api/admin-risk'
     | '/api/bind'
+    | '/api/card-number'
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/mandates'
+    | '/api/onboarding'
     | '/api/payments'
     | '/api/plans'
+    | '/api/secure-operation'
     | '/api/security'
     | '/api/settings'
     | '/api/step-up'
@@ -229,12 +289,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/api/admin'
+    | '/api/admin-profile'
+    | '/api/admin-risk'
     | '/api/bind'
+    | '/api/card-number'
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/mandates'
+    | '/api/onboarding'
     | '/api/payments'
     | '/api/plans'
+    | '/api/secure-operation'
     | '/api/security'
     | '/api/settings'
     | '/api/step-up'
@@ -251,12 +317,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/api/admin'
+    | '/api/admin-profile'
+    | '/api/admin-risk'
     | '/api/bind'
+    | '/api/card-number'
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/mandates'
+    | '/api/onboarding'
     | '/api/payments'
     | '/api/plans'
+    | '/api/secure-operation'
     | '/api/security'
     | '/api/settings'
     | '/api/step-up'
@@ -274,12 +346,18 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   ApiAdminRoute: typeof ApiAdminRoute
+  ApiAdminProfileRoute: typeof ApiAdminProfileRoute
+  ApiAdminRiskRoute: typeof ApiAdminRiskRoute
   ApiBindRoute: typeof ApiBindRoute
+  ApiCardNumberRoute: typeof ApiCardNumberRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiConfirmRoute: typeof ApiConfirmRoute
   ApiDashboardRoute: typeof ApiDashboardRoute
+  ApiMandatesRoute: typeof ApiMandatesRoute
+  ApiOnboardingRoute: typeof ApiOnboardingRoute
   ApiPaymentsRoute: typeof ApiPaymentsRoute
   ApiPlansRoute: typeof ApiPlansRoute
+  ApiSecureOperationRoute: typeof ApiSecureOperationRoute
   ApiSecurityRoute: typeof ApiSecurityRoute
   ApiSettingsRoute: typeof ApiSettingsRoute
   ApiStepUpRoute: typeof ApiStepUpRoute
@@ -334,11 +412,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin-profile': {
+      id: '/api/admin-profile'
+      path: '/api/admin-profile'
+      fullPath: '/api/admin-profile'
+      preLoaderRoute: typeof ApiAdminProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin-risk': {
+      id: '/api/admin-risk'
+      path: '/api/admin-risk'
+      fullPath: '/api/admin-risk'
+      preLoaderRoute: typeof ApiAdminRiskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/bind': {
       id: '/api/bind'
       path: '/api/bind'
       fullPath: '/api/bind'
       preLoaderRoute: typeof ApiBindRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/card-number': {
+      id: '/api/card-number'
+      path: '/api/card-number'
+      fullPath: '/api/card-number'
+      preLoaderRoute: typeof ApiCardNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -362,6 +461,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mandates': {
+      id: '/api/mandates'
+      path: '/api/mandates'
+      fullPath: '/api/mandates'
+      preLoaderRoute: typeof ApiMandatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/onboarding': {
+      id: '/api/onboarding'
+      path: '/api/onboarding'
+      fullPath: '/api/onboarding'
+      preLoaderRoute: typeof ApiOnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/payments': {
       id: '/api/payments'
       path: '/api/payments'
@@ -374,6 +487,13 @@ declare module '@tanstack/react-router' {
       path: '/api/plans'
       fullPath: '/api/plans'
       preLoaderRoute: typeof ApiPlansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/secure-operation': {
+      id: '/api/secure-operation'
+      path: '/api/secure-operation'
+      fullPath: '/api/secure-operation'
+      preLoaderRoute: typeof ApiSecureOperationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/security': {
@@ -442,12 +562,18 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   ApiAdminRoute: ApiAdminRoute,
+  ApiAdminProfileRoute: ApiAdminProfileRoute,
+  ApiAdminRiskRoute: ApiAdminRiskRoute,
   ApiBindRoute: ApiBindRoute,
+  ApiCardNumberRoute: ApiCardNumberRoute,
   ApiChatRoute: ApiChatRoute,
   ApiConfirmRoute: ApiConfirmRoute,
   ApiDashboardRoute: ApiDashboardRoute,
+  ApiMandatesRoute: ApiMandatesRoute,
+  ApiOnboardingRoute: ApiOnboardingRoute,
   ApiPaymentsRoute: ApiPaymentsRoute,
   ApiPlansRoute: ApiPlansRoute,
+  ApiSecureOperationRoute: ApiSecureOperationRoute,
   ApiSecurityRoute: ApiSecurityRoute,
   ApiSettingsRoute: ApiSettingsRoute,
   ApiStepUpRoute: ApiStepUpRoute,
@@ -460,12 +586,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

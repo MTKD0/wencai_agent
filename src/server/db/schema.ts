@@ -1,4 +1,7 @@
 import { integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+export { bankCardNumbers } from './card-schema'
+export { bankInitialEnrollments } from './enrollment-schema'
+export { bankCardPasswords, bankSecureRequests } from './security-operation-schema'
 
 // 金额统一以「分」为单位存储，避免浮点误差
 
@@ -58,6 +61,7 @@ export const bankNotifications = sqliteTable('bank_notifications', {
 })
 export const bankTaskPermissions = sqliteTable('bank_task_permissions', {
   taskId: text('task_id').primaryKey(), level: text('level', { enum: ['yellow', 'red'] }).notNull(),
+  payeeRiskJson: text('payee_risk_json'),
 })
 export const bankTaskApprovals = sqliteTable('bank_task_approvals', {
   taskId: text('task_id').primaryKey(), actionId: text('action_id').notNull().unique(),
@@ -188,6 +192,13 @@ export const plans = sqliteTable('plans', {
     enum: ['running', 'suspended', 'paused', 'completed', 'failed', 'compensated', 'handoff'],
   }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+/** Which recipient warning was actually presented with this confirmation, independent of its base level. */
+export const bankPendingRiskSnapshots = sqliteTable('bank_pending_risk_snapshots', {
+  actionId: text('action_id').primaryKey().references(() => pendingActions.id, { onDelete: 'cascade' }),
+  accountId: text('account_id').notNull(),
+  revision: integer('revision').notNull(),
 })
 
 /**
@@ -321,4 +332,129 @@ export const auditLogs = sqliteTable('audit_logs', {
   payloadJson: text('payload_json').notNull(),
   prevHash: text('prev_hash').notNull(),
   hash: text('hash').notNull(),
+})
+
+/**
+ * 安全内核演示用的篡改备份。
+ *
+ * 只服务于本地答辩演示：`tamperAuditLog` 故意改写一条审计记录的载荷（不动 hash 列），
+ * 原值存到这里以便 `restoreAuditLog` 无损还原。**不是审计链的一部分**——
+ * 它不参与哈希计算，因此篡改演示本身不会污染整链校验的结果。
+ */
+export const bankAuditTamperBackup = sqliteTable('bank_audit_tamper_backup', {
+  seq: integer('seq').primaryKey(),
+  payloadJson: text('payload_json').notNull(),
+  hash: text('hash').notNull(),
+  tamperedAt: integer('tampered_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+/**
+ * 由 Agent 发起的交易密码修改凭证。
+ *
+ * 只存凭证本身，**不存密码**：工具 `request_password_change` 在用户完成红色强验证后签发，
+ * 用户带着它到安全设置页亲自输入新密码，再由 `/api/security` 校验并单次消费。
+ * 这样新密码永远不会出现在模型上下文、pending_actions 参数快照与审计日志中。
+ */
+export const bankPasswordChangeGrants = sqliteTable('bank_password_change_grants', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  /** 签发它的待确认操作编号，用于追溯"哪一笔确认授权了这次修改" */
+  actionId: text('action_id').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  consumedAt: integer('consumed_at', { mode: 'timestamp_ms' }),
+})
+
+/**
+ * 常设授权（standing mandate）：用户一次强验证，授权在有限期内按周期向固定收款人转固定金额。
+ *
+ * 安全属性都落在这张表上，由代码在每次执行时强制，不依赖模型：
+ * - 金额固定为 amountCents（即"单次上限"），收款人用指纹锁定，改了就暂停；
+ * - executionsDone / totalSpentCents 与 maxExecutions / maxTotalCents 在结算事务内条件更新；
+ * - minIntervalHours 由频率推导，两次执行之间的硬间隔；
+ * - expiresAt 到期自动失效，撤销立即生效。
+ * 模型只能创建（红色强验证）、查询和撤销，没有任何触发执行的入口。
+ */
+export const bankStandingMandates = sqliteTable('bank_standing_mandates', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  fromAccountId: text('from_account_id').notNull(),
+  payeeId: text('payee_id').notNull(),
+  payeeName: text('payee_name').notNull(),
+  payeeFingerprint: text('payee_fingerprint').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  memo: text('memo').notNull().default(''),
+  cadenceJson: text('cadence_json').notNull(),
+  maxExecutions: integer('max_executions').notNull(),
+  maxTotalCents: integer('max_total_cents').notNull(),
+  minIntervalHours: integer('min_interval_hours').notNull(),
+  executionsDone: integer('executions_done').notNull().default(0),
+  totalSpentCents: integer('total_spent_cents').notNull().default(0),
+  failureCount: integer('failure_count').notNull().default(0),
+  /** active | revoked | expired | exhausted | suspended */
+  status: text('status').notNull(),
+  /** 授权它的那一笔红色待确认动作；唯一，一笔确认只能产生一份授权 */
+  authorizedActionId: text('authorized_action_id').notNull(),
+    payeeRiskJson: text('payee_risk_json'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  nextDueAt: integer('next_due_at', { mode: 'timestamp_ms' }).notNull(),
+  lastExecutedAt: integer('last_executed_at', { mode: 'timestamp_ms' }),
+  endedAt: integer('ended_at', { mode: 'timestamp_ms' }),
+  endedReason: text('ended_reason'),
+}, (t) => [uniqueIndex('bank_mandate_action').on(t.authorizedActionId)])
+
+/** 每次执行一行；(mandateId, seq) 唯一，同一期不可能被执行两次 */
+export const bankMandateExecutions = sqliteTable('bank_mandate_executions', {
+  id: text('id').primaryKey(),
+  mandateId: text('mandate_id').notNull(),
+  seq: integer('seq').notNull(),
+  transactionId: text('transaction_id').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  executedAt: integer('executed_at', { mode: 'timestamp_ms' }).notNull(),
+}, (t) => [uniqueIndex('bank_mandate_seq').on(t.mandateId, t.seq)])
+
+/** 后台 AI 只能追加 suspected，人工复核通过 revision CAS，不能由对话工具摘除。 */
+export const bankRiskFlags = sqliteTable('bank_risk_flags', {
+  accountId: text('account_id').primaryKey().references(() => accounts.id, { onDelete: 'cascade' }),
+  status: text('status', { enum: ['suspected', 'confirmed', 'cleared'] }).notNull(),
+  featuresJson: text('features_json').notNull(),
+  reasonCodesJson: text('reason_codes_json').notNull(),
+  snapshotHash: text('snapshot_hash').notNull(),
+  source: text('source', { enum: ['ai', 'manual'] }).notNull(),
+  revision: integer('revision').notNull().default(1),
+  /** 只在人工复核时递增；用于拒绝复核前启动、复核后才返回的 AI 结果。 */
+  reviewRevision: integer('review_revision').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  reviewedBy: text('reviewed_by'),
+  reviewedAt: integer('reviewed_at', { mode: 'timestamp_ms' }),
+})
+
+/** worker 跨进程租约与冷却；模型不可用时只记失败，不阻断银行服务。 */
+export const bankRiskAnalysisState = sqliteTable('bank_risk_analysis_state', {
+  accountId: text('account_id').primaryKey().references(() => accounts.id, { onDelete: 'cascade' }),
+  leaseToken: text('lease_token'),
+  leaseUntil: integer('lease_until', { mode: 'timestamp_ms' }),
+  nextRunAt: integer('next_run_at', { mode: 'timestamp_ms' }).notNull(),
+  lastSnapshotHash: text('last_snapshot_hash'),
+  lastStatus: text('last_status').notNull().default('idle'),
+  lastErrorCode: text('last_error_code'),
+  analyzedAt: integer('analyzed_at', { mode: 'timestamp_ms' }),
+})
+
+/**
+ * 后台用户画像的文字缓存。只存文字与来源，不存任何指标：指标每次由代码重新计算，
+ * `fingerprint` 是指标的哈希，数据变了指纹就变，旧文字不会冒充新数据。
+ * 这张表**不被策略引擎、Agent 或数字核验读取**，画像文字永远不是证据。
+ */
+export const bankProfileNarratives = sqliteTable('bank_profile_narratives', {
+  userId: text('user_id').primaryKey(),
+  fingerprint: text('fingerprint').notNull(),
+  text: text('text').notNull(),
+  /** ai | rule：文字由模型还是确定性模板生成 */
+  source: text('source').notNull(),
+  /** 模型输出被拒绝的原因：numbers | invalid | unavailable */
+  rejected: text('rejected'),
+  generatedAt: integer('generated_at', { mode: 'timestamp_ms' }).notNull(),
 })
