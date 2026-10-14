@@ -4,6 +4,8 @@
 
 架构与安全设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)；当前源码调用链、开发入口、Windows 启动步骤和待办见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。
 
+接手开发见 [交接说明](docs/HANDOFF.md)，演示流程见 [演示指南](docs/DEMO.md)，当前组件约定见 [UI 迁移说明](docs/UI-MIGRATION.md)。
+
 ## 快速开始
 
 macOS / Linux 可执行 `./start.sh`，Windows 可直接双击根目录的 `start.bat`（或直接运行 `pnpm dev`）：自动加载 `.env.local`、检查依赖与数据库、同时启动全栈 Web 服务与 Worker 后台任务，并打开浏览器。启动窗口就是实时日志窗口，日志同时保存在 `.scratch/logs/`；按 `Ctrl+C` 立即停止全部服务。默认端口为 3000，端口占用时自动顺延，并使用日志中显示的实际地址。
@@ -31,6 +33,12 @@ pnpm exec node --env-file=.env.local ./node_modules/vite/bin/vite.js --port 3000
 | `13800000001` | 李小萌 | `654321` |
 
 第二个账号用于演示越权防护：登录态 A 拿不到 B 的任何数据。
+
+## 生产部署与演示
+
+容器部署、环境配置和日志操作见 [Google VM 部署说明](docs/GOOGLEVM.md)。`pnpm build` 后可用 `pnpm start` 运行生产 SSR 服务；`compose.production.yml` 管理 Web、Worker 和私有演示短信服务。生产密钥保存在不提交的 `.env.production` 中，不覆盖数据库或重新播种。
+
+私有演示短信必须显式开启演示模式并配置独立令牌；它只向私有日志输出模拟验证码，不发送真实短信。`pnpm test:deployment` 验证适配器访问控制。合成风控样本可通过 `pnpm exec tsx scripts/seed-risk-demo.ts --append-demo` 幂等追加，详见 [收款风险分析](docs/RECIPIENT-RISK.md)。
 
 ## 常用命令
 

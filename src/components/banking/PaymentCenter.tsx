@@ -727,6 +727,7 @@ export function PaymentApproval({
           const result = await confirm.mutateAsync(stepUp)
           onComplete(result.output)
         }}
+        onCompleted={(result) => onComplete(result.output)}
         onCancel={() => {
           void cancel
             .mutateAsync()

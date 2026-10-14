@@ -461,10 +461,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                         <h2 className="text-sm font-semibold text-foreground">{selectedCard?.accountName} · 尾号 {selectedCard?.last4}</h2>
                         <span className="text-xs text-muted-foreground">{activity.monthly.period}</span>
                       </div>
-                      <div className="flex gap-4 text-xs font-mono">
-                        <span>收入: <strong className="text-emerald-600 dark:text-emerald-400">+{formatAmount(activity.monthly.income)}</strong></span>
-                        <span>支出: <strong>−{formatAmount(activity.monthly.expense)}</strong></span>
-                      </div>
+                      <AccountMonthlyTotals monthly={activity.monthly} hidden={hidden} />
                     </div>
                     <TransactionList transactions={activity.transactions} hidden={hidden} />
                   </Card>
@@ -520,19 +517,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                       管理 <ChevronRight className="size-3" />
                     </Button>
                   </div>
-                  <div className="divide-y divide-border/60">
-                    {data.subscriptions.map((item) => (
-                      <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
-                        <span className="font-medium text-foreground">{item.merchant}</span>
-                        <div className="flex items-center gap-3 font-mono">
-                          <span>¥ {formatAmount(item.amount)}</span>
-                          <Badge variant={item.status === 'active' ? 'default' : 'secondary'} className="text-[10px]">
-                            {item.status === 'active' ? '生效中' : '已暂停'}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <SubscriptionList subscriptions={data.subscriptions} hidden={hidden} />
                 </Card>
               </div>
             )}
@@ -664,24 +649,15 @@ export default function BankingHome({ user }: { user: { id: string; name: string
             </>
           )}
 
-          {data && detail === 'assets' && (
-            <div className="space-y-4">
-              <Card className="p-4 border-border bg-card">
-                <span className="text-xs text-muted-foreground">总资产</span>
-                <div className="text-2xl font-bold font-mono mt-1">¥ {formatAmount(data.totalAssets)}</div>
-              </Card>
-              <div className="divide-y divide-border/60">
-                {data.accounts.map((a) => (
-                  <div key={a.id} className="py-3 flex justify-between text-xs">
-                    <div>
-                      <div className="font-semibold">{a.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{a.currency} 活期</div>
-                    </div>
-                    <span className="font-mono font-medium">¥ {formatAmount(a.balance)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {data && detail === 'assets' && <AssetDetails data={data} hidden={hidden} />}
+
+          {data && detail === 'notifications' && (
+            <NotificationDetails
+              notifications={data.notifications}
+              subscriptions={data.subscriptions}
+              hidden={hidden}
+              onManage={() => openAgent('帮我查看订阅扣费时间和提醒设置')}
+            />
           )}
 
           {data && detail === 'transactions' && (
@@ -693,6 +669,107 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           {data && detail === 'tasks' && <TaskCenter onFollowUp={(text) => openAgent(text)} />}
         </div>
       </Drawer>
+    </div>
+  )
+}
+
+export function AccountMonthlyTotals({ monthly, hidden }: { monthly: DashboardData['monthly']; hidden: boolean }) {
+  return (
+    <div className="flex flex-wrap gap-4 text-xs font-mono">
+      <span>收入: <strong className="text-emerald-600 dark:text-emerald-400">{hidden ? '••••' : `+${formatAmount(monthly.income)}`}</strong></span>
+      <span>支出: <strong>{hidden ? '••••' : `−${formatAmount(monthly.expense)}`}</strong></span>
+    </div>
+  )
+}
+
+export function SubscriptionList({ subscriptions, hidden }: { subscriptions: DashboardData['subscriptions']; hidden: boolean }) {
+  return (
+    <div className="divide-y divide-border/60">
+      {subscriptions.map((item) => (
+        <div key={item.id} className="py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="min-w-0">
+            <div className="font-medium text-foreground break-words">{item.merchant}</div>
+            <div className="text-muted-foreground">{item.cycle === 'monthly' ? '每月' : '每年'}</div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="font-mono">{hidden ? '••••' : `¥ ${formatAmount(item.amount)}`}</span>
+            <Badge variant={item.status === 'active' ? 'default' : 'secondary'} className="text-[10px]">
+              {item.status === 'active' ? '生效中' : '已暂停'}
+            </Badge>
+          </div>
+        </div>
+      ))}
+      {!subscriptions.length && <p className="py-3 text-xs text-muted-foreground">暂无订阅记录</p>}
+    </div>
+  )
+}
+
+export function AssetDetails({ data, hidden }: { data: DashboardData; hidden: boolean }) {
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 border-border bg-card">
+        <span className="text-xs text-muted-foreground">总资产</span>
+        <div className="text-2xl font-bold font-mono mt-1">{hidden ? '••••' : `¥ ${formatAmount(data.totalAssets)}`}</div>
+      </Card>
+      <dl className="divide-y divide-border/60">
+        {[
+          { label: '可用余额', value: data.availableBalance },
+          { label: '理财持仓本金', value: data.investmentPrincipal },
+          { label: '生日计划预留资金', value: data.reservedBalance ?? 0 },
+        ].map((item) => (
+          <div key={item.label} className="py-3 flex justify-between gap-3 text-xs">
+            <dt>{item.label}</dt>
+            <dd className="font-mono font-medium">{hidden ? '••••' : `¥ ${formatAmount(item.value)}`}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-xs text-muted-foreground">理财按持仓本金统计，不包含预计收益。</p>
+      <div className="divide-y divide-border/60">
+        {data.accounts.map((account) => (
+          <div key={account.id} className="py-3 flex justify-between gap-3 text-xs">
+            <div className="min-w-0">
+              <div className="font-semibold break-words">{account.name}</div>
+              <div className="text-[11px] text-muted-foreground">{account.currency} 活期</div>
+            </div>
+            <span className="font-mono font-medium">{hidden ? '••••' : `¥ ${formatAmount(account.balance)}`}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function NotificationDetails({ notifications, subscriptions, hidden, onManage }: {
+  notifications: DashboardData['notifications']
+  subscriptions: DashboardData['subscriptions']
+  hidden: boolean
+  onManage: () => void
+}) {
+  return (
+    <div className="space-y-4">
+      {notifications?.map((notice) => (
+        <article key={notice.id} className="space-y-2 rounded-xl border border-border p-4">
+          <h3 className="text-sm font-semibold break-words">{notice.title}</h3>
+          <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{notice.body}</p>
+          {notice.actionId && (
+            <a className="inline-block text-xs font-medium underline underline-offset-4 rounded-sm focus-visible:outline-2 focus-visible:outline-ring" href={`/confirm/${encodeURIComponent(notice.actionId)}`}>
+              核对并确认
+            </a>
+          )}
+        </article>
+      ))}
+      {!notifications?.length && <p className="text-xs text-muted-foreground">暂无消息通知</p>}
+      <div className="flex items-start gap-3">
+        <Bell className="size-4 shrink-0 mt-0.5" />
+        <div>
+          <h3 className="text-sm font-semibold">订阅服务提醒</h3>
+          <p className="text-xs text-muted-foreground">查看正在生效的订阅，提前安排支出。</p>
+        </div>
+      </div>
+      <SubscriptionList subscriptions={subscriptions.filter((item) => item.status === 'active')} hidden={hidden} />
+      <Button className="w-full" onClick={onManage} type="button">
+        管理订阅提醒 <ChevronRight className="size-4" />
+      </Button>
     </div>
   )
 }
