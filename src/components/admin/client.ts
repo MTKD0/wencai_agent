@@ -68,6 +68,106 @@ export type AdminCommand =
   | { type: 'cancelPlan'; planId: string }
   | { type: 'advanceClock'; to: string }
   | { type: 'runJobs' }
+  | { type: 'tamperAudit'; seq: number }
+  | { type: 'restoreAudit' }
+
+// ── 安全内核 ──────────────────────────────────────────────────────────────────
+
+export type AuditChainEntry = {
+  seq: number
+  at: string
+  userId: string
+  channel: string
+  type: string
+  hash: string
+  prevHash: string
+  payloadJson: string
+  ok: boolean
+  reason: string
+  tampered: boolean
+}
+
+export type AdminSecurityOverview = {
+  generatedAt: string
+  chain: {
+    ok: boolean
+    brokenAt: number
+    brokenSeq: number | null
+    total: number
+    entries: AuditChainEntry[]
+  }
+  redTeam: Array<{
+    id: string
+    input: string
+    category: string
+    expect: string
+    verdict: 'block' | 'flag' | 'allow'
+    score: number
+    categories: string[]
+    passed: boolean
+    caughtBy: string
+  }>
+  redTeamScore: { total: number; passed: number }
+  policy: Array<{
+    id: string
+    label: string
+    note: string
+    tool: string
+    baseRisk: 'green' | 'yellow' | 'red'
+    level: 'green' | 'yellow' | 'red'
+    allowed: boolean
+    reasons: string[]
+    requiresChannelHandoff: boolean
+  }>
+  stats: {
+    redactedTotal: number
+    outputViolations: number
+    circuitBreaks: number
+    pendingTotal: number
+    executedTotal: number
+    deniedTotal: number
+  }
+}
+
+export type TraceStep = {
+  seq: number
+  at: string
+  type: string
+  label: string
+  tone: 'green' | 'yellow' | 'red' | 'danger' | 'neutral'
+  detail: string
+  hash: string
+}
+
+export type AdminTrace = {
+  id: string
+  sessionId: string
+  channel: string
+  startedAt: string
+  endedAt: string
+  request: string
+  guard: { verdict: string; score: number; categories: string[]; provider: string } | null
+  tools: string[]
+  level: 'green' | 'yellow' | 'red' | null
+  allowed: boolean | null
+  reasons: string[]
+  facts: Record<string, unknown> | null
+  outcome: 'blocked' | 'denied' | 'pending' | 'confirmed' | 'failed' | 'compensated' | 'ok' | 'open'
+  verified: number
+  redacted: number
+  steps: TraceStep[]
+}
+
+export type SandboxProbeResult = {
+  id: string
+  label: string
+  note: string
+  code: string
+  ok: boolean
+  durationMs: number
+  output: string
+  error: string
+}
 
 export class AdminApiError extends Error {
   constructor(public code: string, message: string) { super(message) }
@@ -101,4 +201,10 @@ export const adminApi = {
   report: (userId: string, period: string) => get<AdminReport>('report', { userId, period }),
   anomalies: (userId: string) => get<AdminAnomaly[]>('anomalies', { userId }),
   command: (userId: string, cmd: AdminCommand) => post<unknown>(userId, cmd),
+  /** 安全内核：审计链状态、红队回归、策略推演 */
+  security: () => get<AdminSecurityOverview>('security'),
+  /** 决策链：把审计事件按一次用户请求重新串起来 */
+  trace: () => get<AdminTrace[]>('trace'),
+  /** 沙箱样本执行（一次性跑完，含超时与越权用例） */
+  sandbox: () => get<SandboxProbeResult[]>('sandbox'),
 }

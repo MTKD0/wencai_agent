@@ -1,15 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import '../components/admin/admin.css'
-import { AdminWorkspace } from '../components/admin/Workspace'
+import { AdminWorkspace, navigation } from '../components/admin/Workspace'
 import { AdminHome } from '../components/admin/Home'
 import type { Section } from '../components/admin/shared'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-const sections: Section[] = [
-  'overview', 'transactions', 'transfers', 'investments',
-  'cards', 'subscriptions', 'plans', 'audit',
-]
+// 以导航表为准，避免新增栏目后忘记同步白名单而被静默回退到 overview。
+const sections: Section[] = navigation.map((item) => item.id)
 
 export const Route = createFileRoute('/admin')({
   validateSearch: (search: Record<string, unknown>): { section: Section; userId?: string } => ({

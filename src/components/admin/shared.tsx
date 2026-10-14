@@ -36,6 +36,9 @@ export type Section =
   | 'cards'
   | 'subscriptions'
   | 'plans'
+  | 'security'
+  | 'risk-review'
+  | 'profile'
   | 'audit'
 
 export type ViewProps = {
