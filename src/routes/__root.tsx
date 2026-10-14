@@ -8,9 +8,14 @@ import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 
+import { UIProvider } from '#/components/ui/provider'
+
 interface MyRouterContext {
   queryClient: QueryClient
 }
+
+// The independent security document must not inherit the banking theme's background.
+const SECURE_DOCUMENT_SCRIPT = `(function(){try{if(window.location.pathname==='/secure-operation'){document.documentElement.dataset.secureDocument='true';document.documentElement.style.background='#fff'}}catch(e){}})();`
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
@@ -48,11 +53,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: SECURE_DOCUMENT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere]">
-        {children}
+        <UIProvider>{children}</UIProvider>
         {import.meta.env.DEV && (
           <TanStackDevtools
             config={{ position: 'bottom-right' }}

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BindRouteImport } from './routes/bind'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SecureOperationRouteImport } from './routes/secure-operation'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
 import { Route as ApiAdminProfileRouteImport } from './routes/api/admin-profile'
@@ -54,6 +55,11 @@ const BindRoute = BindRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecureOperationRoute = SecureOperationRouteImport.update({
+  id: '/secure-operation',
+  path: '/secure-operation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
   '/login': typeof LoginRoute
+  '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
   '/login': typeof LoginRoute
+  '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
   '/login': typeof LoginRoute
+  '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -259,6 +268,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/bind'
     | '/login'
+    | '/secure-operation'
     | '/settings'
     | '/api/admin'
     | '/api/admin-profile'
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/bind'
     | '/login'
+    | '/secure-operation'
     | '/settings'
     | '/api/admin'
     | '/api/admin-profile'
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/bind'
     | '/login'
+    | '/secure-operation'
     | '/settings'
     | '/api/admin'
     | '/api/admin-profile'
@@ -344,6 +356,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   BindRoute: typeof BindRoute
   LoginRoute: typeof LoginRoute
+  SecureOperationRoute: typeof SecureOperationRoute
   SettingsRoute: typeof SettingsRoute
   ApiAdminRoute: typeof ApiAdminRoute
   ApiAdminProfileRoute: typeof ApiAdminProfileRoute
@@ -396,6 +409,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/secure-operation': {
+      id: '/secure-operation'
+      path: '/secure-operation'
+      fullPath: '/secure-operation'
+      preLoaderRoute: typeof SecureOperationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -560,6 +580,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   BindRoute: BindRoute,
   LoginRoute: LoginRoute,
+  SecureOperationRoute: SecureOperationRoute,
   SettingsRoute: SettingsRoute,
   ApiAdminRoute: ApiAdminRoute,
   ApiAdminProfileRoute: ApiAdminProfileRoute,
@@ -586,3 +607,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
