@@ -1,18 +1,10 @@
 import { defineRegistry } from '@json-render/react'
-import { createContext, useContext } from 'react'
+import { createContext } from 'react'
+import { AgentActionButton, AgentCardPicker, AgentChoiceList, AgentSelectableTable } from '#/components/chat/AgentInteraction'
+import { choiceFromRow } from '#/components/chat/interaction-message'
 import { AnimatedBarChart, AnimatedDonutChart, normalizeChartData } from '#/components/ui/charts'
 import { AnimatedAmount, Reveal } from '#/components/ui/motion'
-import {
-  Table as ShadcnTable,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
 import { catalog } from './catalog'
-
 /** FollowUp 点击后以用户身份发送消息。数值仍只能由已验证的 state 引用传入。 */
 export const FollowUpContext = createContext<(prompt: string) => void>(() => {})
 type Row = Record<string, unknown>
@@ -58,42 +50,37 @@ export const { registry } = defineRegistry(catalog, {
       />
     ),
     Table: ({ props }) => (
-      <div className="bank-gen-table rounded-xl border border-border/80 overflow-hidden bg-background/80">
-        <ShadcnTable>
-          <TableHeader>
-            <TableRow>
-              {props.columns.map((column) => (
-                <TableHead key={column.key} className="text-xs font-semibold">{column.label}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {asRows(props.rows).map((row, index) => (
-              <TableRow key={index} style={{ animationDelay: `${Math.min(index, 10) * 50}ms` }}>
-                {props.columns.map((column) => (
-                  <TableCell key={column.key} className="text-xs">{String(row[column.key] ?? '')}</TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </ShadcnTable>
-      </div>
+      <AgentSelectableTable
+        rows={asRows(props.rows)}
+        columns={props.columns.map((column) => ({ key: column.key, label: column.label }))}
+      />
+    ),
+    ChoiceList: ({ props }) => (
+      <AgentChoiceList
+        title={props.title}
+        choices={asRows(props.data).flatMap((row) => {
+          const choice = choiceFromRow(row, props.kind ?? undefined)
+          return choice ? [choice] : []
+        })}
+      />
+    ),
+    CardPicker: ({ props }) => (
+      <AgentCardPicker
+        title={props.title}
+        role={props.role}
+        choices={asRows(props.data).flatMap((row) => {
+          const choice = choiceFromRow(row, 'card')
+          return choice ? [choice] : []
+        })}
+      />
     ),
     Note: ({ props }) => <p className="bank-gen-note">{props.text}</p>,
-    FollowUp: ({ props }) => <FollowUpButton label={props.label} prompt={props.prompt} />,
+    FollowUp: ({ props }) => <FollowUpButton label={props.label} prompt={props.prompt} className="bank-follow-up bank-lift" />,
+    Confirm: ({ props }) => <AgentActionButton label="确认" prompt={props.prompt} className="bank-follow-up bank-lift" />,
   },
 })
 
-function FollowUpButton({ label, prompt }: { label: string; prompt: string }) {
-  const send = useContext(FollowUpContext)
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => send(prompt)}
-      className="bank-follow-up rounded-full text-xs font-medium"
-    >
-      {label}
-    </Button>
-  )
+function FollowUpButton({ label, prompt, className }: { label: string; prompt: string; className?: string }) {
+  // 有选择组件时 AgentActionButton 的 AgentSelectionConfirm 会接管统一确认。
+  return <AgentActionButton label={label} prompt={prompt} className={className} />
 }

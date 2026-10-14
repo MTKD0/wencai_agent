@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { ConfirmError } from '#/lib/queries'
-import { useStrongVerification } from '#/components/ui/StrongVerification'
+import { useSecureOperation, type SecureResult } from '#/components/ui/SecureOperation'
 import type { ConfirmSummary } from '#/server/tools/define'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,47 +18,56 @@ export interface ConfirmCardProps {
   submitting?: boolean
   /** 外部错误文案；step_up_failed 由调用方判断是否可重试 */
   error?: string
-  /** 确认。stepUp 仅红色操作会传。 */
+  /** 确认。安全验证在独立页面完成，这里不再需要 stepUp。 */
   onConfirm?: (stepUp?: StepUpPayload) => void | Promise<void>
   /** 取消。 */
   onCancel?: () => void
+  /** 安全页面完成后回传的服务端结果 */
+  onCompleted?: (result: SecureResult) => void | Promise<void>
   /** 已完成的展示态（外部在成功后置 true） */
   done?: string
   doneState?: 'success' | 'cancelled' | 'failed'
+  /** Agent 交互区接管：确认/取消/重新办理都发完整消息，不走本地 mutation */
+  onAgentAction?: (action: 'verify' | 'cancel' | 'repeat' | 'receipt') => boolean
+  agentBusy?: boolean
 }
 
 export type StepUpPayload = import('#/server/auth/step-up').StrongStepUp
 
 /**
  * 安全关键组件：内容全部来自服务端生成的 summary，不渲染任何模型文字。
- * 黄色：一键确认；红色：绑定手机短信或 Passkey 强验证。
+ * 确认后打开独立安全页面；密码与强验证都不在主文档内发生。
  */
 export default function ConfirmCard(props: ConfirmCardProps) {
   const [message, setMessage] = useState<string>()
   const confirming = useRef(false)
-  const [verifying, setVerifying] = useState(false)
-  const [escalated, setEscalated] = useState(false)
-  const red = props.level === 'red' || escalated
-  const submitting = props.submitting || verifying
-  const state = props.done ? (props.doneState ?? 'success') : 'pending'
-  const verification = useStrongVerification({ purpose: 'action', actionId: props.actionId }, !!submitting)
+  const [completed, setCompleted] = useState(false)
+  const openSecure = useSecureOperation()
+  const queries = useQueryClient()
+  const done = props.done ?? (completed ? '操作已完成' : undefined)
+  const red = props.level === 'red'
+  const submitting = props.submitting
+  const state = done ? (props.doneState ?? 'success') : 'pending'
+  const [latestReasons, setLatestReasons] = useState<string[]>()
 
   async function confirm() {
-    if (confirming.current || submitting || props.done) return
+    if (confirming.current || submitting || done) return
+    if (props.onAgentAction && !props.onAgentAction('verify')) return
     confirming.current = true
-    setVerifying(true)
     setMessage(undefined)
     try {
-      // 强验证的 stepUp 只在红色操作时构造；Passkey 用浏览器 API 现取 challenge
-      const stepUp: StepUpPayload | undefined = red ? await verification.getProof() : undefined
-      await props.onConfirm?.(stepUp)
+      const result = await openSecure({ purpose: 'confirm_action', actionId: props.actionId })
+      if (result.cancelled) return
+      if (!result.ok) throw new Error(result.message ?? '本次操作未完成')
+      setCompleted(true)
+      await props.onCompleted?.(result)
     } catch (err) {
-      if (err instanceof ConfirmError && err.data.requiredLevel === 'red') setEscalated(true)
+      if (err instanceof ConfirmError && err.data.reasons) setLatestReasons(err.data.reasons)
       // 错误由 props.error 展示；这里不再自行维护错误态
       setMessage(err instanceof Error ? err.message : '验证失败')
     } finally {
       confirming.current = false
-      setVerifying(false)
+      void queries.invalidateQueries({ queryKey: ['confirm', props.actionId] })
     }
   }
 
@@ -66,10 +76,22 @@ export default function ConfirmCard(props: ConfirmCardProps) {
       <div className="mb-3 flex items-center justify-between">
         <p className="m-0 font-semibold text-[var(--sea-ink)]">{props.summary.title}</p>
         <Badge
-          variant={props.done ? (state === 'success' ? 'default' : 'secondary') : red ? 'destructive' : 'outline'}
+          variant={
+            done
+              ? state === 'success'
+                ? 'default'
+                : 'secondary'
+              : red
+                ? 'destructive'
+                : 'outline'
+          }
           className="text-xs"
         >
-          {props.done ? ({ success: '已完成', cancelled: '已取消', failed: '未完成' }[state as 'success' | 'cancelled' | 'failed']) : red ? '强验证' : '需确认'}
+          {done
+            ? ({ success: '已完成', cancelled: '已取消', failed: '未完成' } as const)[state as 'success' | 'cancelled' | 'failed']
+            : red
+              ? '强验证'
+              : '需确认'}
         </Badge>
       </div>
       <dl className="m-0 space-y-1.5 text-sm">
@@ -80,39 +102,37 @@ export default function ConfirmCard(props: ConfirmCardProps) {
           </div>
         ))}
       </dl>
-      {props.reasons.length > 0 && (
+      {(latestReasons ?? props.reasons).length > 0 && (
         <ul className="mt-3 mb-0 list-none space-y-0.5 p-0 text-xs text-[var(--sea-ink-soft)]">
-          {props.reasons.map((r) => (
+          {(latestReasons ?? props.reasons).map((r) => (
             <li key={r}>· {r}</li>
           ))}
         </ul>
       )}
 
-      {props.done ? (
-        <p className="bank-confirm-status" role="status">{state === 'success' ? '✓ ' : ''}{props.done}</p>
-      ) : (
+      {done && <p className="bank-confirm-status" role="status">{state === 'success' ? '✓ ' : ''}{done}</p>}
+      {(!done || props.onAgentAction) && (
         <div className="mt-4 space-y-2">
-          {red && verification.controls}
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => props.onCancel?.()}
-              disabled={submitting}
-              className="flex-1 rounded-full text-xs"
+              onClick={() => (props.onAgentAction ? props.onAgentAction(done ? 'receipt' : 'cancel') : props.onCancel?.())}
+              disabled={submitting || props.agentBusy}
+              className="bank-confirm-cancel flex-1 rounded-full text-xs"
             >
-              取消
+              {done ? '核对结果' : '取消'}
             </Button>
             <Button
               type="button"
               variant={red ? 'destructive' : 'default'}
               size="sm"
-              onClick={() => void confirm()}
-              disabled={submitting || !props.onConfirm || (red && !verification.ready)}
-              className="flex-1 rounded-full text-xs font-semibold"
+              onClick={() => (done && props.onAgentAction ? props.onAgentAction('repeat') : void confirm())}
+              disabled={submitting || props.agentBusy}
+              className="bank-confirm-submit flex-1 rounded-full text-xs font-semibold"
             >
-              {submitting ? '处理中…' : '确认'}
+              {submitting ? '处理中…' : done ? '重新办理' : '确认'}
             </Button>
           </div>
           {(message ?? props.error) && <p className="m-0 text-center text-xs text-red-600">{message ?? props.error}</p>}

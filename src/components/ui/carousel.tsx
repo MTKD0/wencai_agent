@@ -17,6 +17,9 @@ type CarouselProps = {
   plugins?: CarouselPlugin
   orientation?: "horizontal" | "vertical"
   setApi?: (api: CarouselApi) => void
+  /** Controlled selection: identifies the active card and its ledger. */
+  value?: number
+  onValueChange?: (index: number) => void
 }
 
 type CarouselContextProps = {
@@ -47,12 +50,18 @@ function Carousel({
   plugins,
   className,
   children,
+  value,
+  onValueChange,
   ...props
 }: React.ComponentProps<"div"> & CarouselProps) {
+  const initial = React.useRef(value)
+  const latest = React.useRef({ value, onValueChange })
+  latest.current = { value, onValueChange }
   const [carouselRef, api] = useEmblaCarousel(
     {
       ...opts,
       axis: orientation === "horizontal" ? "x" : "y",
+      ...(initial.current !== undefined ? { startIndex: initial.current } : {}),
     },
     plugins
   )
@@ -63,6 +72,7 @@ function Carousel({
     if (!api) return
     setCanScrollPrev(api.canScrollPrev())
     setCanScrollNext(api.canScrollNext())
+    latest.current.onValueChange?.(api.selectedScrollSnap())
   }, [])
 
   const scrollPrev = React.useCallback(() => {
@@ -90,6 +100,11 @@ function Carousel({
     if (!api || !setApi) return
     setApi(api)
   }, [api, setApi])
+
+  // Controlled value wins over the embla internal position.
+  React.useEffect(() => {
+    if (api && value !== undefined && api.selectedScrollSnap() !== value) api.scrollTo(value, true)
+  }, [value, api])
 
   React.useEffect(() => {
     if (!api) return
@@ -130,14 +145,14 @@ function Carousel({
   )
 }
 
-function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
+function CarouselContent({ className, viewportClassName, ...props }: React.ComponentProps<"div"> & { viewportClassName?: string }) {
   const { carouselRef, orientation } = useCarousel()
 
   return (
     <div
       ref={carouselRef}
-      className="overflow-hidden"
       data-slot="carousel-content"
+      className={cn("overflow-hidden", viewportClassName)}
     >
       <div
         className={cn(

@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import { useEffect, useRef, useState } from 'react'
@@ -10,6 +12,9 @@ import { toolPresentations } from './presentation'
 import AssistantText, { presentedTables } from './AssistantText'
 import { subscribeConfirmations } from '#/lib/confirmation-notices'
 import ConfirmCard from './ConfirmCard'
+import { MotionMessage, ThinkingDots } from '#/components/ui/motion'
+import { AgentInteractionContext, AgentInteractionGroup } from './AgentInteraction'
+import { interactionSnapshot, InteractionMemory, type AgentMessageOptions } from './interaction-message'
 
 const SUGGESTIONS = [
   { label: '查一下本月支出', prompt: '帮我分析本月支出并用图表展示分类', icon: ReceiptText },
@@ -30,9 +35,13 @@ export default function ChatView({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
     onFinish: () => {
       void client.invalidateQueries({ queryKey: ['dashboard'] })
+      void client.invalidateQueries({ queryKey: ['confirm'] })
+      void client.invalidateQueries({ queryKey: ['plans'] })
     },
   })
   const [input, setInput] = useState('')
+  const interactionMemory = useRef(new InteractionMemory())
+  useEffect(() => { if (messages.length) interactionMemory.current.remember(interactionSnapshot(messages, messages.length - 1)) }, [messages])
   const [sendError, setSendError] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const followScroll = useRef(true)
@@ -44,6 +53,27 @@ export default function ChatView({
   const [sending, setSending] = useState(false)
   const activeConfirmation = useRef<string | undefined>(undefined)
   const busy = status === 'submitted' || status === 'streaming'
+  const [stoppedNotice, setStoppedNotice] = useState('')
+  useEffect(() => { if (status === 'submitted') setStoppedNotice('') }, [status])
+  /**
+   * 停止不只是停下文字输出：服务端会让正在执行的计划停在当前步骤并标记为已暂停。
+   * 这里在停止后查一次，把结果告诉用户，避免留下一个用户不知道的计划。
+   */
+  async function stopAndReport() {
+    await stop()
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    void client.invalidateQueries({ queryKey: ['plans'] })
+    try {
+      const res = await fetch('/api/plans')
+      const data = (await res.json()) as { plans?: { status: string; updatedAt: string; state: { plan: { goal: string } } }[] }
+      const paused = data.plans?.find((plan) => plan.status === 'paused' && Date.now() - new Date(plan.updatedAt).getTime() < 120_000)
+      setStoppedNotice(paused
+        ? `已停止。计划「${paused.state.plan.goal}」已暂停在当前步骤，已完成的步骤不会撤销；可在生活页的任务中心恢复或取消。`
+        : '已停止回答。')
+    } catch {
+      setStoppedNotice('已停止回答。')
+    }
+  }
   useEffect(() => subscribeConfirmations((notice) => {
     if (notice.userId !== userId || seenConfirmations.current.has(notice.actionId)) return
     seenConfirmations.current.add(notice.actionId)
@@ -66,15 +96,16 @@ export default function ChatView({
           : 'smooth',
       })
   }, [messages, active, busy])
-  const send = (text: string) => {
-    if (!text.trim() || busy || dispatching.current) return
+  const send = (text: string, options?: AgentMessageOptions) => {
+    if (!text.trim() || busy || dispatching.current) return false
     dispatching.current = true
     setSending(true)
     activeConfirmation.current = undefined
     followScroll.current = true
     setSendError('')
-    void sendMessage({ text }).catch(() => setSendError('消息发送失败，请稍后重试')).finally(() => { dispatching.current = false; setSending(false) })
+    void sendMessage({ text }, options ? { body: options } : undefined).catch(() => setSendError('消息发送失败，请稍后重试')).finally(() => { dispatching.current = false; setSending(false) })
     setInput('')
+    return true
   }
   useEffect(() => {
     if (busy || dispatching.current) return
@@ -88,10 +119,16 @@ export default function ChatView({
     followScroll.current = true
     setSendError('')
     setFailedConfirmation(undefined)
-    void sendMessage(
-      { text: actionId ? '我已核对并确认，请帮我核对执行结果。' : request!.text },
-      actionId ? { body: { confirmedActionId: actionId } } : undefined,
-    ).catch(() => {
+    void (async () => {
+      let text = request?.text ?? ''
+      if (actionId) {
+        const response = await fetch(`/api/confirm?actionId=${encodeURIComponent(actionId)}`, { credentials: 'same-origin' })
+        if (!response.ok) throw new Error('无法读取本次确认摘要')
+        const receipt = await response.json() as { summary: { title: string; fields: { label: string; value: string }[] } }
+        text = `我已核对并确认${receipt.summary.title}（${receipt.summary.fields.map((field) => `${field.label}：${field.value}`).join('；')}）。请仅按服务端回执核对执行结果，不要再次执行。`
+      }
+      await sendMessage({ text }, actionId ? { body: { confirmedActionId: actionId } } : undefined)
+    })().catch(() => {
       setSendError(actionId ? '自动核对暂未完成，操作已确认成功，可重试核对。' : '消息发送失败，请稍后重试')
       if (actionId) setFailedConfirmation(actionId)
     }).finally(() => { dispatching.current = false; setSending(false) })
@@ -123,15 +160,15 @@ export default function ChatView({
           <p>查账户、转账、看账单，我来帮你</p>
           <div className="bank-agent-suggestions">
             {SUGGESTIONS.map(({ label, prompt, icon: Icon }) => (
-              <button
+              <Button
                 key={label}
                 className="bank-lift"
                 disabled={busy}
-                onClick={() => send(prompt)}
+                onClick={() => send(prompt)} type="button"
               >
                 <Icon size={17} />
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -146,12 +183,12 @@ export default function ChatView({
             const presentation = toolPresentations(message.parts, processing)
             const tables = presentedTables(message.parts, presentation)
             return (
-              <div
+              <MotionMessage
                 key={message.id}
                 className={`bank-message ${message.role === 'user' ? 'is-user' : 'is-assistant'}`}
               >
                 {message.role !== 'user' && <AgentAvatar small />}
-                <div className="bank-message-content">
+                <AgentInteractionContext.Provider value={{ send, enabled: true, busy: busy || sending, snapshot: interactionSnapshot(messages, messageIndex), memory: interactionMemory.current }}><div className="bank-message-content"><AgentInteractionGroup active={message.role === 'assistant' && !processing} securityConfirmation={message.parts.some((part) => 'output' in part && !!part.output && typeof part.output === 'object' && 'status' in part.output && ['needs_confirmation', 'needs_handoff', 'plan'].includes(String(part.output.status)))}>
                   {message.parts.map((part, index) => {
                     const key = `${message.id}-${index}`
                     if (part.type === 'text')
@@ -192,15 +229,14 @@ export default function ChatView({
                         <div className="bank-tool-result" key={key}>
                           <ToolPart
                             part={part as never}
-                            onFollowUp={send}
                             summarized={presentation[index] === 'status'}
                           />
                         </div>
                       )
                     return null
                   })}
-                </div>
-              </div>
+                </AgentInteractionGroup></div></AgentInteractionContext.Provider>
+              </MotionMessage>
             )
           })}
           {status === 'submitted' && (
@@ -208,22 +244,21 @@ export default function ChatView({
               <AgentAvatar small />
               <span>
                 文财正在思考
-                <i />
-                <i />
-                <i />
+                <ThinkingDots />
               </span>
             </div>
           )}
         </div>
+        {stoppedNotice && !busy && <p className="bank-agent-disclaimer" role="status">{stoppedNotice}</p>}
         {(error || sendError) && (
           <div className="bank-chat-error" role="alert">
             {sendError || '暂时无法连接文财，请稍后重新发送。'}
-            <small>你也可以先在首页查看账户和账单。</small>
-            {failedConfirmation && <button type="button" disabled={busy} className="bank-text-button" onClick={() => {
+            <small>智能助手不可用时，关闭此面板仍可在首页办理转账、卡片管理，并在任务中心处理进行中的计划。</small>
+            {failedConfirmation && <Button type="button" disabled={busy} className="bank-text-button" onClick={() => {
               setConfirmations((queue) => [...queue, failedConfirmation])
               setFailedConfirmation(undefined)
               setSendError('')
-            }}>重新核对结果</button>}
+            }}>重新核对结果</Button>}
           </div>
         )}
       </div>
@@ -237,7 +272,7 @@ export default function ChatView({
         <span className="bank-composer-mark" aria-hidden="true">
           <ReceiptText size={20} />
         </span>
-        <input
+        <Input
           data-autofocus
           aria-label="发送给文财的消息"
           value={input}
@@ -247,27 +282,27 @@ export default function ChatView({
           maxLength={4000}
         />
         {busy ? (
-          <button
+          <Button
             className="bank-send bank-lift"
             type="button"
             aria-label="停止回答"
-            onClick={() => void stop()}
+            onClick={() => void stopAndReport()}
           >
             {status === 'submitted' ? (
               <Loader2 size={20} className="bank-spin" />
             ) : (
               <Square size={18} />
             )}
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             type="submit"
             aria-label="发送消息"
             className="bank-send bank-lift"
             disabled={!input.trim()}
           >
             <ArrowUp size={24} />
-          </button>
+          </Button>
         )}
       </form>
       <p className="bank-agent-disclaimer">敏感操作须由你确认，请以银行数据为准</p>
