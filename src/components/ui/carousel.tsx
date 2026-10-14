@@ -145,40 +145,27 @@ function Carousel({
   )
 }
 
-function CarouselContent({ className, viewportClassName, ...props }: React.ComponentProps<"div"> & { viewportClassName?: string }) {
-  const { carouselRef, orientation } = useCarousel()
+function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
+  const { carouselRef } = useCarousel()
 
   return (
     <div
       ref={carouselRef}
       data-slot="carousel-content"
-      className={cn("overflow-hidden", viewportClassName)}
+      className={cn("overflow-hidden", className)}
     >
-      <div
-        className={cn(
-          "flex",
-          orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col",
-          className
-        )}
-        {...props}
-      />
+      <div className="ui-carousel-track" {...props} />
     </div>
   )
 }
 
 function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
-  const { orientation } = useCarousel()
-
   return (
     <div
       role="group"
       aria-roledescription="slide"
       data-slot="carousel-item"
-      className={cn(
-        "min-w-0 shrink-0 grow-0 basis-full",
-        orientation === "horizontal" ? "pl-4" : "pt-4",
-        className
-      )}
+      className={cn("min-w-0 shrink-0 grow-0 basis-full", className)}
       {...props}
     />
   )

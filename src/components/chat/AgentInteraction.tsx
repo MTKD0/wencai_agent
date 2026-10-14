@@ -159,7 +159,7 @@ export function AgentCardPicker({ choices: inputChoices, title = '我的银行�
     <section className={`bank-agent-choice${selected ? ' is-selected' : ''}`} aria-label={title}>
       <header><h3>{title}</h3><span aria-live="polite">{index + 1} / {choices.length}</span></header>
       <Carousel value={index} onValueChange={setIndex} className="bank-agent-card-picker" aria-label="选择银行卡">
-        <CarouselContent viewportClassName="bank-card-viewport" tabIndex={0} aria-label="左右滑动选择银行卡">
+        <CarouselContent className="bank-card-viewport" tabIndex={0} aria-label="左右滑动选择银行卡">
           {choices.map((item, i) => (
             <CarouselItem key={item.id} className="bank-card-slide" inert={i !== index} aria-label={`${i + 1} / ${choices.length} 尾号${item.card?.last4}`}>
               <BankCard {...(item.card ?? { name: item.label })} index={i} />

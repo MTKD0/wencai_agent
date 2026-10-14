@@ -1,0 +1,22 @@
+/*
+ * Shared ui-* utility contracts used by business components.
+ * Kept separate from the shadcn token layer so either stack can render them.
+ */
+
+/* A button that carries no chrome of its own; the caller supplies the skin. */
+.ui-button-reset {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The moving part of a Carousel; the viewport around it clips. */
+.ui-carousel-track {
+  display: flex;
+  touch-action: pan-y pinch-zoom;
+}
