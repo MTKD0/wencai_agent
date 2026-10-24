@@ -89,14 +89,14 @@
 | `src/server/guard/` | `heuristic.ts` / `qwen3guard.ts` / `index.ts`。**fail-to-heuristic**：审核模型超时不阻断业务 | |
 | `src/server/tools/` | 工具契约（`define.ts`）+ 各业务工具 + `runner.ts` 授权入口 + `sanitize.ts` 隔离标记 | |
 | `src/server/payments/` | `service.ts` 结算（转账/冲正），`investment-rollback.ts` 幂等冲正 | |
-| `src/server/cards/` | `service.ts` 卡片读取时**无损升级旧库** | 见 §6 |
-| `src/server/automation/` | 定时任务执行、订阅识别、通知、生日订单 | 见 §7 |
+| `src/server/cards/` | `service.ts` 卡片读取时**无损升级旧库** | 见 §7 第 1 条 |
+| `src/server/automation/` | 定时任务执行、订阅识别、通知、生日订单、常设授权 | |
 | `src/server/executor/` | DAG 执行器（挂起/恢复/补偿） | |
 | `src/server/agent/` | `instructions.ts` 系统指令、`run.ts` 主流程、`session.ts` 进程内工具结果快照 | |
-| `src/server/llm/` | `models.ts` 模型注册 | |
+| `src/server/llm/` | `models.ts` 模型注册与运行时故障切换 | |
 | `src/server/channels/` | `lark.tsx` 飞书、`mcp.ts` MCP Server | |
 | `src/genui/` | `catalog.ts` 组件目录（zod 约束）、`registry.tsx` 组件实现 | 客户端 |
-| `src/server/genui/validate.ts` | ★ 服务端 spec 校验 | 见 §5 |
+| `src/server/genui/validate.ts` | ★ 服务端 spec 校验 | 见 §7 第 4 条 |
 
 ### 2.3 两类令牌，**不要混用**
 
@@ -116,11 +116,11 @@
 
 ## 3. 当前完成度
 
-**工具规模**：`BANK_TOOLS` **67 个**（39 read / 28 write），另有 `SYSTEM_TOOLS`（`advance_simulation_clock`、`run_due_jobs`，**不暴露给模型**）。Web/飞书额外注册 `plan_task`、`show_view`；MCP 只注册 read 工具。
+**工具规模**（2026-10-25）：`BANK_TOOLS` **89 个**（54 read / 35 write），Web/飞书 Agent 暴露 88 个（排除旧 `request_password_change`），另有 `SYSTEM_TOOLS`（`advance_simulation_clock`、`run_due_jobs`，**不暴露给模型**）。Web/飞书额外注册 `ask_questions`、`prepare_interaction`、`prepare_transfer_batch`、`plan_task`、`show_view`；MCP 只注册 54 个 read 工具。README 的计数由 `tests/tool-catalog-docs.test.ts` 自动核对。
 
-**已实现且有单测**：策略引擎、确认令牌、审计哈希链、DAG 执行器（挂起/恢复/补偿/handoff）、Guard、数字校验、QuickJS 沙箱、生成式 UI 校验、卡片独立账户升级、双边记账、订阅识别、生日预留与订单、任务中心（暂停/恢复/取消）。
+**已实现且有单测**：策略引擎、确认令牌、审计哈希链、DAG 执行器（挂起/恢复/补偿/handoff）、Guard、数字校验、QuickJS 沙箱、生成式 UI 校验、卡片独立账户升级、双边记账、订阅识别、生日预留与订单、任务中心（暂停/恢复/取消）、模型故障切换、常设授权、收款账户风险分析与人工复核、生活商城、基金申购与理财专家。
 
-**测试**：58 个测试文件、622 项通过（截至 2026-10-20，其中包括下面三处回归修复；此前 37 个文件、377 项为 2026-10-13，含 #1 后台收款风险分析与确认/自动执行回归，见 [RECIPIENT-RISK.md](RECIPIENT-RISK.md)，以及 #7 后台用户画像，见 [PROFILE.md](PROFILE.md)）。运行前**必须指向独立数据库**，见 §8。
+**测试**：72 个测试文件、1001 项通过（2026-10-25，独立库）。运行前**必须指向独立数据库**，见 §8。
 
 ---
 
@@ -132,7 +132,7 @@
 |---|---|---|
 | 01 智能转账 | `find_payee` / `search_bank_accounts` / `scheduled_tasks` / `preview_split`+`commit_split` | ✅ |
 | 02 账单分析 | `analyze_spending`（沙箱）/ `get_spending_report` / 后台异常视图 | ✅ |
-| 03 理财操作 | `list_products` / `scoreRisk` / `preview_purchase`+`commit_purchase` | ✅ |
+| 03 理财操作 | `list_products` / `get_wealth_advice` / `rank_funds` / 风险测评三件套 / `commit_purchase` / `commit_redemption` / `commit_fund_order` | ✅ 基金暂不支持赎回 |
 | 04 卡片管理 | `apply_card` / `adjust_credit_limit` / `lock_card`+`unlock_card` / `report_card_lost` | ✅ |
 | 05 订阅代扣 | `detect_subscriptions` / worker 续费提醒 / `cancel_subscription` | ✅ |
 | 06 跨场景联动 | `create_birthday_plan` + `automation/birthdays.ts`（生日前两天生成模拟订单） | ✅ |
@@ -141,7 +141,7 @@
 
 ### 4.2 已知的表达层缺口（便宜，但要补）
 
-1. **"密码修改"曾未作为 Agent 工具。** 赛题把"密码修改"明确列入红色示例。→ **已补齐**，见 §10「P0 补 `request_password_change`」。做法是工具不接收任何密码，确认后签发一次性凭证，用户在安全设置页亲自输入。
+1. **"密码修改"曾未作为 Agent 工具。** 赛题把"密码修改"明确列入红色示例。→ 10-12 补了账户级 `request_password_change`（见 §10）；改为每卡独立密码后，Agent 改用 `card_password_settings` 引导用户在独立安全页面先强验证再改密，旧工具保留实现但已从 Agent 白名单移除。
 2. **演示验证必须如实表述。** 当前 UI 使用模拟指纹 / 人脸按钮，须显式开启 `AUTH_DEMO_MODE=true`；旁白与字幕统一写“模拟指纹 / 人脸验证”。不能声称“用 Passkey 实现人脸核验”，也不能把保留的 WebAuthn 接口当作已接入当前异常转账链路。真实验证接入与演示准备见本文顶部更正和 `DEMO.md` 第一节。
 3. **沙箱缺"可监控"。** 赛题要求"受限、**可监控**的逻辑隔离环境"。→ **已补齐**：安全内核页的「代码沙箱监控」按需运行四类样本并显示耗时与错误，见 §10。
 
@@ -150,12 +150,12 @@
 | 赛题要求 | 实现 | 判定 |
 |---|---|---|
 | 权限分级 | `policy/` 纯函数，只升不降，每条记 `reason` | 强 |
-| 幻觉防护 | `verify/numbers.ts` + `verify/response.ts` + genui 禁数字字面量 | 强 |
-| 注入防御 | `guard/` + `⟦外部文本⟧` 隔离 | 强 |
-| 操作审计（完整决策链路） | 哈希链，含命中规则与事实快照 | 强，**超出赛题要求** |
-| 异常熔断 | 5 次失败锁 30 分钟 + `transfer-burst` 规则 | 强 |
-| 沙箱 | QuickJS，1s / 32MB，无 fs/net | 有，可监控性弱 |
-| 意图理解（模糊/省略/隐含） | 多轮补全、指代解析、收款人消歧 | 有 |
+| 幻觉防护 | `verify/numbers.ts` + `verify/transactions.ts` + `verify/response.ts` + genui 禁数字字面量 | 强；暂不识别"万"和中文数字（SECURITY §18 #4） |
+| 注入防御 | `guard/` + `⟦外部文本⟧` 隔离 + 结构性限制 | 强；只审核最后一条用户消息（SECURITY §18 #3） |
+| 操作审计（完整决策链路） | 哈希链，含命中规则与事实快照；安全内核页可追踪单次请求 | 强；哈希未加密钥（SECURITY §18 #6） |
+| 异常熔断 | 5 次失败锁 30 分钟 + `transfer-burst` 规则 | 强；反复注入尚不触发锁定 |
+| 沙箱 | QuickJS，1s / 32MB，无 fs/net；安全内核页可现场运行四类样本 | 强 |
+| 意图理解（模糊/省略/隐含） | 即时问卷补全、选择组件、收款人与银行卡消歧 | 有 |
 | DAG 分解 | `planner/dag.ts` + 执行器 | 强 |
 | **中断、回退和人工接管** | 挂起恢复 + Saga 补偿 + `handoff` 节点 | 强 |
 
@@ -169,15 +169,21 @@
 
 | 日期 | 事项 |
 |---|---|
+| 10.28 | 人工智能赛道线上答疑 |
 | **11.02** | 人工智能赛道作品提交截止 |
 | 11.10 | 决赛入围公布（10 强） |
 | **11.21—11.22** | 人工智能黑客马拉松（现场） |
+| 11.23 | 总决赛与颁奖 |
+
+提交材料清单与作品简介见 [COMPETITION-COMPLIANCE.md](COMPETITION-COMPLIANCE.md)。
 
 ---
 
 ## 5. 待开发任务（按优先级）
 
-### P0 — 安全内核可视化 ⭐ 最高 ROI
+> 2026-10-25 状态：安全内核可视化、`request_password_change`、模型降级链（备用模型切换部分）、理财专家均已完成，见 §10；演示脚本已写入 DEMO.md，**视频与 PPT 尚未制作**；红队扩充仍未做。以下保留原始任务描述。
+
+### P0 — 安全内核可视化 ⭐ 最高 ROI ✅ 2026-10-12
 
 赛题列了"完整决策链路"和"可监控"，但没有界面证明它。**建议新建 `/admin` 下的一个"安全内核"视图**（纯读 + 本地库，现场演示最不容易出故障）：
 
@@ -198,21 +204,21 @@
 **D. 沙箱监控**
 展示模型生成的 JS 代码、执行耗时、内存上限、被拒绝的 API 调用。
 
-### P0 — 补 `request_password_change`
+### P0 — 补 `request_password_change` ✅ 2026-10-12（后已由 `card_password_settings` 取代）
 红色分级，接现有 `/api/step-up`。见 §4.2。
 
-### P0 — 全流程演示脚本 + 录屏
+### P0 — 全流程演示脚本 + 录屏（脚本 ✅，录屏 ❌）
 6 个场景每场景 30 秒，串成一条叙事线。
 
-### P1 — 模型降级链
+### P1 — 模型降级链 ✅ 2026-10-12（备用模型切换；"确定性菜单式降级"未做）
 `primaryModel()` → `fallbackModel()` → **确定性菜单式降级**。
 注意：这不只是功能，是**演示保险**——11.21 现场黑客马拉松如果模型 API 挂了/限流，没有降级链就是黑屏。
-现状：`llm/models.ts` 只有两个工厂函数，**运行时错误自动切换尚未实现**。
+现状（2026-10-25）：`withFailover` 已实现开始响应前的自动切换与 60 秒冷却，见 SECURITY §13.1；两个模型都不可用时的菜单式降级未做。
 
 ### P1 — 红队用例扩充 + 数字
 扩到 50 条，跑出**拦截率 / 误拦率**，写进答辩材料。规则和数字校验**不能**证明所有输入下无幻觉，别过度承诺。
 
-### P2 — 理财专家（只读顾问）见 §5.1
+### P2 — 理财专家（只读顾问）✅ 已实现为 `get_wealth_advice`，见 §5.1 与 [FUNDS.md](FUNDS.md)
 
 > 2026-10-20：已与实时基金数据接入合并为一套方案，见 [WEALTH-FUND-PLAN.md](WEALTH-FUND-PLAN.md)。触发方式由"run.ts 意图路由"改为只读工具 `get_wealth_advice`，§5.1 的其余约束不变。
 
@@ -352,10 +358,10 @@ src/server/tools/
 5. **数字核验只信任三种出处**：服务端会话快照、本轮工具输出、服务端执行回执。**浏览器提交的历史工具结果不作为凭证**（`agent/run.ts` 的 `trustedEvidence`）。
 6. **确认回报轮次降级为只读**：带 `confirmedActionId` 的请求 `readOnly: true`，不注册 `plan_task` / `show_view`，防止重复写操作。
 7. **待确认动作的消费是原子的**，条件更新防并发重复消费；`confirmPending` 在**用户执行租约内重跑风险策略**（等级只升不降，按执行时事实判断）。
-8. **扩展转账的已知缺口**：`commit_transfer` 尚未接入原 `transfer` 的风险升级规则。`ARCHITECTURE.md` 与 `README.md` 均已标注。
+8. **转账类工具共用一套风险规则**：`rules.ts` 的 `isTransfer` 覆盖 `transfer`、`commit_transfer`、定时转账、本人互转、信用卡还款、AA 付款、生日订单与常设授权；新增转账类工具时**必须同时加入** `isTransfer` 和 `security/verification-policy.ts` 的 `TRANSFER_TOOLS`。
 9. **不是每个 write 工具都有补偿**；缺失补偿或补偿失败时计划进入 `failed`，**不能承诺所有流程都自动回滚成功**。
-10. **后台 `/admin` 不经过策略引擎与确认令牌**，是人工直连通道，每条命令写审计（`admin_command`）。它**不是用户端**，且 `ADMIN_TOKEN` 是演示访问凭据，**不是完整管理员角色系统**。
-11. **进程内状态有三处**：生成式 UI 快照（`agent/session.ts` 的 Map）、飞书对话历史、Passkey challenge。**正式多实例部署需共享持久化。**
+10. **后台 `/admin` 不经过策略引擎与确认令牌**，是人工直连通道，每条命令写审计（`admin_command`）。它**不是用户端**，且 `ADMIN_TOKEN` 是演示访问凭据，**不是完整管理员角色系统**。当前 `AUTH_DEMO_MODE=true` 时后台免凭据访问（团队测试需要），**提交前两天需收紧**（SECURITY §15）。
+11. **进程内状态有五处**：生成式 UI 快照（`agent/session.ts` 的 Map）、飞书对话历史、Passkey challenge、后台转账一次性授权、审计写入队列。**正式多实例部署需共享持久化**（SECURITY §18 #11）。
 12. **`routeTree.gen.ts` 是生成文件**，新增路由后运行 `pnpm generate-routes`，不要手工维护。
 
 ---
@@ -628,6 +634,8 @@ S3–S5（对话工具、一键急停、飞书与后台）未做，按 §11.6 �
 
 `tests/security-repair.test.ts` 的"两笔预先创建的 600 元确认单…"在北京时间 0–6 点会失败：夜间单笔超过 500 元本身就是红色，第一张也被拦下。与本轮改动无关，是既有测试对运行时刻敏感；已在该用例内把时间固定到白天。**如果其他用例在夜间也出现类似失败，同样是这个原因。**
 
+> 2026-10-25 注：夜间规则与新收款人规则已在同日稍晚的 `692ea6a` 中移除，分级界限改为与赛题一致的日累计 1000 元；本条只作历史记录。
+
 **本轮验证**：类型检查通过；独立库上 **31 个测试文件、280 项通过**（此前 258 项）；生产构建通过。
 
 **下一步**：#1 已完成（见下），可继续 #2 上下文压缩、#7 后台用户画像，或 §11.6 的 S3–S5。
@@ -723,6 +731,15 @@ S3–S5（对话工具、一键急停、飞书与后台）未做，按 §11.6 �
 - **文档索引**：`docs/README.md` 按用途列出全部 29 份文档并标明主文档和过时状态，根 README 已链接。
 
 **验证**：类型检查与生产构建通过；`format:changed --check` 通过；独立库上 **70 个文件、991 项通过**；循环依赖仍为 17 个，没有新增（拆除留到阶段 B）。
+
+### 2026-10-25 · 比赛提交材料：技术文档与作品简介 ✅（仅文档）
+
+- **作品简介**（199 字）与**提交材料清单**写入 [COMPETITION-COMPLIANCE.md](COMPETITION-COMPLIANCE.md) §0–§1；该文档按 `ebc6e23` 重写，逐项对应六个场景、三项核心技术要求，并列出与赛题的两处差异（黄色转账也要一次付款凭证；比赛题多出的风控规则），答辩时主动说明。
+- **ARCHITECTURE.md 重写为 v1.0**：Mermaid 系统架构图、一笔转账的时序图、生日 DAG 示例（三张图均已用 Mermaid 11 解析渲染通过），技术选型、模块划分按当前代码更新。删去已过时的说法（"红色包括新收款人""运行时切换未实现""Passkey 模拟人脸"等）。
+- **新增 ALGORITHMS.md**：14 个核心算法的输入、步骤、公式、局限与对应测试。
+- 根 README 的"用户与权限"一节改为当前的验证方式；文档索引登记新文档。
+- **验证**：独立库上 **72 个文件、1001 项通过**；所有相对链接与锚点均可解析。
+- **仍缺**：答辩 PPT、演示视频；后台演示模式免凭据访问需在提交前两天收紧。
 
 ---
 
@@ -857,7 +874,7 @@ standing_authorizations {
 
 **绝对不要做**：模型直接返回 `level: 'red'`，或模型返回的风险分参与 `maxRisk()`。等级必须由 `rules.ts` 用事实算出来。
 
-**注意形态 B 的措辞**：规则要写成"当 `facts.aiRiskFlags` 非空时升级为红色"——**策略仍然在代码里**，模型只贡献了"这笔像不像异常"这个**事实**。这和"新收款人升级"是同一个模式。
+**注意形态 B 的措辞**：规则要写成"当 `facts.aiRiskFlags` 非空时升级为红色"——**策略仍然在代码里**，模型只贡献了"这笔像不像异常"这个**事实**。这和"日累计超过 1000 元升级"是同一个模式：事实由代码采集，规则由代码决定。
 
 **性能警告**：这会在**确认路径上**加一次模型调用。确认路径必须快，建议异步生成、卡片先出，"AI 分析"作为补充信息后到。
 
@@ -880,7 +897,7 @@ worker：SQL 算结构化特征 → 模型给判断与理由 → bank_risk_flags
 3. **特征由 SQL 计算**（开户天数、短期内不同付款人数、快进快出比例等），模型不读原始备注与商户名，避免间接注入。
 4. **给付款人的提示不下定论**："该收款账户近期收款特征异常，请核实对方身份"。
 
-局限：异步分析有时间差，全新账户的第一笔仍靠既有"新收款人升红色"规则兜住，两条规则互补；演示数据中没有欺诈模式，需要专门补"骡子账户"种子数据。
+局限：异步分析有时间差，尚未分析的账户只受日累计、单笔 3000 元和高频熔断规则约束（"新收款人升红色"规则已于 2026-10-13 移除）；演示数据中没有欺诈模式，需要专门补"骡子账户"种子数据。
 
 **已定（2026-10-12）：做完整版**，即 `suspected` 与 `confirmed` 两级都实现，含后台复核视图。验收点：
 
@@ -1084,7 +1101,7 @@ worker：SQL 算结构化特征 → 模型给判断与理由 → bank_risk_flags
 | 任务 | 复杂度 | 模型 · effort | 依据 |
 |---|---|---|---|
 | UI 与话术明确标注“模拟指纹 / 人脸验证”（§4.2） | 简单 | Sonnet · `low` | 当前流程不使用 Passkey 冒充生物识别，部署演示开关须显式设置 |
-| 核实 §7 第 8 条是否过时 | 简单 | Sonnet · `medium` | `rules.ts` 的 `isTransfer` 已包含 `commit_transfer`，这条可能已修复；需确认 `commit_transfer` 的 `factsHint` 是否传了 `payeeId`，否则新收款人规则仍会漏判 |
+| ~~核实 §7 第 8 条是否过时~~ ✅ 2026-10-25 | — | — | 已核实：`isTransfer` 包含 `commit_transfer`，其 `factsHint` 传入 `payeeId`，收款账户风险标记可以生效；§7 第 8 条已改写 |
 | 降级链真实故障验证（§10） | 简单 | 手动 | 把 `DEEPSEEK_API_KEY` 改错跑一次对话，不需要模型写代码 |
 | 红队用例扩到 50 条并统计拦截率 / 误拦率（§5 P1） | 中等 | Sonnet · `medium` | 主要是写样本和统计脚本；注意误拦样本同样要写，否则拦截率没有意义 |
 | #8 常设授权 + 周期任务 | **极其复杂** | Opus · `xhigh`，表结构与上限校验设计用 `max` | 新建一个资金自动执行的授权原语，#9 会建在它之上。必须由代码强制单次 / 累计 / 次数 / 间隔上限，worker 触发、模型不能触发，撤销立即生效，执行时复判。开工前先确认 §11.2 "30 天内最多一次"的读法 |
@@ -1127,7 +1144,7 @@ worker：SQL 算结构化特征 → 模型给判断与理由 → bank_risk_flags
 | `db/upgrade.ts` 统一建表 | 复杂 | Opus · `high` | 无损升级逻辑有数据迁移，必须可重复、可并发、绝不重置数据 |
 | 定时任务类型注册表 `jobs/registry.ts` | 复杂 | Opus · `high` | 重写执行分发，涉及结算与状态同事务提交 |
 | 定时任务重试与死信 | 复杂 | Opus · `high` | 资金任务的重试最容易造成重复扣款，必须依赖现有的执行标记与条件更新 |
-| `BusinessClock` 接口 | 复杂 | Opus · `high` | 改变所有任务与策略的时间来源，影响日累计与夜间规则 |
+| `BusinessClock` 接口 | 复杂 | Opus · `high` | 改变所有任务与策略的时间来源，影响北京时间日累计 |
 
 ### 12.3 用量提示
 
@@ -1143,9 +1160,10 @@ worker：SQL 算结构化特征 → 模型给判断与理由 → bank_risk_flags
 
 | 文档 | 用途 |
 |---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | 设计意图、安全机制、技术选型理由（含"设计目标"与"已实现"的区分说明） |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 系统架构图、时序图、技术选型、模块划分（v1.0，2026-10-25） |
+| [ALGORITHMS.md](ALGORITHMS.md) | 核心算法说明（参赛技术文档） |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | 源码调用链、开发入口、按日期的变更记录 |
-| [COMPETITION-COMPLIANCE.md](COMPETITION-COMPLIANCE.md) | 赛题对应与验收边界，**明确区分"模拟"与"真实"** |
+| [COMPETITION-COMPLIANCE.md](COMPETITION-COMPLIANCE.md) | 作品简介、提交材料清单、赛题逐项对应，**明确区分"模拟"与"真实"** |
 | [DEMO.md](DEMO.md) | 演示脚本、分镜与固定话术、录屏方法、现场兜底方案 |
 | [RECIPIENT-RISK.md](RECIPIENT-RISK.md) | #1 后台收款账户风险标记与人工复核：实现地图、演示数据、边界 |
 | [PROFILE.md](PROFILE.md) | #7 后台用户画像：口径、红线、实测中发现的问题、边界 |

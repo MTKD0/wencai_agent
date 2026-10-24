@@ -51,7 +51,7 @@ flowchart TD
 
 ## 3. 工具体系与两类令牌
 
-当前 `BANK_TOOLS` **67 个**，其中 39 个 read、28 个 write，工具名称无重复。覆盖基础、扩展、计划、支付、卡片、AA、订阅与生日工具。Web/飞书还注册 `plan_task`、`show_view`；MCP 只注册 read 工具。
+当前 `BANK_TOOLS` **89 个**，其中 54 个 read、35 个 write，工具名称无重复（2026-10-25；README 计数由 `tests/tool-catalog-docs.test.ts` 自动核对）。覆盖基础、扩展、计划、支付、卡片、AA、订阅、生日、常设授权、生活商城与基金工具。Web/飞书 Agent 暴露其中 88 个（排除旧 `request_password_change`），另注册 `ask_questions`、`prepare_interaction`、`prepare_transfer_batch`、`plan_task`、`show_view`；MCP 只注册 54 个 read 工具。
 
 | 文件 | 负责内容 |
 |---|---|
@@ -146,7 +146,7 @@ pnpm exec node --env-file=.env.local ./node_modules/vite/bin/vite.js --port 3000
 
 页面：`http://localhost:3000/`（用户端）、`/admin`（演示后台用户首页）。首页合并银行用户与已注册用户，选择后进入 `/admin?userId=...&section=overview`；业务 GET 携带 `userId`，POST 携带 `x-admin-user`，TanStack Query 缓存键按用户隔离。用户列表服务在 `server/admin/users.ts`；未知用户读写返回 404。此处「登录账户」仅切换管理对象，不更改 Better Auth 用户端会话。
 
-后台检查 `ADMIN_ENABLED`；仅本地开发允许免后台凭据，非本地或生产必须配置至少24位 `ADMIN_TOKEN`，通过后台页面输入后使用 Bearer 请求。生产默认关闭后台。飞书、MCP 启动脚本同样要注入所需环境变量。
+后台检查 `ADMIN_ENABLED`；`AUTH_DEMO_MODE=true` 时免后台凭据（团队测试期间的临时安排，提交前需收紧，见 SECURITY §15）；非演示模式下仅本地开发允许免凭据，非本地或生产必须配置至少24位 `ADMIN_TOKEN`，通过后台页面输入后使用 Bearer 请求。生产默认关闭后台。飞书、MCP 启动脚本同样要注入所需环境变量。
 
 验证命令：`pnpm typecheck`、`pnpm build`、`pnpm test`。数据库测试依赖已有表结构，应指向独立库；当前 `vitest.config.ts` 禁用文件并行，以避免 SQLite 写冲突。
 
@@ -185,7 +185,9 @@ Remove-Item Env:DATABASE_URL
 
 仍须区分本地功能测试与外部验收：真实短信需要配置发送适配器；Passkey 需要实际设备完成注册与验证；飞书需要应用凭据、权限及回调配置。生日订单、信用授信及外部银行转账均为模拟，不连接真实商户或银行。没有可靠事务标记的旧版 processing 任务不可自动重跑，必须人工核对旧流水。
 
-生成式 UI 快照、飞书对话历史与 Passkey challenge 仍在进程内，正式多实例部署需共享持久化；当前后台令牌是演示访问凭据，不是完整管理员角色系统。主模型运行时故障后的自动切换、空闲超时策略、真实客服工单等仍属于后续生产化范围。规则拦截与数字核验不能证明模型在所有输入下都无幻觉，提交前应补充对抗用例与真实设备/渠道演示。
+生成式 UI 快照、飞书对话历史与 Passkey challenge 仍在进程内，正式多实例部署需共享持久化；当前后台令牌是演示访问凭据，不是完整管理员角色系统。空闲超时策略、真实客服工单等仍属于后续生产化范围（主模型开始响应前失败的自动切换已于 2026-10-12 实现）。已知缺陷的完整清单以 [SECURITY.md §18](SECURITY.md#18-未完成项与已知缺陷) 为准。
+
+> 以下按日期的小节是**历史变更记录**，描述的是当时的实现（例如 10-12 的"强验证改为短信 / Passkey"已被每卡交易密码与模拟指纹 / 人脸取代）。现行规则以 [SECURITY.md](SECURITY.md) 与代码为准。规则拦截与数字核验不能证明模型在所有输入下都无幻觉，提交前应补充对抗用例与真实设备/渠道演示。
 
 ## 转账与收款人（2026-10-11）
 

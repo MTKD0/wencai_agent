@@ -272,7 +272,7 @@ export const POLICY_PROBES: PolicyProbe[] = [
     tool: 'transfer',
     amount: 200,
     facts: { payeeAgeDays: 400, dailyOutgoingCents: 0 },
-    note: '基准：低风险自动确认',
+    note: '基准：今日累计未超过1000元 → 黄色，需用户确认，并任选一种验证方式',
   },
   {
     id: 'pp-daily-large',

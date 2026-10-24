@@ -4,7 +4,7 @@
 
 用自然语言办理银行业务的 AI Banking Agent。核心原则：**大模型负责理解与提议，确定性代码负责授权与执行。**
 
-架构与安全设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)；**安全机制的完整说明、测试覆盖与已知缺陷见 [docs/SECURITY.md](docs/SECURITY.md)（安全自评报告）**；当前源码调用链、开发入口、Windows 启动步骤和待办见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。**接手本项目请先读 [docs/HANDOFF.md](docs/HANDOFF.md)**：四条硬约束、代码地图、两类令牌的区别、已知的坑与当前优先级都在那里。演示或录屏前先看 [docs/DEMO.md](docs/DEMO.md)：分镜、固定话术、录屏方法与现场兜底。全部 29 份文档的分类与主次见 [docs/README.md](docs/README.md)。
+系统架构图见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，核心算法见 [docs/ALGORITHMS.md](docs/ALGORITHMS.md)，赛题逐项对应、作品简介与提交材料清单见 [docs/COMPETITION-COMPLIANCE.md](docs/COMPETITION-COMPLIANCE.md)；**安全机制的完整说明、测试覆盖与已知缺陷见 [docs/SECURITY.md](docs/SECURITY.md)（安全自评报告）**；当前源码调用链、开发入口、Windows 启动步骤和待办见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。**接手本项目请先读 [docs/HANDOFF.md](docs/HANDOFF.md)**：四条硬约束、代码地图、两类令牌的区别、已知的坑与当前优先级都在那里。演示或录屏前先看 [docs/DEMO.md](docs/DEMO.md)：分镜、固定话术、录屏方法与现场兜底。全部 30 份文档的分类与主次见 [docs/README.md](docs/README.md)。
 
 ## 快速开始
 
@@ -16,7 +16,7 @@ Windows 可直接双击根目录的 `start.bat`：自动加载 `.env.local`、�
 
 ```powershell
 pnpm install --frozen-lockfile
-Copy-Item .env.example .env.local  # 填入至少 16 位的 CONFIRM_SECRET 和模型配置
+Copy-Item .env.example .env.local  # 填入至少 16 位的 CONFIRM_SECRET（生产环境至少 32 位）和模型配置
 New-Item -ItemType Directory -Force data | Out-Null
 pnpm exec node --env-file=.env.local ./node_modules/drizzle-kit/bin.cjs push
 pnpm exec node --env-file=.env.local --import=tsx src/server/db/seed.ts
@@ -56,7 +56,7 @@ Google VM 的 HTTPS 演示部署、生产启动与日志操作见 [部署说明]
 
 ## 转账与收款人
 
-首页点击“转账”，可选择已保存收款人或本人账户互转；账户栏目也提供转账和收款人入口。新增收款人支持完整手机号查找，或完整文财账号＋户名核对，选定账户后确认添加。转账需核对确认，新收款人需交易密码。
+首页点击“转账”，可选择已保存收款人或本人账户互转；账户栏目也提供转账和收款人入口。新增收款人支持完整手机号查找，或完整文财账号＋户名核对，选定账户后确认添加。转账先核对确认单，再在独立安全页面验证：日累计（含本笔）不超过 1000 元为黄色，付款卡密码、短信、模拟指纹或人脸任选一种；超过 1000 元为红色，先验证卡密码再完成短信或模拟指纹 / 人脸；单笔超过 3000 元或收款账户可疑时第二步只接受指纹 / 人脸。收款人新旧不影响等级。
 
 文财系统内账户实时双边记账：A 扣款、B 入账，双方各有流水；“收款”可查看并复制本人的账号与户名。账号首次使用时自动生成并持久保存，已有数据库会无损增加扩展表。旧外部银行卡收款人仍为模拟转出，系统没有接入真实银行。
 
@@ -71,7 +71,7 @@ Google VM 的 HTTPS 演示部署、生产启动与日志操作见 [部署说明]
 这是面向银行运营/演示的管理后台（不是用户端），可直接查看和操作所选用户的模拟银行数据：账户总览、流水与异常、转账与 AA、理财、卡片、订阅、生日计划、仿真时钟、操作审计。账户切换只改变后台管理对象，不创建用户端登录会话；各用户的查询缓存、命令与审计均携带对应用户标识。
 
 - 后台走 `/api/admin`，**不经过策略引擎与确认令牌**，是人工直连通道；每条命令都写入哈希链审计（类型 `admin_command`）。
-- **没有登录鉴权**，只适合本地演示。`NODE_ENV=production` 时默认关闭，显式设置 `ADMIN_ENABLED=true` 可开启。
+- **访问控制**：`NODE_ENV=production` 时默认关闭，显式设置 `ADMIN_ENABLED=true` 可开启。当前 `AUTH_DEMO_MODE=true` 时免凭据访问（团队测试期间的临时安排，提交前需收紧）；非演示模式下，配置了 `ADMIN_TOKEN`（至少 24 位）就必须在后台页面输入它；未配置时只有非生产的本机开发环境可以访问。`ADMIN_TOKEN` 是演示访问凭据，不是管理员角色系统。
 - 「推进时间」只向前推进仿真时钟，并执行到期的定时转账。
 
 ## 工具层
@@ -89,11 +89,11 @@ resolve_recipient → check_transfer_limit → preview_transfer（签发令牌�
 ## 用户与权限
 
 - **身份**：手机号 + 验证码登录（better-auth + phone-number 插件），会话存库。未登录调用 `/api/dashboard`、`/api/chat`、`/api/confirm` 一律 401。
-- **强验证**：红色操作用交易密码（scrypt）或 Passkey（WebAuthn）。5 次失败锁定 30 分钟。
+- **强验证**：在独立安全页面完成，模型不接触任何凭据。红色操作先验证付款卡交易密码（每卡独立，scrypt），再完成短信或模拟指纹 / 人脸；单笔超过 3000 元或收款账户可疑时第二步只接受指纹 / 人脸。连续失败 5 次锁定 30 分钟。
 - **渠道绑定**：飞书账号需在 `/bind` 完成一次强验证后才可代办业务，未绑定账号查不到任何数据。
 - **设备管理**：`/settings` 可查看并踢掉其他登录会话、解绑渠道、注册 Passkey。
 
-详见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 第 3、4 节。
+详见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 第 4 节与 [docs/SECURITY.md](docs/SECURITY.md) 第 3–5 节。
 
 ## 技术栈
 
