@@ -4,7 +4,7 @@
 
 用自然语言办理银行业务的 AI Banking Agent。核心原则：**大模型负责理解与提议，确定性代码负责授权与执行。**
 
-架构与安全设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)；当前源码调用链、开发入口、Windows 启动步骤和待办见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。**接手本项目请先读 [docs/HANDOFF.md](docs/HANDOFF.md)**：四条硬约束、代码地图、两类令牌的区别、已知的坑与当前优先级都在那里。演示或录屏前先看 [docs/DEMO.md](docs/DEMO.md)：分镜、固定话术、录屏方法与现场兜底。
+架构与安全设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)；**安全机制的完整说明、测试覆盖与已知缺陷见 [docs/SECURITY.md](docs/SECURITY.md)（安全自评报告）**；当前源码调用链、开发入口、Windows 启动步骤和待办见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。**接手本项目请先读 [docs/HANDOFF.md](docs/HANDOFF.md)**：四条硬约束、代码地图、两类令牌的区别、已知的坑与当前优先级都在那里。演示或录屏前先看 [docs/DEMO.md](docs/DEMO.md)：分镜、固定话术、录屏方法与现场兜底。全部 29 份文档的分类与主次见 [docs/README.md](docs/README.md)。
 
 ## 快速开始
 
@@ -66,6 +66,8 @@ Google VM 的 HTTPS 演示部署、生产启动与日志操作见 [部署说明]
 
 启动地址的 `/admin` 首页展示全部银行用户与注册用户，支持按姓名、手机号或用户 ID 搜索，并显示账户数、总余额和风险等级。点击「登录账户」进入指定用户的管理界面，右上角或侧栏可返回首页切换账户。
 
+后台首页右上角及侧栏新增「实时日志」（`/admin?section=logs`），无需先选择账户。每 2 秒刷新本服务进程最近 500 条接口、登录认证、Agent 进度与关键错误，支持来源/级别/关键词筛选、暂停刷新、跟随最新和下载当前结果。日志使用真实服务器时间，不受仿真时钟影响；只保存在内存，进程重启后清空，多进程各自独立。后台访问规则同样适用于日志，密码、验证码、Cookie 与请求正文不进入此视图；独立 worker 和启动器输出继续在终端或 `.scratch/logs/` 查看。
+
 这是面向银行运营/演示的管理后台（不是用户端），可直接查看和操作所选用户的模拟银行数据：账户总览、流水与异常、转账与 AA、理财、卡片、订阅、生日计划、仿真时钟、操作审计。账户切换只改变后台管理对象，不创建用户端登录会话；各用户的查询缓存、命令与审计均携带对应用户标识。
 
 - 后台走 `/api/admin`，**不经过策略引擎与确认令牌**，是人工直连通道；每条命令都写入哈希链审计（类型 `admin_command`）。
@@ -74,7 +76,7 @@ Google VM 的 HTTPS 演示部署、生产启动与日志操作见 [部署说明]
 
 ## 工具层
 
-Agent 共 54 个银行工具（基础 13 个 + 扩展 22 个 + 规划 15 个 + 收款与互转 4 个，34 个 read、20 个 write）。扩展部分采用**两段式确认**：
+银行工具注册表共 89 个工具（54 个 read、35 个 write）。实际 Web/飞书 Agent 暴露 88 个（54 个 read、34 个 write），其中旧 `request_password_change` 已从 Agent 白名单移除；MCP 只暴露 54 个只读工具。此计数不包含 `ask_questions`、`show_view` 等会话辅助工具，也不包含后台仿真控制。扩展部分采用**两段式确认**：
 
 ```
 resolve_recipient → check_transfer_limit → preview_transfer（签发令牌，只读）→ commit_transfer（策略引擎拦截 → 用户确认 → 校验并消费令牌）
@@ -82,7 +84,7 @@ resolve_recipient → check_transfer_limit → preview_transfer（签发令牌�
 
 预览令牌绑定 操作类型 + 已解析实体 ID 的参数指纹 + 用户，15 分钟有效。改金额、换收款人、重放、跨用户、过期会被拒绝，见 `tests/confirmation-token.test.ts`；条件更新防止并发重复消费。用户确认另由 HMAC 待确认动作控制，默认有效期 300 秒。
 
-当前扩展转账尚未接入原 `transfer` 的风险升级规则，其他实现边界见 [开发导读第 8 节](docs/DEVELOPMENT.md#8-当前实现边界与优先事项)。
+`transfer` 与 `commit_transfer` 均已接入转账风险升级：日累计超过1000元升级为红色；单笔超过3000元或可疑收款账户要求交易密码加指纹/人脸演示验证，确认执行前重新判定。AA 由参与人本人付款，不能由发起人登记到账；旧 `settleSplit` 实现已删除。飞书确认缺少银行卡/资金账户验证或需追加验证时，返回原确认单 H5 链接，登录同一账户完成独立安全验证后才能执行。其他实现边界见 [开发导读第 8 节](docs/DEVELOPMENT.md#8-当前实现边界与优先事项)。
 
 ## 用户与权限
 

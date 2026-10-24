@@ -2,6 +2,8 @@
  * 管理后台 API 客户端（对接 /api/admin）
  */
 
+import type { RuntimeLogSnapshot } from '#/lib/runtime-logs'
+
 export type AdminUser = {
   id: string
   name: string
@@ -53,7 +55,6 @@ export type AdminAnomaly = {
 export type AdminCommand =
   | { type: 'transfer'; recipient: string; amount: number; memo?: string; executeAt?: string }
   | { type: 'createSplit'; title: string; total: number; contactIds: string[] }
-  | { type: 'settleSplit'; splitId: string; contactId: string }
   | { type: 'cancelTask'; taskId: string }
   | { type: 'assessRisk'; answers: number[] }
   | { type: 'purchase'; productId: string; amount: number }
@@ -196,6 +197,7 @@ async function post<T>(userId: string, command: AdminCommand): Promise<T> {
 }
 
 export const adminApi = {
+  logs: () => get<RuntimeLogSnapshot>('logs'),
   users: () => get<AdminUser[]>('users'),
   snapshot: (userId: string) => get<AdminSnapshot>('snapshot', { userId }),
   report: (userId: string, period: string) => get<AdminReport>('report', { userId, period }),

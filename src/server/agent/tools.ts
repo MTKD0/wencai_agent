@@ -34,20 +34,20 @@ export function buildAgentTools(ctx: AgentContext, options: { readOnly?: boolean
       description: `${def.description}${def.kind === 'write' ? '（写操作，系统会按风险等级要求用户确认）' : ''}`,
       inputSchema: modelToolSchema(def.inputSchema),
       execute: async (args) => {
-        const outcome = await runBankTool(def, args, ctx)
+        const outcome = await runBankTool(def, args, { ...ctx, requestText: options.requestText })
         if (outcome.status === 'done') {
           putSessionData(ctx.sessionId, def.name, outcome.data)
           currentTools.add(def.name)
         }
         return outcome
       },
-      toModelOutput: ({ output }) => ({ type: 'json', value: quarantineForModel(output) as never }),
+      toModelOutput: ({ output }) => ({ type: 'json', value: quarantineForModel(output, def.catalogFields) as never }),
     })
   }
 
   if (ctx.channel !== 'mcp') {
     if (!options.readOnly) tools.ask_questions = tool({
-      description: '为当前业务设计1至12道单选题，每题2至6个选项。逐题选择，最后提交才发送全部题目和答案，途中不发送。只收集业务偏好，不收集密码、验证码、完整卡号或身份证号。风险测评改用get_risk_questionnaire标准问卷，不改题或评分。答案不执行交易、不代替安全确认。',
+      description: '默认的业务提问入口：需要补充条件、澄清意图、选择下一步，或工具返回无匹配/冲突后让用户调整时调用，按系统说明“即时设计问卷”规则出题。1至12道单选题，每题2至6项，逐题选择，最后提交才统一发送。只收集业务信息，不收集密码、验证码、完整卡号或身份证号。风险测评改用get_risk_questionnaire标准问卷。答案不执行交易、不代替安全确认。',
       inputSchema: z.object({ questionnaire: QuestionnaireSchema }),
       execute: async ({ questionnaire }) => questionnaire.purpose === 'risk_assessment' || /风险.{0,4}(?:测评|评估|评定)/.test(questionnaire.title)
         ? { status: 'invalid_questionnaire' as const, errors: ['风险测评请使用get_risk_questionnaire标准问卷'] }

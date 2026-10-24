@@ -26,6 +26,7 @@ import { adminAuthorized, authorizeAdminTransfer } from '#/server/admin/access'
 import { recentTraces, restoreAuditLog, runSandboxProbes, securityOverview, tamperAuditLog } from '#/server/security/kernel'
 import { buildTraces } from '#/server/security/trace'
 import { runLifeRenewalsThrough } from '#/server/life/service'
+import { getRuntimeLogs } from '#/server/admin/runtime-logs'
 
 const disabled = () =>
   Response.json({ error: { code: 'ADMIN_DISABLED', message: '管理后台未启用（设置 ADMIN_ENABLED=true）' } }, { status: 403 })
@@ -263,11 +264,6 @@ const CommandSchema = z.discriminatedUnion('type', [
     contactIds: z.array(z.string()),
   }),
   z.object({
-    type: z.literal('settleSplit'),
-    splitId: z.string(),
-    contactId: z.string(),
-  }),
-  z.object({
     type: z.literal('cancelTask'),
     taskId: z.string(),
   }),
@@ -400,9 +396,6 @@ async function executeCommand(userId: string, command: Command, request: Request
       })
       const requests = await createSplitRequests(userId, id)
       return { id, ...requests, title: command.title, total: command.total, shares, selfAmount: Math.floor(command.total / (command.contactIds.length + 1)) }
-    }
-    case 'settleSplit': {
-      throw new Error('AA 必须由参与人登录自己的账户确认付款，后台不能代替参与人生成到账记录')
     }
     case 'cancelTask': {
       return (await import('#/server/confirm/lock')).withUserExecutionLock(userId, async () => (await import('#/server/automation/service')).cancelScheduled(userId, command.taskId))
@@ -616,9 +609,12 @@ export const Route = createFileRoute('/api/admin')({
     handlers: {
       GET: async ({ request }) => {
         if (!env.ADMIN_ENABLED) return disabled()
-        if (!adminAuthorized(request)) return Response.json({ error: { code: 'ADMIN_AUTH_REQUIRED', message: '请输入后台访问凭据' } }, { status: 401 })
         const url = new URL(request.url)
         const action = url.searchParams.get('action') ?? 'snapshot'
+        // 仅返回展示访问入口所需的模式，不返回凭据或任何银行数据。
+        if (action === 'access') return Response.json({ data: { demoMode: env.AUTH_DEMO_MODE } }, { headers: { 'cache-control': 'no-store' } })
+        if (action === 'logs') return getRuntimeLogs(request)
+        if (!adminAuthorized(request)) return Response.json({ error: { code: 'ADMIN_AUTH_REQUIRED', message: '请输入后台访问凭据' } }, { status: 401 })
         const userId = url.searchParams.get('userId') ?? DEMO_USER_ID
         const period = url.searchParams.get('period') ?? new Date().toISOString().slice(0, 7)
 

@@ -129,6 +129,7 @@ export const listProducts = defineBankTool({
   description: '查询可购买的理财产品（风险等级、预期年化、起购金额、期限）',
   baseRisk: 'green',
   kind: 'read',
+  catalogFields: ['name'],
   inputSchema: z.object({}),
   execute: async () => {
     const rows = await db.select().from(schema.products)
@@ -297,6 +298,7 @@ export const cancelSubscription = defineBankTool({
 
 import { EXTENDED_TOOLS } from './bank-extended'
 import { PLANNING_TOOLS } from './bank-planning'
+import { FUND_TOOLS } from './funds'
 
 export const BANK_TOOLS: BankToolDef[] = [
   getAccounts,
@@ -324,6 +326,7 @@ export const BANK_TOOLS: BankToolDef[] = [
   ...SECURITY_TOOLS,
   ...MANDATE_TOOLS,
   ...LIFE_TOOLS,
+  ...FUND_TOOLS,
 ]
 
 const byName = new Map<string, BankToolDef>(BANK_TOOLS.map((t) => [t.name, t]))

@@ -1,4 +1,4 @@
-import { env } from '#/server/env'
+import { confirmLink } from '#/server/confirm/link'
 import { audit } from '#/server/audit/log'
 import { createPending } from '#/server/confirm/pending'
 import { decide } from '#/server/policy/engine'
@@ -37,7 +37,7 @@ export async function runBankTool(
   if (decision.level === 'green') {
     try {
       const output = await def.execute(args, ctx)
-      const data = await sanitizeToolOutput(ctx, def.name, output)
+      const data = await sanitizeToolOutput(ctx, def.name, output, def.catalogFields)
       await audit(ctx, 'tool_result', { tool: def.name, ok: true, output: data })
       return { status: 'done', data }
     } catch (err) {
@@ -56,15 +56,17 @@ export async function runBankTool(
   } catch (err) {
     return { status: 'error', message: err instanceof Error ? err.message : String(err) }
   }
+  // 确认摘要的 value 也可能来自其他用户的 AA 事由/户名，不能绕过输出审核。
+  const summary = await sanitizeToolOutput(ctx, def.name, pending.summary)
   if (decision.requiresChannelHandoff) {
     return {
       status: 'needs_handoff',
       actionId: pending.actionId,
       level: pending.level,
       reasons: decision.reasons,
-      summary: pending.summary,
-      url: `${env.PUBLIC_BASE_URL}/confirm/${pending.actionId}`,
+      summary,
+      url: confirmLink(pending.actionId),
     }
   }
-  return { status: 'needs_confirmation', ...pending, reasons: decision.reasons }
+  return { status: 'needs_confirmation', ...pending, summary, reasons: decision.reasons }
 }

@@ -1,5 +1,11 @@
 # 文财 · 交接说明（给接手的模型 / 后续开发者）
 
+> 2026-10-22 产品偏好扩充：白名单扩到21只基金（8只债券型基金、11家管理机构），保留真实历史快照与当时申购状态。理财页与Agent支持资产方向、风格及排除项；专家新增明确历史回撤约束，硬过滤先于匿名模型说明，暂停/限额产品只列观察清单。未放宽风险或交易确认，不把QDII统一承诺为次日确认。目录、演示用例与参数见 [FUND-CATALOG.md](FUND-CATALOG.md)。
+
+> 2026-10-22 SQLite 连接恢复：修复本地驱动写锁竞争后复用受污染连接，导致首页银行卡初始化反复 `cannot commit transaction - SQL statements in progress`。仅持久化文件库在安全事务边界重建连接；事务内部不逐句重放，内存库不重连，原资金与验证边界保留。具体复现与回归见 [SQLITE-BUSY-RECOVERY.md](SQLITE-BUSY-RECOVERY.md)。运行中的 web/worker 需正常重启加载修复，不得删除数据库。
+
+> 2026-10-21 理财排行：新增独立理财导航，PC 对比走势图/指标卡/排行表与手机深浅色排行卡共用九周期指标服务；支持机构/风险/名称筛选、自选和按涨跌幅/夏普/回撤/波动/年化收益排序。Agent 可调用 `rank_funds`、`get_fund_metrics`，并读取用户自选。四只基金补齐成立以来公开历史，脚本源失败可尝试东方财富 JSON，断网保留缓存与离线快照；不执行远程 JS，不在数据库事务里联网。债券分类当前仅债券型基金，非全市场榜单；少样本不伪造夏普。原申购和强验证链路保留，详见 [WEALTH-MARKET.md](WEALTH-MARKET.md) 与 [FUNDS.md](FUNDS.md)。
+
 > 2026-10-17 原仓库合并：在保留 fork 的桌面/手机 UI、商城、Agent 交互模板、批量转账、只读银行卡及风险问卷等后续功能的前提下，合并 `leset0ng/main`（`a0bc9a2`）。原仓库已存在的安全与业务修复继续保留，补入资产详情隐藏金额、空消息提示和安全面板宽度保护；57 个文件、597 项测试及类型检查/生产构建通过。冲突取舍与验证限制见 [UPSTREAM-MERGE.md](UPSTREAM-MERGE.md)。
 
 > 2026-10-14黑夜模式：设置新增白天/黑夜/跟随系统选项，偏好持久化；银行主界面、Agent图表/选择/确认卡、登录注册、设置、弹层及独立安全文档统一适配深灰与浅蓝配色。首屏脚本与跨标签主题监听避免安全页闪白，不传递验证材料。长账单Reveal已修复比例门槛导致隐藏的问题。502项回归、类型检查与构建通过，复用规范及实测截图见 [DARK-MODE.md](DARK-MODE.md)。
@@ -208,6 +214,8 @@
 
 ### P2 — 理财专家（只读顾问）见 §5.1
 
+> 2026-10-20：已与实时基金数据接入合并为一套方案，见 [WEALTH-FUND-PLAN.md](WEALTH-FUND-PLAN.md)。触发方式由"run.ts 意图路由"改为只读工具 `get_wealth_advice`，§5.1 的其余约束不变。
+
 ### P3 — 工程债
 见 §6。**在比赛前不要做**——不影响评分，纯风险。
 
@@ -278,21 +286,38 @@ export interface AgentContext {
 
 ---
 
-## 6. 工程债（**比赛前不要动**）
+## 6. 工程债与模块化调整
 
-| 事项 | 说明 |
-|---|---|
-| **三个巨型文件** | `tools/bank-extended.ts` 1023 行（混了报表/理财/转账/卡片/订阅四个域）、`components/banking/PaymentCenter.tsx` 753 行、`routes/api/admin.ts` 666 行、`components/banking/BankingHome.tsx` 721 行。拆分方式见 §6.1。 |
-| **金额单位不统一** | 存库都是整数分；基础工具用 `amount`（元），扩展工具用 `amountCents`（分），返回给模型时又可能换算为元。后台 API 的展示字段**多数仍是分**，前端再除以 100。→ 应抽 `src/server/lib/money.ts`。 |
-| **匹配算法重复** | `payeeScore`/`editDistance` 在 `tools/bank.ts`，`payments/service.ts` 也需要匹配。→ 应抽 `src/server/lib/matching.ts`，顺便做 `bank.ts:103` 标注的 TODO（拼音，`pinyin-pro`）。 |
-| **建表语句三处分散** | `automation/service.ts` 的 `ensureAutomationSchema`、`payments/migrate.ts`、`cards/service.ts` 各有一套 `CREATE TABLE IF NOT EXISTS`。模式本身合理（无损升级已存在的库），但应统一到 `src/server/db/upgrade.ts`，注明每张表的引入日期与幂等契约。 |
-| **时钟语义混乱** | `simNow()`（仿真）与 `new Date()`（真实）混用，靠 `settings.clock_mode` 切换。演示时是特性，做真实定时任务时是 bug 源。→ 应抽显式 `BusinessClock` 接口，所有任务只通过它取时间。 |
-| **定时任务类型硬编码** | `runAutomaticTransfers` 里 `kind === 'transfer' \|\| kind === 'birthdayOrder'` 是 if 分支，加第三种任务要改三处。→ 应做 `jobs/registry.ts`：每种任务声明 `{ kind, prepare, execute, compensate, retryPolicy }`。 |
-| **定时任务缺重试与死信** | 失败直接 `failed`，用户看不到也不会重试。→ 加 `attempts` / `nextRetryAt` / `deadLetterAt`。 |
-| **worker 是全表单进程轮询** | `scripts/worker.ts` 里 `for (const user of users)` 顺序处理所有用户，O(N) 延迟。演示够用，生产要改成按 `due_at` 索引查待办。 |
-| **文档用 changelog 当正文** | `DEVELOPMENT.md` 第 188 行之后是按日期追加的 5 段变更流水，很快会超过正文长度。→ 移到 `docs/CHANGELOG.md`。 |
+> 2026-10-24 根据代码分析重写。整体分层（前端不引用服务端、按机制划分的 `policy` / `confirm` / `audit` / `guard`）**不需要重组**；以下问题按阶段处理。
 
-### 6.1 如果要拆大文件（唯一推荐的拆法）
+### 6.0 现状数据
+
+| 问题 | 数据 | 影响 |
+|---|---|---|
+| **循环依赖** | `madge` 检测到 17 个，几乎都经过 `automation/service → confirm/pending → executor/service → tools/bank`；全项目 26 处动态 `import()`，大多用来绕开循环 | 模块无法独立理解和测试；构建出现 `INEFFECTIVE_DYNAMIC_IMPORT` 警告 |
+| **循环的成因** | ① `automation/service.ts` 混放通知、订阅提醒与识别、任务审批、定时转账、建表，被 9 处动态引用；② `tools/bank.ts` 既是注册表又放基础工具实现，`executor`、`confirm`、`security/operation`、`lark-confirm` 只为用 `resolveTool` 就引入全部工具；③ 业务层反向依赖工具层（定时任务动态导入 `tools/bank` 的 `transfer` 来创建确认单） | |
+| **时钟** | `simNow()` 放在工具层 `tools/jobs.ts`，被 13 个文件引用；`routes/api/admin.ts` 另有一份返回字符串的同名函数 | 服务层依赖工具层 |
+| **重复的工具函数** | 北京时间偏移 `8 * 3600_000` 手写 13 处；"分 → 元"格式化约 12 份，取整和负数写法不一致 | 口径容易不一致 |
+| **建表语句分散** | 19 个文件、32 条 `CREATE TABLE IF NOT EXISTS`，另有几处 `ALTER TABLE` 补列，与 Drizzle 定义是两份来源 | 加字段要改两处，漏改不会报错 |
+| **大文件**（按体积） | `tools/bank-extended.ts` 41KB、`banking/BankingHome.tsx` 37KB、`routes/api/admin.ts` 28KB、`banking/PaymentCenter.tsx` 27KB、`profile/profile.ts` 27KB、`banking/WealthMarket.tsx` 22KB（111 行，最长一行 1707 列）、`agent/instructions.ts` 20KB（整份提示词一个字符串） | 难审查、易冲突 |
+| **代码格式** | 此前没有格式化工具；144 行超过 300 列；部分文件为去空格的紧凑写法 | 3 人同时提交时 diff 难读 |
+| **样式表** | `admin.css` 68KB、`banking.css` 37KB；迁移到 shadcn 后未清理旧样式 | |
+| **文档** | 29 份，17 份不到 50 行，主题重叠（基金 4 份、Agent 交互 3 份）；本文 1100+ 行 | 找不到主文档 |
+| **仍有效的旧条目** | 收款人匹配算法重复（`payeeScore` 等，可顺带做拼音）；定时任务类型硬编码（应做 `jobs/registry.ts`）；定时任务缺重试与死信；worker 全表顺序轮询 | |
+
+### 6.1 分阶段计划
+
+| 阶段 | 内容 | 复杂度 · 模型 | 状态 |
+|---|---|---|---|
+| **A. 11.02 前（零行为变化）** | ① Prettier + `.editorconfig`，只格式化改动过的文件（`pnpm format:changed`）；② 共享工具 `lib/money.ts`、`lib/time.ts`；③ 文档索引 `docs/README.md` | 简单 · Sonnet `low` | ✅ 2026-10-24 完成，见 §10 |
+| **B. 11.02 提交后至 11.21 前** | ① 拆开循环依赖：通知与自动化建表拆成独立的底层模块；`resolveTool` 移到只负责注册的 `tools/registry.ts`；定时任务改为通过参数传入工具定义；完成后把 `madge --circular` 加入测试防止回归；② 时钟统一到 `server/clock.ts`；③ 建表统一到 `db/upgrade.ts`，按版本顺序执行；④ `routes/api/admin.ts` 按命令拆分；⑤ `agent/instructions.ts` 按业务分段组合；⑥ 与其他开发者约定时间，用单独提交做一次全量格式化 | ①③ 复杂 · Opus `high`；其余中等 · Sonnet `medium` | ❌ 未开始 |
+| **C. 赛后** | 按 §6.2 拆分 `bank-extended` / `bank-planning`；拆分 `PaymentCenter`、`BankingHome`、`WealthMarket`、`profile.ts`；清理旧 CSS；改用 Drizzle 版本化迁移；测试按业务分目录；合并重叠文档；§6.0 "仍有效的旧条目" | 中等 · Sonnet `medium`；迁移 Opus `high` | ❌ 未开始 |
+
+**不建议**：按业务领域重组 `domains/...`（会拆散策略、确认、审计这些跨业务机制）；11.02 前全量格式化或改动循环依赖的核心文件（行为不变，但会与其他开发者大面积冲突，对评审没有帮助）。
+
+**格式化约定（阶段 B⑥ 之前）**：只运行 `pnpm format:changed`，**不要运行 `prettier --write .`**。本项目故意没有提供全量格式化的脚本。
+
+### 6.2 如果要拆大文件（唯一推荐的拆法）
 
 **不要按 DDD 重组 `domains/{account,payment,card}/`**——横切机制（policy/confirm/audit）会被打碎到各域里，反而更难维护，且要改几百处 import。
 
@@ -309,10 +334,10 @@ src/server/tools/
   extended/subscriptions.ts   订阅扩展
   bank-planning.ts         → 拆为 contacts.ts / holdings.ts / schedules.ts /
                              assessments.ts / splits.ts / reminders.ts
-  index.ts                 汇总 BANK_TOOLS + resolveTool
+  registry.ts              只负责汇总 BANK_TOOLS 与 resolveTool（阶段 B① 先建）
 ```
 
-`bank.ts` 末尾那 8 个 `...SPREAD` 改为从 `index.ts` 统一汇总，**`runner.ts` 与 `agent/tools.ts` 的 import 路径无需改动**。
+`bank.ts` 末尾的一串 `...XXX_TOOLS` 改为在 `registry.ts` 统一汇总；`runner.ts` 与 `agent/tools.ts` 的引用改为指向 `registry.ts`。
 
 **判据**：一个文件里同时出现"两种不同的业务名词"就该拆。`bank-extended.ts` 里同时有 transfer / invest / card / subscription 四个域。
 
@@ -668,6 +693,36 @@ S3–S5（对话工具、一键急停、飞书与后台）未做，按 §11.6 �
 ### 2026-10-13 · 剩余任务复杂度评估 ✅
 
 新增 §12：按"简单 / 中等 / 复杂 / 极其复杂"评定所有剩余任务，并给出 Opus 5.5 或 Sonnet 5.5 以及 effort 档位的建议。没有改动代码。
+
+### 2026-10-20 · 实时基金数据与理财专家方案 ✅（仅方案，未开发）
+
+新增 [WEALTH-FUND-PLAN.md](WEALTH-FUND-PLAN.md)，没有改动代码。实测结论：天天基金盘中估值接口已下线（404），历史净值接口可用（需 `Referer`，含申赎状态），公开数据没有风险等级；Tushare Pro 需要 token。方案要点：人工白名单与人工风险评级、每晚刷新加离线快照兜底、T+1 未知价确认、专家只拿别名化数字、补上百分比核验。完整约 11–13 天，11.02 前建议只做文档第 9 节的 MVP（约 8 天）。开工前需要确认文档第 11 节的 5 个事项。
+
+### 2026-10-23 · 安全设计与自评报告 ✅（仅文档）
+
+新增 [SECURITY.md](SECURITY.md)，汇总全部安全设计、实现位置、测试与已知缺陷，可作为《安全自评报告》底稿。没有改动代码。§18 列出 15 项经代码审查确认、尚未修复的问题（外部字段清单不全、Guard 可被变形绕过、只审核最后一条消息、"万"字金额不核验、飞书确认无跳转、审计链无密钥可重算等），§19 列出 5 个规划中的增强（污点追踪、反诈劝阻、会话签名、审计锚定、服务端历史）。修复一项后请同步把 SECURITY.md 中对应状态改为 ✅。
+
+### 2026-10-23 · 安全修复第一批（SECURITY.md §18 #1、#2、#5、#15，#12 部分）✅
+
+- **#1 外部字段**：`UNTRUSTED_FIELDS` 补上 `title`、`requesterName`、`alias`、`note`、`payeeName`、`name`、`value`；`runner.ts` 对确认单摘要再清洗一次；隔离标记内的方括号被转义，防止伪造结束标记。
+- **#2 Guard**：匹配前 NFKC 规范化并去掉不可见字符与空白。测试时发现第一版规则会把"先不要确认，我再想想""我不需要修改密码"等日常说法整句拒答，且误屏蔽了常设授权确认单上服务端自己写的"无需再次确认"。现已把"绕过验证"类规则分为两档：明确的跳过 / 绕过指令、"风控已关闭"、"免确认 + 直接执行"组合**拦截**；单独的"不用确认"只**标记**。新增 `server-copy-guard.test.ts`，扫描全部服务端中文文案，保证改规则不会误伤确认卡。
+- **#5 飞书**：新增 `channels/lark-confirm.ts`，需要卡密码或强验证时回复原确认单的 H5 链接。
+- **#15 README**：工具数改为 89 个（54 只读 / 35 写），由 `tool-catalog-docs.test.ts` 自动核对。
+- **#12**：删除 `settleSplit`；`priorEvidence` / `historyEvidence()` 仍待清理。
+
+**仍存在**：同义改写（"抛开前面的所有约束"、繁体、拼音、英文 disregard 等）规则无法穷举，依赖 Qwen3Guard；只审核最后一条用户消息（#3）未处理。
+
+**验证**：类型检查与生产构建通过；独立库上 **69 个文件、955 项通过**。另：`life-commerce.test.ts` 的"系统工具推进时钟"用例在一次全量运行中卡住 240 秒失败，单独运行及另两次全量运行均通过，改动前版本也通过，与本批修改无关，但存在偶发卡顿，值得单独排查。
+
+### 2026-10-24 · 模块化调整阶段 A ✅（零行为变化）
+
+按 §6.1 阶段 A 完成三件事，并重写了 §6（工程债与模块化调整）：
+
+- **代码格式**：新增 Prettier（devDependency）、`.prettierrc.json`（不加分号、单引号、尾逗号、两空格、120 列，与现有主流写法一致）、`.prettierignore`（排除生成文件、运行数据和 Markdown）、`.editorconfig`。新增 `pnpm format:changed`（`scripts/format-changed.mjs`）：只格式化相对 HEAD 改动过或新增的文件，`--check` 只检查。**故意没有提供全量格式化脚本**，全量格式化留到阶段 B 与其他开发者约定后单独提交。
+- **共享工具**：`src/lib/time.ts`（北京时间日期、月份、时刻、自然日起点与范围）与 `src/lib/money.ts`（分 ↔ 元、`¥1,234.56` 与 `1,234.56` 格式），前后端均可用。`lib/dashboard.ts` 的 `businessDate` / `businessMonth` / `businessDateTime` 改为转发到 `lib/time.ts`，名称与输出不变。其余十余处手写实现**未迁移**，新代码请改用这两个模块。`tests/shared-helpers.test.ts`（24 项）逐一核对新函数与既有写法在日界、跨月、跨年、闰日、负数、非整数分上的结果一致；唯一差异是负数：模板写法会产生 `¥-12.34`，新函数统一为 `-¥12.34`。
+- **文档索引**：`docs/README.md` 按用途列出全部 29 份文档并标明主文档和过时状态，根 README 已链接。
+
+**验证**：类型检查与生产构建通过；`format:changed --check` 通过；独立库上 **70 个文件、991 项通过**；循环依赖仍为 17 个，没有新增（拆除留到阶段 B）。
 
 ---
 
@@ -1084,6 +1139,8 @@ worker：SQL 算结构化特征 → 模型给判断与理由 → bank_risk_flags
 
 ## 13. 延伸阅读
 
+基金阶段更新（2026-10-20）：已接入统一数据接口、天天基金默认适配与4只公开离线快照、worker刷新租约、未知价申购/T+1确认、只读`get_wealth_advice`和账户页基础展示，见[FUNDS.md](FUNDS.md)。专家复用#7月均支出，名称匿名化后交模型，百分比核验仅限专家输出。当前未实现基金赎回、Tushare适配、完整前端定稿；原理财产品保持独立。
+
 | 文档 | 用途 |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 设计意图、安全机制、技术选型理由（含"设计目标"与"已实现"的区分说明） |
@@ -1093,6 +1150,8 @@ worker：SQL 算结构化特征 → 模型给判断与理由 → bank_risk_flags
 | [RECIPIENT-RISK.md](RECIPIENT-RISK.md) | #1 后台收款账户风险标记与人工复核：实现地图、演示数据、边界 |
 | [PROFILE.md](PROFILE.md) | #7 后台用户画像：口径、红线、实测中发现的问题、边界 |
 | [AUTH-CARDS.md](AUTH-CARDS.md) | 注册无卡、每卡独立交易密码、安全独立页面、受控卡号与双边转账实测 |
+| [WEALTH-FUND-PLAN.md](WEALTH-FUND-PLAN.md) | 实时基金数据接入与理财专家：数据源实测、架构、交易规则、专家把关、分阶段工期 |
+| [SECURITY.md](SECURITY.md) | 安全设计与自评报告：原则、威胁模型、各机制实现与状态、测试覆盖、未完成项与已知缺陷 |
 | `README.md` | 快速开始、工具层概览、用户与权限 |
 
 **最后一句**：这个仓库里所有看起来"过度设计"的地方——纯函数策略引擎、两类令牌、哈希链、禁数字字面量、只读确认回报轮次——都是同一条原则的不同切面。**当你觉得某个机制是在自找麻烦时，先回去读 §0。**
