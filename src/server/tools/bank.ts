@@ -14,6 +14,7 @@ import { cancelLifeSubscription, lifeSubscriptionChangeSummary, listLifeSubscrip
 export { listTransactions } from './transaction-query'
 import { ownProfile, userCards } from '#/server/cards/service'
 import { paymentAccounts } from '#/server/payments/service'
+import { subscriptionTotals, sumYuan } from './totals'
 import { and, eq, gte, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
@@ -44,6 +45,7 @@ export const getAccounts = defineBankTool({
     const rows = await paymentAccounts(ctx.userId)
     return rows.map((a) => ({ id: a.id, name: a.cardLast4 ? `储蓄卡 · 尾号${a.cardLast4}` : a.name, remark: a.remark, cardId: a.cardId, last4: a.cardLast4, balance: yuan(a.balanceCents), currency: a.currency }))
   },
+  totals: (rows) => ({ totalBalance: sumYuan(rows.map((a) => a.balance)), accountCount: rows.length }),
 })
 
 export const findPayee = defineBankTool({
@@ -122,6 +124,7 @@ export const listSubscriptions = defineBankTool({
   execute: async (_args, ctx) => {
     return listLifeSubscriptions(ctx.userId,await simNow())
   },
+  totals: subscriptionTotals,
 })
 
 export const listProducts = defineBankTool({

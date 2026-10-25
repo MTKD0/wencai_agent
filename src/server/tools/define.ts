@@ -28,6 +28,11 @@ export interface BankToolDef<I = any, O = any> {
    * 这些通用键不是外部文本：不过审核、不加隔离标记。只能豁免通用键，备注、户名等外部字段始终审核。
    */
   catalogFields?: readonly CatalogField[]
+  /**
+   * 服务端算好的合计（单位：元），随结果一起交给模型并作为数字核验的证据。
+   * 模型复述总余额、订阅年费等汇总数时引用这里的值，不自行心算——心算结果即使正确也无法通过核验。
+   */
+  totals?: (output: O) => Record<string, number>
 }
 
 /** UNTRUSTED_FIELDS 中可被目录类工具豁免的通用键 */
@@ -42,7 +47,7 @@ export function defineBankTool<I, O>(def: BankToolDef<I, O>): BankToolDef<I, O> 
 
 /** 工具统一返回结构：UI 依据 status 渲染固定组件 */
 export type ToolOutcome =
-  | { status: 'done'; data: unknown }
+  | { status: 'done'; data: unknown; totals?: Record<string, number> }
   | { status: 'denied'; reasons: string[] }
   | {
       status: 'needs_confirmation'

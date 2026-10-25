@@ -37,6 +37,8 @@ export function buildAgentTools(ctx: AgentContext, options: { readOnly?: boolean
         const outcome = await runBankTool(def, args, { ...ctx, requestText: options.requestText })
         if (outcome.status === 'done') {
           putSessionData(ctx.sessionId, def.name, outcome.data)
+          // 合计单独存一份，后续轮次复述时仍是服务端证据，show_view 也可引用 /<工具名>_totals
+          if (outcome.totals) putSessionData(ctx.sessionId, `${def.name}_totals`, outcome.totals)
           currentTools.add(def.name)
         }
         return outcome

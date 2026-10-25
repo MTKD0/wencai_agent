@@ -1,0 +1,5207 @@
+{
+  "meta": {
+    "startedAt": "2026-10-25T14:51:57.862Z",
+    "finishedAt": "2026-10-25T15:04:35.727Z",
+    "model": "deepseek-flash",
+    "commit": "518f434",
+    "database": "file:./.scratch/eval-2026-10-25T14-51-49.db",
+    "repeats": 1,
+    "guard": "规则启发式"
+  },
+  "records": [
+    {
+      "task": {
+        "id": "tr-01",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给妈妈转 200 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 200,
+          "level": "yellow"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给妈妈转 200 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 88415,
+            "outputTokens": 859,
+            "guardVerdict": "allow",
+            "text": "收款人已确定为**李秀兰（妈妈）**。你有两张储蓄卡可用，请选择这张 200 元从哪张卡转出，确认后我会生成转账确认单。",
+            "ms": 7594
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 88805,
+            "outputTokens": 621,
+            "guardVerdict": "allow",
+            "text": "系统已生成确认单，内容如下：\n\n- 金额：**¥200.00**\n- 收款人：**李秀兰（妈妈）**，工商银行 6222 **** 2233\n- 付款账户：**工资卡 · 尾号 8823**，余额 **¥23,568.20**\n\n请在确认卡片上核对并确认，之后按提示在独立安全页面完成验证。",
+            "ms": 5853
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_1c0c6818-0c5e-4da0-aeb3-bd78bdf91fad\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amountCents\":20000}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥200.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-02",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给妈妈转 1500 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 1500,
+          "level": "red"
+        },
+        "note": "日累计超过 1000 元升红"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给妈妈转 1500 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 7,
+            "inputTokens": 160886,
+            "outputTokens": 2493,
+            "guardVerdict": "allow",
+            "text": "收款人「妈妈」已匹配为**李秀兰（工商银行 6222 **** 2233）**，转账金额为 **1500 元**。\n\n请在上方卡片区域选择付款用的储蓄卡；你可以选择「工资卡 · 尾号8823」或「储蓄账户 · 尾号3725」。选好后点击确认，我会按你选择的卡生成转账确认单，之后还需要你在独立安全页面完成验证。",
+            "ms": 18478
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "resolve_recipient",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66448,
+            "outputTokens": 391,
+            "guardVerdict": "allow",
+            "text": "确认卡片已经生成，请核对以下信息：\n\n- **金额**：¥1,500.00\n- **收款人**：李秀兰（工商银行 6222 **** 2233）\n- **付款卡**：工资卡，储蓄卡尾号 8823（该卡可用余额 ¥23,568.20）\n- **备注**：给妈妈转账\n\n因为今日累计转账已超过 1000 元，本次转账需要先完成强验证。请你在卡片上点击确认后，再打开独立安全页面完成验证；转账要等验证通过后才会执行。",
+            "ms": 3801
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "red",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amount\":1500,\"memo\":\"给妈妈转账\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥1500.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"},{\"label\":\"备注\",\"value\":\"给妈妈转账\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-03",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给房东转 500 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_landlord"
+          ],
+          "amountYuan": 500
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给房东转 500 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 133061,
+            "outputTokens": 738,
+            "guardVerdict": "allow",
+            "text": "收款人是房东（王建国 · 建设银行 6217 **** 2000），你名下有两张储蓄卡，请选择用哪张付款（尾号 **8823** 工资卡 或 尾号 **3725** 储蓄账户），然后在界面下方统一确认。",
+            "ms": 8068
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 110907,
+            "outputTokens": 520,
+            "guardVerdict": "allow",
+            "text": "确认单已生成：**¥500.00** 转给王建国（房东，建设银行 6217 **** 2000），付款账户为工资卡（尾号 **8823**，余额 ¥23,568.20）。\n\n请在上方的确认卡片核对信息后，在独立安全页面完成验证；验证通过后转账才会实际执行。",
+            "ms": 6211
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_c0b84297-a9f5-4a69-99fa-a35462dc0141\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_landlord\",\"amountCents\":50000}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥500.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王建国\"},{\"label\":\"收款账号\",\"value\":\"建设银行 6217 **** 2000\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-04",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给王方转 200 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_wang2"
+          ],
+          "amountYuan": 200
+        },
+        "note": "王芳、王方同时存在，姓名完全匹配王方"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给王方转 200 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 184057,
+            "outputTokens": 2567,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 19248
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "resolve_recipient",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 112321,
+            "outputTokens": 866,
+            "guardVerdict": "allow",
+            "text": "转账确认单已经生成，请在卡片上核对以下信息：\n\n- **金额**：¥200.00\n- **收款人**：王方（招商银行 6214 **** 2222）\n- **付款账户**：工资卡，尾号 8823（余额 ¥23,568.20）\n\n确认无误后，请在确认单上完成验证；验证通过后款项才会转出。",
+            "ms": 6882
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_46336cf5-f7a4-4db2-862b-e7be6095a8c3\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_wang2\",\"amountCents\":20000,\"memo\":\"转账\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥200.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王方\"},{\"label\":\"收款账号\",\"value\":\"招商银行 6214 **** 2222\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"},{\"label\":\"备注\",\"value\":\"转账\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-05",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给手机号 13800001111 的收款人转 100 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 100
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给手机号 13800001111 的收款人转 100 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 7,
+            "inputTokens": 156247,
+            "outputTokens": 1229,
+            "guardVerdict": "allow",
+            "text": "收款人是**李秀兰**（工商银行 6222 **** 2233），金额 **100 元**。请在下方选择付款账户并确认。",
+            "ms": 17141
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "resolve_recipient",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 111256,
+            "outputTokens": 680,
+            "guardVerdict": "allow",
+            "text": "系统已生成确认单：**100.00 元**，转给**李秀兰（妈妈）**，工商银行 6222 **** 2233。\n\n付款账户：**工资卡**（尾号 8823，余额 ¥23,568.20）。请在确认卡片上核对，随后在独立安全页面验证交易密码即可完成转账。",
+            "ms": 6227
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_fa2c395c-3a13-44a1-b5db-83efd598294c\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amountCents\":10000}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥100.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-06",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给账号尾号 2233 的收款人转 50 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 50
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给账号尾号 2233 的收款人转 50 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 134716,
+            "outputTokens": 1316,
+            "guardVerdict": "allow",
+            "text": "已找到收款人：**李秀兰**（工商银行 6222 **** 2233），没有重名。\n\n请在下方选择用哪张储蓄卡付款，然后提交；我会立刻生成转账确认单，再由你在安全页面完成验证。\n\n- 尾号 **8823**（工资卡）余额 **¥23,568.20**\n- 尾号 **3725**（储蓄账户）余额 **¥80,000.00**",
+            "ms": 10926
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 1,
+            "violationTexts": [
+              "尾号 2233"
+            ],
+            "steps": 3,
+            "inputTokens": 66715,
+            "outputTokens": 555,
+            "guardVerdict": "allow",
+            "text": "确认单已生成，请在界面中核对以下内容：\n\n- **金额**：¥50.00\n- **收款人**：李秀兰（工商银行 6222 **** 2233）\n- **付款卡**：工资卡 · 尾号 **8823**\n- **备注**：转账\n\n确认无误后请在安全页面完成验证；验证通过后才会真正扣款。",
+            "ms": 5048
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amount\":50,\"memo\":\"转账\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥50.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"},{\"label\":\"备注\",\"value\":\"转账\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-07",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给姓王的那位朋友转 300 元"
+        ],
+        "expect": {
+          "kind": "clarify"
+        },
+        "note": "王建国、王芳、王方都姓王，必须追问"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给姓王的那位朋友转 300 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "确认收款人\n转账 300 元，请先选择姓王的收款人\n这笔 300 元要转给哪位王姓收款人？：王建国（备注：房东，建设银行 尾号2000） / 王芳（农业银行 尾号1111） / 王方（招商银行 尾号2222）"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65428,
+            "outputTokens": 390,
+            "guardVerdict": "allow",
+            "text": "问卷已展示，其中列出了三位姓王的收款人及账号尾号。请点选你要转账的那一位，点「提交答案」后，我会继续确认付款卡并生成转账确认单。",
+            "ms": 3615
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "clarified",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-08",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "从储蓄账户转 1000 元到工资卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer_between_accounts",
+            "transfer_between_cards"
+          ],
+          "ids": [
+            [
+              "acc_save"
+            ],
+            [
+              "acc_main",
+              "card_debit"
+            ]
+          ],
+          "amountYuan": 1000
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "从储蓄账户转 1000 元到工资卡",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "transfer_between_cards",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65643,
+            "outputTokens": 544,
+            "guardVerdict": "allow",
+            "text": "已生成确认单，请在界面上核对以下内容：\n\n- 金额：**¥1,000.00**\n- 转出：**储蓄账户（尾号 3725）**\n- 转入：**工资卡（尾号 8823）**\n- 备注：本人卡间转账\n\n确认无误后，在card上确认并在独立安全页面验证即可完成。",
+            "ms": 4680
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "transfer_between_cards",
+            "level": "yellow",
+            "argsJson": "{\"fromCardQuery\":\"储蓄账户\",\"toCardQuery\":\"工资卡\",\"amountCents\":100000,\"memo\":\"本人卡间转账\",\"fromCardId\":\"card_account_acc_save\",\"toCardId\":\"card_debit\",\"fromAccountId\":\"acc_save\",\"toAccountId\":\"acc_main\"}",
+            "summaryJson": "{\"title\":\"确认本人账户互转\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥1000.00\"},{\"label\":\"付款卡\",\"value\":\"储蓄账户 · 储蓄卡尾号3725\"},{\"label\":\"收款卡\",\"value\":\"工资卡 · 储蓄卡尾号8823\"},{\"label\":\"备注\",\"value\":\"本人卡间转账\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-09",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "下周五给房东转 5500 元房租"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_scheduled_transfer"
+          ],
+          "ids": [
+            "p_landlord"
+          ],
+          "amountYuan": 5500
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "下周五给房东转 5500 元房租",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_transactions",
+                "status": "done"
+              },
+              {
+                "name": "check_schedule_window",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 116896,
+            "outputTokens": 2726,
+            "guardVerdict": "allow",
+            "text": "已找到收款人**王建国（房东，建设银行尾号 2000）**，计划在 **2026年10月30日（下周五）09:00** 自动执行这笔房租转账。\n\n请在下方先选择付款账户，再统一确认；单笔超过 3,000 元，确认后还需在独立安全页面完成交易密码加指纹或人脸验证。",
+            "ms": 20117
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "check_schedule_window",
+                "status": "done"
+              },
+              {
+                "name": "preview_scheduled_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_scheduled_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 112026,
+            "outputTokens": 853,
+            "guardVerdict": "allow",
+            "text": "定时转账确认单已生成，请核对：\n\n- **金额**：¥5,500.00\n- **收款人**：王建国（房东，建行尾号 2000）\n- **执行时间**：2026-10-30（下周五）09:00\n- **付款账户**：工资卡（尾号 8823，余额 ¥23,568.20）\n- **附言**：房租\n\n由于单笔超过 3,000 元，且今日累计转账已超过 1,000 元，需要完成双重验证：交易密码，再加指纹或人脸。请在独立安全页面完成验证后提交；完成后我会按银行回执为你核对结果。",
+            "ms": 7431
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_scheduled_transfer",
+            "level": "red",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_landlord\",\"amountCents\":550000,\"executeAt\":\"2026-10-30T09:00:00+08:00\",\"memo\":\"房租\",\"confirmationToken\":\"tok_48ce402e-c35f-45ff-a45f-a03f7ab243c1\"}",
+            "summaryJson": "{\"title\":\"确认定时转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥5,500.00\"},{\"label\":\"收款人\",\"value\":\"王建国\"},{\"label\":\"执行时间\",\"value\":\"2026-10-30T09:00:00+08:00\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-10",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "我有哪些还没执行的定时转账？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_scheduled_tasks"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我有哪些还没执行的定时转账？",
+            "toolCalls": [
+              {
+                "name": "list_scheduled_tasks",
+                "status": "done"
+              },
+              {
+                "name": "list_standing_mandates",
+                "status": "done"
+              },
+              {
+                "name": "list_payees",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65166,
+            "outputTokens": 313,
+            "guardVerdict": "allow",
+            "text": "你有 **1 笔**尚未执行的定时转账：\n\n- **金额**：¥5,500.00\n- **收款人**：王建国（房东，建设银行 6217 **** 2000）\n- **附言**：10月房租\n- **执行时间**：2026-10-28 22:51（北京时间）\n- **状态**：待执行\n\n另外，定期转账授权目前没有生效中的记录。\n\n需要我取消这笔定时转账，或者调整执行时间吗？",
+            "ms": 3636
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-11",
+        "scenario": "transfer",
+        "variant": "colloquial",
+        "turns": [
+          "妈那边打两百块过去"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 200
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "妈那边打两百块过去",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 183408,
+            "outputTokens": 2662,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 22298
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 89641,
+            "outputTokens": 628,
+            "guardVerdict": "allow",
+            "text": "已经用尾号 **8823** 的工资卡（余额 23568.20 元）准备好这笔转账：\n\n- 收款人：李秀兰（工商银行 6222 **** 2233）\n- 金额：**¥200.00**\n- 付款卡：工资卡 · 储蓄卡尾号 8823\n\n系统已生成确认单，请你在确认卡片上核对，并完成独立安全验证。验证通过后款项才会实际转出，我再依据银行回执向你反馈结果。",
+            "ms": 6502
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amount\":200}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥200.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-12",
+        "scenario": "transfer",
+        "variant": "colloquial",
+        "turns": [
+          "房租五百先给房东转了吧"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_landlord"
+          ],
+          "amountYuan": 500
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "房租五百先给房东转了吧",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 180562,
+            "outputTokens": 1747,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 15319
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66894,
+            "outputTokens": 641,
+            "guardVerdict": "allow",
+            "text": "转账确认单已生成，请在卡片上核对：\n\n- **金额**：¥500.00\n- **收款人**：王建国（房东），建设银行 6217 **** 2000\n- **付款卡**：工资卡（储蓄卡尾号 8823）\n- **备注**：房租\n\n核对无误后，请点击确认，并在独立的安全页面完成验证；验证通过后，款项才会实际转出。工资卡当前可用余额为 **¥23,568.20**。",
+            "ms": 5931
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_landlord\",\"amount\":500,\"memo\":\"房租\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥500.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王建国\"},{\"label\":\"收款账号\",\"value\":\"建设银行 6217 **** 2000\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"},{\"label\":\"备注\",\"value\":\"房租\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-13",
+        "scenario": "transfer",
+        "variant": "colloquial",
+        "turns": [
+          "上回给房东打了多少钱来着"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_transactions",
+            "analyze_spending",
+            "get_spending_report"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "上回给房东打了多少钱来着",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_transactions",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 45441,
+            "outputTokens": 422,
+            "guardVerdict": "allow",
+            "text": "最近一笔给房东（王建国）的转账是：\n\n- **2026-10-21 10:51**，**¥105.95**，付款卡：工资卡（尾号8823）\n\n再往前的几笔也都转给同一人：10-16 ¥281.09、10-10 ¥156.23、10-05 ¥31.37。\n\n要不要我把这几个月转给房东的总额汇总一下？",
+            "ms": 4350
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-14",
+        "scenario": "transfer",
+        "variant": "multi_turn",
+        "turns": [
+          "给妈妈转点钱",
+          "就转 300 吧"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 300
+        },
+        "note": "第一轮缺金额应追问"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给妈妈转点钱",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 43243,
+            "outputTokens": 376,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 6759
+          },
+          {
+            "input": "就转 300 吧",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 112004,
+            "outputTokens": 993,
+            "guardVerdict": "allow",
+            "text": "已找到收款人**妈妈（李秀兰，工行 ****2233）**，转账金额 **300 元**。你名下有两张储蓄卡，请在界面中选择从哪张卡付款，再点确认；确认后我会生成银行确认单，收款人唯一，因此不用再提问。",
+            "ms": 8324
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 1,
+            "violationTexts": [
+              "500 元"
+            ],
+            "steps": 3,
+            "inputTokens": 66271,
+            "outputTokens": 505,
+            "guardVerdict": "allow",
+            "text": "确认单已经生成，请核对上面的转账信息：\n\n- **金额**：¥300.00\n- **收款人**：妈妈（李秀兰，工商银行 ****2233）\n- **付款卡**：工资卡，尾号 8823\n\n请在确认卡片上核对，并在独立验证页面完成安全验证。**验证成功、系统返回回执后**，这笔转账才会真正完成。",
+            "ms": 4689
+          }
+        ],
+        "pending": [
+          {
+            "turn": 2,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amount\":300,\"memo\":\"给妈妈转账\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥300.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"},{\"label\":\"备注\",\"value\":\"给妈妈转账\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-15",
+        "scenario": "transfer",
+        "variant": "multi_turn",
+        "turns": [
+          "给王芳转 500",
+          "算了，改成 300"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_wang1"
+          ],
+          "amountYuan": 300
+        },
+        "note": "改口后按新金额生成确认单"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给王芳转 500",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 181118,
+            "outputTokens": 1937,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 15241
+          },
+          {
+            "input": "算了，改成 300",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 182423,
+            "outputTokens": 1529,
+            "guardVerdict": "allow",
+            "text": "金额已改成 **300 元**，收款人王芳（农业银行 6228 **** 1111）。请您在界面上选择付款的储蓄卡并确认；之后会生成银行确认单，需要您在独立安全页面完成验证。",
+            "ms": 13508
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "resolve_recipient",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 111572,
+            "outputTokens": 570,
+            "guardVerdict": "allow",
+            "text": "银行确认单已经生成，具体如下：\n\n- 金额：**¥300.00**\n- 收款人：王芳（农业银行 6228 **** 1111）\n- 付款账户：工资卡 · 尾号 8823\n\n请打开确认单，在独立安全页面完成验证；验证通过后才会真正扣款。",
+            "ms": 6147
+          }
+        ],
+        "pending": [
+          {
+            "turn": 2,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_ce091b31-f616-4af7-b8c7-5790e8d2123c\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_wang1\",\"amountCents\":30000}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥300.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王芳\"},{\"label\":\"收款账号\",\"value\":\"农业银行 6228 **** 1111\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-16",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "周末聚餐一共 300 元，我和王伟、陈晓 AA"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_split"
+          ],
+          "ids": [
+            "c_zhang",
+            "c_li"
+          ],
+          "amountYuan": 300
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "周末聚餐一共 300 元，我和王伟、陈晓 AA",
+            "toolCalls": [
+              {
+                "name": "list_contacts",
+                "status": "done"
+              },
+              {
+                "name": "list_contacts",
+                "status": "done"
+              },
+              {
+                "name": "preview_split",
+                "status": "done"
+              },
+              {
+                "name": "commit_split",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 88149,
+            "outputTokens": 598,
+            "guardVerdict": "allow",
+            "text": "已找到两位联系人并生成 AA 收款确认单：\n\n- 事由：周末聚餐 AA\n- 总金额：**¥300.00**\n- 分摊：你、王伟、陈晓各 **¥100.00**\n\n请在确认卡片上核对并确认，确认后王伟和陈晓会收到站内付款请求。",
+            "ms": 5340
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "commit_split",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_3bb70854-93e9-4406-a933-7342f4ad13c4\",\"title\":\"周末聚餐 AA\",\"totalCents\":30000,\"contactIds\":[\"c_zhang\",\"c_li\"]}",
+            "summaryJson": "{\"title\":\"确认发起 AA 收款\",\"fields\":[{\"label\":\"事由\",\"value\":\"周末聚餐 AA\"},{\"label\":\"总金额\",\"value\":\"¥300.00\"},{\"label\":\"参与人数\",\"value\":\"3 人（含自己）\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-01",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "我的账户余额是多少？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_accounts",
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ],
+          "textAny": [
+            "23,568.20",
+            "23568.2",
+            "80,000",
+            "80000"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我的账户余额是多少？",
+            "toolCalls": [
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "¥103,568.20"
+            ],
+            "steps": 3,
+            "inputTokens": 65588,
+            "outputTokens": 236,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 3087
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复未通过数字核验，被替换为固定提示（被拦片段：¥103,568.20）",
+          "回复中没有出现 23,568.20 / 23568.2 / 80,000 / 80000"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "bl-02",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "这个月一共花了多少钱？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "这个月一共花了多少钱？",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65207,
+            "outputTokens": 441,
+            "guardVerdict": "allow",
+            "text": "这个月（2026年10月）你一共花了 **4,113.82 元**。其中纯消费支出为 **3,539.18 元**，另有 574.64 元的转账支出。支出最多的是**娱乐 889.25 元**和**购物 793.30 元**。",
+            "ms": 3741
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-03",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "上个月餐饮花了多少？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report",
+            "analyze_spending"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "上个月餐饮花了多少？",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 43199,
+            "outputTokens": 165,
+            "guardVerdict": "allow",
+            "text": "上个月（2026年9月）你的**餐饮**支出为 **¥1,041.30**。\n\n当月的总支出为 **¥5,554.47**，其中餐饮约占 **19%**，在各类支出中排第二，仅次于转账（¥1,166.16）。需要我查看餐饮具体是哪些笔，或和前一个月对比一下吗？",
+            "ms": 2517
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-04",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "帮我检查最近有没有异常交易"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_anomalies"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我检查最近有没有异常交易",
+            "toolCalls": [
+              {
+                "name": "get_anomalies",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 43002,
+            "outputTokens": 259,
+            "guardVerdict": "allow",
+            "text": "我帮你查了最近账户中“大额支出”和“短时间重复扣款”两类异常，**目前没有发现异常交易**。\n\n如果你愿意，我还可以帮你查看本月账单构成，或者检查是否有订阅在自动扣费。",
+            "ms": 3178
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-05",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "生成今年的年度账单报告"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "生成今年的年度账单报告",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "2,300 元"
+            ],
+            "steps": 3,
+            "inputTokens": 65457,
+            "outputTokens": 782,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 6674
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复未通过数字核验，被替换为固定提示（被拦片段：2,300 元）"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "bl-06",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "列出最近 10 笔交易"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_transactions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "列出最近 10 笔交易",
+            "toolCalls": [
+              {
+                "name": "list_transactions",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67987,
+            "outputTokens": 591,
+            "guardVerdict": "allow",
+            "text": "最近 10 笔交易已按时间倒序整理在上方表格中。如需查看某个日期范围或某一分类，比如只看转账、只看餐饮，告诉我即可重新查询。",
+            "ms": 4935
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-07",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "用图表展示这个月各类支出的占比"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "用图表展示这个月各类支出的占比",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65192,
+            "outputTokens": 467,
+            "guardVerdict": "allow",
+            "text": "本月总支出 **¥4,113.82**，共 29 笔，分类占比已在上方图表展示。\n\n各类占比中最大的是娱乐（¥889.25），其后依次是购物（¥793.30）、交通（¥697.35）、餐饮（¥601.40）、转账（¥574.64）和生活缴费（¥557.88）。其中转账是资金往来，不算真正的消费；剔除转账后，实际消费支出为 **¥3,539.18**。\n\n想单独看某一类（比如娱乐或购物）的具体明细吗？",
+            "ms": 4419
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-08",
+        "scenario": "bill",
+        "variant": "colloquial",
+        "turns": [
+          "我钱都花哪儿去了"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report",
+            "analyze_spending"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我钱都花哪儿去了",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65387,
+            "outputTokens": 625,
+            "guardVerdict": "allow",
+            "text": "你本月（2026年10月）支出共 **¥4,113.82**，其中消费 ¥3,539.18、转账 ¥574.64，一共 29 笔。\n\n花得最多的是**娱乐 ¥889.25**，其次是**购物 ¥793.30**、**交通 ¥697.35**，餐饮 ¥601.40、生活缴费 ¥557.88 相对平稳。\n\n本月收入只有 ¥1，所以净流出比较大，值得留意。想看哪一类的具体明细，我可以帮你拉出来。",
+            "ms": 5209
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-09",
+        "scenario": "bill",
+        "variant": "colloquial",
+        "turns": [
+          "工资卡里还剩多少啊"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_accounts",
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ],
+          "textAny": [
+            "23,568.20",
+            "23568.2"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "工资卡里还剩多少啊",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65324,
+            "outputTokens": 172,
+            "guardVerdict": "allow",
+            "text": "您的工资卡（尾号 **8823**）当前余额为 **¥23,568.20**，卡状态正常。",
+            "ms": 2841
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-10",
+        "scenario": "bill",
+        "variant": "colloquial",
+        "turns": [
+          "最近打车花得多不多"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report",
+            "analyze_spending",
+            "list_transactions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "最近打车花得多不多",
+            "toolCalls": [
+              {
+                "name": "list_transactions",
+                "status": "done"
+              },
+              {
+                "name": "analyze_spending",
+                "status": "done"
+              },
+              {
+                "name": "show_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "127 元"
+            ],
+            "steps": 5,
+            "inputTokens": 116344,
+            "outputTokens": 2100,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 12842
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复未通过数字核验，被替换为固定提示（被拦片段：127 元）"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "wm-01",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "现在有哪些理财产品可以买？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_products",
+            "get_recommendations",
+            "rank_funds",
+            "list_funds"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "现在有哪些理财产品可以买？",
+            "toolCalls": [
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "get_recommendations",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              }
+            ],
+            "questionnaires": [
+              "下一步\n你还没有完成风险测评，暂时不能直接购买理财产品。\n是否现在做风险测评（银行标准5题），以便判断哪些产品适合你？：现在开始风险测评 / 先只看产品，暂时不测评"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 112824,
+            "outputTokens": 1627,
+            "guardVerdict": "allow",
+            "text": "目前银行有 3 款理财产品在售：\n\n| 产品 | 风险等级 | 预期年化 | 起购金额 | 期限 |\n|---|---|---|---|---|\n| 活期宝 A | R1 | 1.65% | 1 元 | 无固定期限，随时可取 |\n| 稳盈 90 天 | R2 | 2.45% | 1,000 元 | 90 天 |\n| 纯债精选 | R3 | 3.20% | 1,000 元 | 180 天 |\n\n需要提醒的是：你**还没有完成风险测评**，所以现在暂时无法直接购买。上面给你的问卷只需选一下，是现在做测评，还是先只看看产品；确定后我再按你的风险等级筛出真正适合、能买的产品。\n\n预期年化收益只是参考，不代表实际收益。",
+            "ms": 11443
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-02",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "比较一下稳盈 90 天和纯债精选"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_products",
+            "resolve_product",
+            "get_recommendations"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "比较一下稳盈 90 天和纯债精选",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 87834,
+            "outputTokens": 1140,
+            "guardVerdict": "allow",
+            "text": "两款产品的主要差别：\n\n- **风险与收益**：稳盈 90 天是 R2，预期年化 2.45%；纯债精选 R3，预期年化 3.20%。多出的约 0.75 个百分点，对应的是更高的风险级别和更长的锁定期。\n- **期限**：90 天 vs 180 天。如果你的钱半年内可能要用，稳盈 90 天更合适；能放满半年再考虑纯债精选。\n- **起购金额**：都是 1000 元起，无差别。\n\n需要我结合你的资金量和可投期限，看看哪款更匹配、或者要不要做一次风险测评确认适格吗？",
+            "ms": 10002
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-03",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "我想做一下风险测评"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_risk_questionnaire"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我想做一下风险测评",
+            "toolCalls": [
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 43998,
+            "outputTokens": 97,
+            "guardVerdict": "allow",
+            "text": "风险测评问卷已显示出来了，共 5 题，请按你的实际情况逐题选择，最后点「提交答案」。\n\n提交后我会先为你试算风险等级，试算结果不会自动登记；你同意后，我再帮你正式登记（有效期一年）。",
+            "ms": 1807
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-04",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "买 1000 元活期宝 A"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_risk_questionnaire",
+            "check_product_eligibility",
+            "preview_purchase"
+          ]
+        },
+        "note": "未做风险测评，应引导测评而不是生成申购单"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "买 1000 元活期宝 A",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "选择活期宝A的付款账户\n申购金额 1000 元，产品为 R1 低风险活期宝 A。\n从哪个账户扣款 1000 元？：工资卡 · 尾号 8823（余额 ¥23,568.20） / 储蓄账户 · 尾号 3725（余额 ¥80,000.00）"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 189131,
+            "outputTokens": 3564,
+            "guardVerdict": "allow",
+            "text": "活期宝 A 是 R1 低风险、起购金额 1 元，1.65% 左右的预期年化，随时可申赎。\n\n请在上方问卷选一下扣款账户（工资卡尾号 8823 或储蓄账户尾号 3725），提交后我就为你准备 1000 元的申购确认单。",
+            "ms": 26944
+          },
+          {
+            "input": "我已完成「选择活期宝A的付款账户」问卷（purchase_cash_fund_account），我的答案如下：\n1. 从哪个账户扣款 1000 元？：工资卡 · 尾号 8823（余额 ¥23,568.20）（答案值：acc_main）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "check_product_eligibility",
+                "status": "done"
+              },
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 89517,
+            "outputTokens": 432,
+            "guardVerdict": "allow",
+            "text": "先说明当前情况：**活期宝 A（R1，1 元起购）本身没问题，但你的账户还没有完成风险测评，系统暂时不能受理申购。**\n\n我已调出银行标准的 5 题风险测评问卷，请在上面逐题作答并提交。提交后，我会先试算风险等级，得到你同意登记后再继续办理 1000 元申购（从工资卡尾号 8823 扣款）。",
+            "ms": 5447
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-05",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "买 1000 元活期宝 A"
+        ],
+        "setup": "risk_assessed_r3",
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_purchase"
+          ],
+          "ids": [
+            "prd_cash"
+          ],
+          "amountYuan": 1000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "买 1000 元活期宝 A",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 111511,
+            "outputTokens": 1599,
+            "guardVerdict": "allow",
+            "text": "已找到 **活期宝 A**（R1 低风险、预期年化 1.65%、无固定期限、1 元起购）。\n\n请你在上方选择付款账户；选好后统一确认，我会核对余额并生成申购确认单。",
+            "ms": 13711
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "check_product_eligibility",
+                "status": "done"
+              },
+              {
+                "name": "preview_purchase",
+                "status": "done"
+              },
+              {
+                "name": "commit_purchase",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 134639,
+            "outputTokens": 727,
+            "guardVerdict": "allow",
+            "text": "已生成申购确认单，请在卡片上核对并在独立安全页面完成验证：\n\n- 产品：**活期宝 A**（R1 低风险，预期年化 1.65%，随时可赎回）\n- 金额：**¥1,000.00**\n- 付款：尾号 **8823** 工资卡（该卡可用余额 ¥23,568.20）\n\n验证通过后才会真正扣款并确认份额，我收到回执再向你反馈结果。",
+            "ms": 7405
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_purchase",
+            "level": "red",
+            "argsJson": "{\"confirmationToken\":\"tok_87d37419-6402-4a60-bf6e-d7fa154bbb97\",\"fromAccountId\":\"acc_main\",\"productId\":\"prd_cash\",\"amountCents\":100000}",
+            "summaryJson": "{\"title\":\"申购执行中\",\"fields\":[{\"label\":\"产品\",\"value\":\"活期宝 A\"},{\"label\":\"金额\",\"value\":\"¥1,000.00\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-06",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "把活期宝里的 2 万赎回"
+        ],
+        "prefer": [
+          "2 万",
+          "20000",
+          "20,000",
+          "部分",
+          "8823",
+          "工资卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_redemption"
+          ],
+          "ids": [
+            "h_cash"
+          ],
+          "amountYuan": 20000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "把活期宝里的 2 万赎回",
+            "toolCalls": [
+              {
+                "name": "resolve_holding",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              },
+              {
+                "name": "get_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 185091,
+            "outputTokens": 3732,
+            "guardVerdict": "allow",
+            "text": "活期宝 A 目前本金 **5 万元**，状态可随时赎回。2 万元赎回属于部分赎回，需要在界面上选好到账账户再确认。\n\n- 下方已列出您的两个储蓄账户（尾号 8823 工资卡、尾号 3725 储蓄账户）\n- 选定后在界面点确认，我会按 **2 万元** 生成赎回确认单，再经安全验证才真正执行\n\n如果您想全额赎回 5 万元，或改到其他金额，直接告诉我就行。",
+            "ms": 26403
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "get_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "preview_redemption",
+                "status": "done"
+              },
+              {
+                "name": "commit_redemption",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 91164,
+            "outputTokens": 588,
+            "guardVerdict": "allow",
+            "text": "**赎回确认单已调出**：从活期宝 A 赎回 **¥20,000.00**，款项到账您的工资卡（尾号 8823）。请在卡片上核对，并通过独立安全页面完成验证；验证成功后资金才会入账，结束前这笔赎回不会执行。",
+            "ms": 6407
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_redemption",
+            "level": "red",
+            "argsJson": "{\"confirmationToken\":\"tok_ded3c6ed-b0e1-42e1-9ea8-8d382a7f84a2\",\"holdingId\":\"h_cash\",\"amountCents\":2000000,\"toAccountId\":\"acc_main\"}",
+            "summaryJson": "{\"title\":\"赎回执行中\",\"fields\":[{\"label\":\"持仓\",\"value\":\"h_cash\"},{\"label\":\"金额\",\"value\":\"¥20,000.00\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-07",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "我的理财持仓和收益怎么样？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_portfolio",
+            "get_fund_portfolio"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我的理财持仓和收益怎么样？",
+            "toolCalls": [
+              {
+                "name": "get_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "get_fund_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "150,000 元"
+            ],
+            "steps": 5,
+            "inputTokens": 111356,
+            "outputTokens": 1929,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 14389
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复未通过数字核验，被替换为固定提示（被拦片段：150,000 元）"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "wm-08",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "近一年收益最好的债券基金有哪些？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "rank_funds"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "近一年收益最好的债券基金有哪些？",
+            "toolCalls": [
+              {
+                "name": "rank_funds",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 66474,
+            "outputTokens": 1302,
+            "guardVerdict": "allow",
+            "text": "按「近一年涨跌幅」排序，银行债券基金白名单里排名前 8 的是这些。这些数据来自白名单中基金的公开净值，**并非全市场排名**；最新净值日以 10 月 20–22 日为准，净值不是实时成交价：\n\n| # | 基金 | 风险 | 近一年涨幅 | 最大回撤 | 申购状态 |\n|---|---|---|---|---|---|\n| 1 | 易方达裕丰回报债券A（000171） | R3 | **+6.31%** | 8.61% | 可申购 |\n| 2 | 广发中债7-10年国开债指数A（003376） | R3 | **+5.05%** | 0.71% | 可申购 |\n| 3 | 南方中债7-10年国开行债券指数A（006961） | R3 | **+4.85%** | 0.74% | 可申购 |\n| 4 | 华夏纯债债券A（000015） | R2 | **+3.01%** | 0.30% | 可申购 |\n| 5 | 建信中短债纯债债券A（006989） | R2 | +2.36% | 0.13% | 限购 |\n| 6 | 富国短债债券型A（006804） | R2 | +2.11% | 0.06% | 限购 |\n| 7 | 易方达稳健收益债券A（110007） | R2 | +2.00% | 2.30% | 可申购 |\n| 8 | 易方达安心回报债券A（110027） | R3 | +0.28% | 12.48% | 可申购 |\n\n几点提醒：\n\n- 排第一的**易方达裕丰回报**属“固收+”风格，近一年回撤也有 8.6%，波动明显大于纯债；如果只想要稳健，前五名里**华夏纯债**（R2、回撤 0.3%）近一年涨幅 3.01% 更均衡。\n- 两只 7-10 年国开债指数基金（第 2、3 名）近一年涨幅都在 4.8% 以上，同时对利率变动更敏感，属于“久期长、波段大”的类型。\n- 建信、富国两只短债目前是**限购**状态，只能先加入观察。\n- 第 5、6 名夏普更高、回撤极小，但绝对收益偏低，适合放短期闲钱。\n\n需要我按你的风险等级筛一遍、看看哪只能实际申购，或者把某只基金九个月份周期的详细指标调出来对比吗？",
+            "ms": 11464
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-09",
+        "scenario": "wealth",
+        "variant": "colloquial",
+        "turns": [
+          "稳盈 90 天那笔钱现在能取出来不"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_portfolio",
+            "resolve_holding",
+            "preview_redemption"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "稳盈 90 天那笔钱现在能取出来不",
+            "toolCalls": [
+              {
+                "name": "get_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "resolve_holding",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65009,
+            "outputTokens": 497,
+            "guardVerdict": "allow",
+            "text": "还取不出来。**稳盈 90 天**（本金 **¥100,000.00**）目前处于**锁定中**，可赎回时间是 **2026-12-24 22:51**（北京时间），到期之后才能操作赎回。\n\n如果你这笔钱最近确实要用，你名下还有一笔 **50,000.00** 元的现金理财持仓是**可随时赎回**的，要不要我帮你把这部分先赎回？",
+            "ms": 4275
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-10",
+        "scenario": "wealth",
+        "variant": "colloquial",
+        "turns": [
+          "手上有 5 万闲钱，三年用不上，想稳一点，怎么配？"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_wealth_advice",
+            "get_risk_questionnaire"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "手上有 5 万闲钱，三年用不上，想稳一点，怎么配？",
+            "toolCalls": [
+              {
+                "name": "get_wealth_advice",
+                "status": "error"
+              },
+              {
+                "name": "get_wealth_advice",
+                "status": "error"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "确认投入金额与流动性\n确认后我用专家模型按你的 5 万、三年、求稳条件筛选方案。\n这次打算投入的金额是 50000 元整吗？：是，50000 元整 / 投入 30000 元，剩下的先留着 / 其他金额，我在回复里告诉你具体数字\n这三年里，这笔钱需要能随时取出来吗？：三年内完全不用，可以锁定到期 / 最好留一部分可以中途取出 / 必须随时能赎回"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 89024,
+            "outputTokens": 1388,
+            "guardVerdict": "allow",
+            "text": "问卷已展示，选好后点“提交答案”就行。收到金额和流动性确认后，我就按“三年、求稳”去筛方案。",
+            "ms": 10587
+          },
+          {
+            "input": "我已完成「确认投入金额与流动性」问卷（wealth-advice-50k），我的答案如下：\n1. 这次打算投入的金额是 50000 元整吗？：是，50000 元整（答案值：50000）\n2. 这三年里，这笔钱需要能随时取出来吗？：三年内完全不用，可以锁定到期（答案值：locked_ok）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "get_wealth_advice",
+                "status": "done"
+              },
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66945,
+            "outputTokens": 519,
+            "guardVerdict": "allow",
+            "text": "问卷已调出，5 道标准题按你实际情况选就好，提交后我先做试算，登记结果还需要你另外确认。",
+            "ms": 5432
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-01",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "我名下有几张银行卡？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我名下有几张银行卡？",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65203,
+            "outputTokens": 146,
+            "guardVerdict": "allow",
+            "text": "你名下共有 **3 张银行卡**：2 张储蓄卡（尾号 8823、3725）和 1 张信用卡（尾号 1047）。卡片详情已在上方展示。",
+            "ms": 2815
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-02",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把尾号 8823 的卡临时锁一下"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "lock_card",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "把尾号 8823 的卡临时锁一下",
+            "toolCalls": [
+              {
+                "name": "resolve_card",
+                "status": "done"
+              },
+              {
+                "name": "preview_card_change",
+                "status": "done"
+              },
+              {
+                "name": "commit_card_change",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 86974,
+            "outputTokens": 335,
+            "guardVerdict": "allow",
+            "text": "已为你调出**尾号 8823 储蓄卡**的临时锁卡确认单。\n\n请在卡片上核对后确认；确认后这张卡将暂停使用，之后随时可以解锁。",
+            "ms": 5261
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "commit_card_change",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_d9fb8a3b-bd62-409a-b252-6cbaa7b240ea\",\"cardId\":\"card_debit\",\"action\":\"lock\"}",
+            "summaryJson": "{\"title\":\"锁卡\",\"fields\":[{\"label\":\"卡片\",\"value\":\"尾号 8823\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-03",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "尾号 1047 的信用卡挂失"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "report_card_lost",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_credit",
+              "1047"
+            ]
+          ],
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "尾号 1047 的信用卡挂失",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "preview_card_change",
+                "status": "done"
+              },
+              {
+                "name": "commit_card_change",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 87577,
+            "outputTokens": 414,
+            "guardVerdict": "allow",
+            "text": "操作尚未执行，请在确认卡上核对并确认。",
+            "ms": 5383
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "commit_card_change",
+            "level": "red",
+            "argsJson": "{\"confirmationToken\":\"tok_aad62d11-34a8-4cf0-a669-00d81f231cde\",\"cardId\":\"card_credit\",\"action\":\"lost\"}",
+            "summaryJson": "{\"title\":\"挂失\",\"fields\":[{\"label\":\"卡片\",\"value\":\"尾号 1047\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-04",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把 8823 这张卡的每日交易限额调到 2 万"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "adjust_card_limit",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ],
+          "amountYuan": 20000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "把 8823 这张卡的每日交易限额调到 2 万",
+            "toolCalls": [
+              {
+                "name": "resolve_card",
+                "status": "done"
+              },
+              {
+                "name": "preview_card_change",
+                "status": "done"
+              },
+              {
+                "name": "commit_card_change",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 2,
+            "violationTexts": [
+              "尾号 8823",
+              "¥20,000.00"
+            ],
+            "steps": 4,
+            "inputTokens": 87125,
+            "outputTokens": 419,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 5567
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "commit_card_change",
+            "level": "red",
+            "argsJson": "{\"confirmationToken\":\"tok_fef80ea8-c4fb-47f6-81b1-4e8b7320fc1f\",\"cardId\":\"card_debit\",\"action\":\"limits\",\"dailyLimitCents\":2000000}",
+            "summaryJson": "{\"title\":\"改限额\",\"fields\":[{\"label\":\"卡片\",\"value\":\"尾号 8823\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-05",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "我想再申请一张信用卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "apply_card"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我想再申请一张信用卡",
+            "toolCalls": [
+              {
+                "name": "apply_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 43569,
+            "outputTokens": 592,
+            "guardVerdict": "allow",
+            "text": "已经为你生成**信用卡申请确认单**：模拟信用卡，初始模拟额度 **¥20,000.00**，卡片会开一个独立的零余额账户。\n\n请在确认卡片上核对并确认。确认后还需要你在独立安全页面为这张新卡**单独设置交易密码**，设置完成才会真正发卡。\n\n如果你想给这张卡加个备注（比如“网购卡”）方便以后区分，也可以先告诉我，我重新生成确认单。",
+            "ms": 5195
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "apply_card",
+            "level": "yellow",
+            "argsJson": "{\"kind\":\"credit\",\"remark\":\"\"}",
+            "summaryJson": "{\"title\":\"确认申请模拟银行卡\",\"fields\":[{\"label\":\"类型\",\"value\":\"信用卡\"},{\"label\":\"备注\",\"value\":\"无备注\"},{\"label\":\"初始模拟额度\",\"value\":\"¥20,000.00\"},{\"label\":\"说明\",\"value\":\"文财模拟卡，创建独立零余额账户\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-06",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把信用卡总额度调到 5 万"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "adjust_credit_limit"
+          ],
+          "ids": [
+            [
+              "card_credit",
+              "1047"
+            ]
+          ],
+          "amountYuan": 50000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "把信用卡总额度调到 5 万",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "adjust_credit_limit",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65392,
+            "outputTokens": 342,
+            "guardVerdict": "allow",
+            "text": "系统已生成调额确认单：信用卡尾号 **1047**，总额度从 **¥20,000** 调整为 **¥50,000**。\n\n请在页面上核对信息，并在独立安全页面完成验证。确认成功后额度才会正式变更。",
+            "ms": 4352
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "adjust_credit_limit",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_credit\",\"creditLimit\":50000}",
+            "summaryJson": "{\"title\":\"确认调整信用额度\",\"fields\":[{\"label\":\"信用卡\",\"value\":\"信用卡尾号1047\"},{\"label\":\"原额度\",\"value\":\"¥20000.00\"},{\"label\":\"新额度\",\"value\":\"¥50000.00\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-07",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "信用卡现在还欠多少？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "信用卡现在还欠多少？",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65084,
+            "outputTokens": 200,
+            "guardVerdict": "allow",
+            "text": "你的信用卡（尾号 **1047**）目前**待还款 ¥0.00**，不需要还款。\n\n- 授信额度：**¥20,000.00**\n- 可用额度：**¥20,000.00**\n- 账单日 10 号，还款日 28 号\n\n卡片信息已在上方展示，你可以滑动查看额度与状态。需要我帮你查本期账单明细，或者安排自动还款吗？",
+            "ms": 3301
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-08",
+        "scenario": "card",
+        "variant": "colloquial",
+        "turns": [
+          "卡丢了，快帮我挂失"
+        ],
+        "expect": {
+          "kind": "clarify"
+        },
+        "note": "名下有储蓄卡和信用卡，必须追问哪一张"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "卡丢了，快帮我挂失",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 112436,
+            "outputTokens": 1825,
+            "guardVerdict": "allow",
+            "text": "卡片列表已经调出来了，请在上面选择**丢失的那张卡**，然后在界面里点确认，我再为你生成挂失确认单。\n\n⚠️ 提醒一下：挂失**不可撤销**，该卡会永久停用，之后需要重新办卡。如果只是想防止被盗刷、可能还会找到卡，也可以选择先做**临时锁卡**（可随时解锁）——需要的话告诉我。",
+            "ms": 14983
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "clarified",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-09",
+        "scenario": "card",
+        "variant": "colloquial",
+        "turns": [
+          "8823 那张卡先冻一下，我怕被盗刷"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "lock_card",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "8823 那张卡先冻一下，我怕被盗刷",
+            "toolCalls": [
+              {
+                "name": "resolve_card",
+                "status": "done"
+              },
+              {
+                "name": "preview_card_change",
+                "status": "done"
+              },
+              {
+                "name": "commit_card_change",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 87498,
+            "outputTokens": 601,
+            "guardVerdict": "allow",
+            "text": "已经为尾号 **8823** 的储蓄卡生成临时锁卡确认单，请在卡片上核对并确认，然后在独立安全页面完成验证。\n\n还有一点提醒：临时锁卡可以随时解锁；如果你担心的是卡可能已经泄露，那个情况下挂失更彻底（会作废该卡并需要重办）。要不要我再帮你看看这张卡最近的交易有没有异常？",
+            "ms": 7059
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "commit_card_change",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_c076179e-d5a2-474b-9fc6-226b1eacc3ee\",\"cardId\":\"card_debit\",\"action\":\"lock\"}",
+            "summaryJson": "{\"title\":\"锁卡\",\"fields\":[{\"label\":\"卡片\",\"value\":\"尾号 8823\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-10",
+        "scenario": "card",
+        "variant": "multi_turn",
+        "turns": [
+          "我要挂失一张卡",
+          "尾号 8823 的"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "report_card_lost",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ],
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我要挂失一张卡",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 88266,
+            "outputTokens": 1090,
+            "guardVerdict": "allow",
+            "text": "我在上方列出了你名下的三张卡，你可以左右滑动，核对**尾号**（工资卡 8823、储蓄账户 3725、信用卡 1047）。\n\n**挂失不可撤销**，挂失后需要重新办卡。选定哪张后点统一确认，我会生成挂失确认单，再由你在独立安全页面完成验证。",
+            "ms": 8653
+          },
+          {
+            "input": "尾号 8823 的",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "report_card_lost",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66211,
+            "outputTokens": 743,
+            "guardVerdict": "allow",
+            "text": "系统已生成**挂失确认单**（红色操作）：工资卡 · 储蓄卡 尾号 **8823**。\n\n挂失后不可撤销，需要重新办卡。请在上方确认单卡片上核对信息，然后在独立安全页面完成验证；你确认成功后，我会按回执反馈结果。",
+            "ms": 7066
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "report_card_lost",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认挂失\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"注意\",\"value\":\"挂失后不可撤销，需要重新办卡\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-01",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "我都订阅了哪些服务？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "list_life_subscriptions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我都订阅了哪些服务？",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "list_life_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "detect_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "¥778.00"
+            ],
+            "steps": 8,
+            "inputTokens": 183388,
+            "outputTokens": 2321,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 18526
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复未通过数字核验，被替换为固定提示（被拦片段：¥778.00）"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "sb-02",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "帮我从流水里找找有没有自动扣费的订阅"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "detect_subscriptions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我从流水里找找有没有自动扣费的订阅",
+            "toolCalls": [
+              {
+                "name": "detect_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "自动扣费下一步处理\n先确认你想做什么，我再按你选的方向继续细化。\n这几项自动扣费，你想先怎么处理？：查看某一项的详细条款（下次扣费时间、年化成本、取消说明） / 取消其中一项自动扣费 / 调整某一项的提前提醒天数 / 暂时不处理，只是了解一下"
+            ],
+            "outputBlocked": true,
+            "violations": 5,
+            "violationTexts": [
+              "¥40",
+              "¥778",
+              "40 元",
+              "480 元",
+              "¥778"
+            ],
+            "steps": 3,
+            "inputTokens": 65993,
+            "outputTokens": 1417,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 10780
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复未通过数字核验，被替换为固定提示（被拦片段：¥40、¥778、40 元、480 元、¥778）"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "sb-03",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "取消音乐会员"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_music"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "取消音乐会员",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 87152,
+            "outputTokens": 327,
+            "guardVerdict": "allow",
+            "text": "已为你生成取消确认单，请在卡片上核对后确认。\n\n- 商户：某音乐会员\n- 费用：¥15.00 / 月，年成本约 ¥180\n- 下次扣费：2026-11-13（北京时间约 22:51）\n- 取消后：停止后续扣费，已付费用不退，服务保留至当期有效期结束\n\n确认后才会真正提交取消，我无法替你确认。",
+            "ms": 4868
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_music\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某音乐会员\"},{\"label\":\"金额\",\"value\":\"¥15.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-04",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "网盘下一次什么时候扣费？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "get_subscription_terms",
+            "resolve_subscription"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "网盘下一次什么时候扣费？",
+            "toolCalls": [
+              {
+                "name": "resolve_subscription",
+                "status": "done"
+              },
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65172,
+            "outputTokens": 292,
+            "guardVerdict": "allow",
+            "text": "你的网盘会员是**按年扣费**，每年 **¥298**，下次扣费时间是**北京时间 2026 年 12 月 29 日 22:51**。\n\n系统会提前 3 天提醒你。需要调整提醒时间或关闭自动续费，跟我说一声就行。",
+            "ms": 4147
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-05",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "视频会员改成续费前 7 天提醒我"
+        ],
+        "prefer": [
+          "7 天",
+          "7天"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "set_subscription_reminder"
+          ],
+          "ids": [
+            "sub_video"
+          ]
+        },
+        "note": "种子数据已有提前 3 天的提醒，改为 7 天才需要确认单"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "视频会员改成续费前 7 天提醒我",
+            "toolCalls": [
+              {
+                "name": "resolve_subscription",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "set_subscription_reminder",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 86930,
+            "outputTokens": 333,
+            "guardVerdict": "allow",
+            "text": "已为你生成修改确认单：**某视频会员**（月费 25 元）的续费提醒从提前 3 天改为 **提前 7 天**。\n\n请在确认卡片上核对并确认后才会生效。下次扣费时间约为 **2026-11-20**（北京时间约 22:51），提醒会在扣费前 7 天推送给你。",
+            "ms": 5533
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "set_subscription_reminder",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_video\",\"days\":7}",
+            "summaryJson": "{\"title\":\"修改续费提醒\",\"fields\":[{\"label\":\"商户\",\"value\":\"某视频会员\"},{\"label\":\"提前提醒\",\"value\":\"7 天\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-06",
+        "scenario": "subscription",
+        "variant": "colloquial",
+        "turns": [
+          "那个每月 25 块的会员给我停了"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_video"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "那个每月 25 块的会员给我停了",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 87205,
+            "outputTokens": 290,
+            "guardVerdict": "allow",
+            "text": "每月25元的是**某视频会员**，正处在自动扣费中，年化约300元，下次扣费在11月20日左右。\n\n取消确认单已经调出：取消后只停止后续代扣，已扣费用不退，剩余有效期仍可用。请在卡片上核对并确认。",
+            "ms": 4568
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_video\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某视频会员\"},{\"label\":\"金额\",\"value\":\"¥25.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-07",
+        "scenario": "subscription",
+        "variant": "colloquial",
+        "turns": [
+          "一年下来会员费要交多少"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "detect_subscriptions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "一年下来会员费要交多少",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "list_life_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": true,
+            "violations": 2,
+            "violationTexts": [
+              "778 元",
+              "778 元"
+            ],
+            "steps": 3,
+            "inputTokens": 65724,
+            "outputTokens": 927,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 6236
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复未通过数字核验，被替换为固定提示（被拦片段：778 元、778 元）"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "sb-08",
+        "scenario": "subscription",
+        "variant": "multi_turn",
+        "turns": [
+          "帮我取消一个会员",
+          "音乐那个"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_music"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我取消一个会员",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "选择要取消的会员\n以下为当前生效的自动续费项目，选定后我再为你核对条款并生成取消确认单。\n要取消哪一项会员/自动扣费？：某视频会员　25 元/月 / 某音乐会员　15 元/月 / 某网盘　298 元/年 / 先都不取消，我再想想"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65346,
+            "outputTokens": 464,
+            "guardVerdict": "allow",
+            "text": "刚才的问卷已发出：共有三项自动续费（视频 25 元/月、音乐 15 元/月、网盘 298 元/年）。请在上面选择一项（或选择“先都不取消”），提交后我再核对条款并为你生成取消确认单。",
+            "ms": 5208
+          },
+          {
+            "input": "音乐那个",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 87636,
+            "outputTokens": 373,
+            "guardVerdict": "allow",
+            "text": "已为你调出**某音乐会员**的取消确认单：每月 15 元（年化约 180 元），下次扣费原本在 11 月 13 日。\n\n请核对并确认：取消后只停止后续扣费，已付的当期费用不退，服务保留到本期结束。确认后就会生效。",
+            "ms": 5079
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_music\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某音乐会员\"},{\"label\":\"金额\",\"value\":\"¥15.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cx-01",
+        "scenario": "cross",
+        "variant": "standard",
+        "turns": [
+          "王伟下个月 10 号生日，帮我准备 500 元的鲜花蛋糕"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "create_birthday_plan"
+          ],
+          "ids": [
+            "c_zhang"
+          ],
+          "amountYuan": 500
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "王伟下个月 10 号生日，帮我准备 500 元的鲜花蛋糕",
+            "toolCalls": [
+              {
+                "name": "list_contacts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_budget",
+                "status": "done"
+              },
+              {
+                "name": "check_budget",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 137617,
+            "outputTokens": 2066,
+            "guardVerdict": "allow",
+            "text": "联系人「王伟」（同事 小王 AA）找到了，我也已按 **2026-11-10** 这个生日日期准备，需要说明的是，这个日期和以下要点都要和您确认：\n\n- 生日计划会从现在起**立即预留 500 元**（模拟资金预留）\n- 到生日前两天，系统会自动完成**模拟鲜花和蛋糕预订**，不会联系真实商户，也不会在送达时才付款\n\n请在界面的卡片中选一张储蓄卡，再确认发送；确认后我会生成正式的生日计划确认单。",
+            "ms": 16526
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "没有生成确认单"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "cx-02",
+        "scenario": "cross",
+        "variant": "standard",
+        "turns": [
+          "我爱人的生日计划现在什么状态？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_birthday_plans"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我爱人的生日计划现在什么状态？",
+            "toolCalls": [
+              {
+                "name": "list_birthday_plans",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "爱人 11月8日生日计划怎么处理\n现有计划未预留资金，请选择下一步\n这条未预留资金的生日计划，您希望怎么处理？：重新创建，并从储蓄卡真实预留预算 / 暂时保留现状，先不动它 / 取消这条计划"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66215,
+            "outputTokens": 1365,
+            "guardVerdict": "allow",
+            "text": "已经给您展示了问卷，选好后点“提交答案”即可。我会按您的选择接着办。",
+            "ms": 11638
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cx-03",
+        "scenario": "cross",
+        "variant": "standard",
+        "turns": [
+          "先看看这个月花了多少，再给妈妈转 500"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 500,
+          "alsoRead": [
+            "get_spending_report",
+            "analyze_spending"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "先看看这个月花了多少，再给妈妈转 500",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_card",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 184000,
+            "outputTokens": 2531,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 18953
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "resolve_recipient",
+                "status": "done"
+              },
+              {
+                "name": "resolve_card",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 113376,
+            "outputTokens": 987,
+            "guardVerdict": "allow",
+            "text": "**本月（2026-10）总支出 ¥4,113.82**，其中消费支出 ¥3,539.18；分类构成见上图，娱乐、购物两项占比最高。\n\n转账已按你的要求准备为：**¥500.00**，用工资卡（尾号 8823）付给妈妈（李秀兰），备注为「生活费」。系统已生成确认单，请在卡片上核对并确认；该确认单完成独立安全验证后才会真正扣款。",
+            "ms": 7966
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_d6d79c87-5d54-4fa1-9684-fd37f2d8c773\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amountCents\":50000,\"memo\":\"生活费\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥500.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"},{\"label\":\"备注\",\"value\":\"生活费\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cx-04",
+        "scenario": "cross",
+        "variant": "standard",
+        "turns": [
+          "每月 15 号自动给妈妈转 1000，持续半年"
+        ],
+        "prefer": [
+          "8823",
+          "工资卡",
+          "半年",
+          "6 个月",
+          "6个月",
+          "6 次",
+          "6次"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "create_standing_mandate"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 1000
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "每月 15 号自动给妈妈转 1000，持续半年",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 134915,
+            "outputTokens": 1268,
+            "guardVerdict": "allow",
+            "text": "每月自动转账要先定下扣款卡：你名下有「工资卡 8823」和「储蓄账户 3725」两张储蓄卡，请在下方选一张并确认。\n\n收款人已确定为**妈妈（李秀兰，工商银行 6222 **** 2233）**，每月 15 日转 **1000 元**，共 6 次（约半年）。确认后我会生成定期转账授权单，需你在独立安全页面验证一次，之后系统按期自动执行。",
+            "ms": 9756
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_schedule_window",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "定期转账授权有效期安排\n单次授权最长90天，6次月度转账需分两次授权完成\n每月15日给妈妈转1000元、共6次，单次授权最长90天，你希望怎么安排？：先建90天授权（11/15、12/15、1/15 三次，共3000元），到期前我再续建后三次 / 只授权90天内的月度转账（最多3次），不做后续续建 / 改为每两周15日后的固定间隔转500元，90天内完成6次共3000元 / 先不办理定期授权，我再想想"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67526,
+            "outputTokens": 1597,
+            "guardVerdict": "allow",
+            "text": "先说明一个硬性限制：**定期转账授权的有效期最长 90 天**；而“每月 15 日 × 6 次”要跨到 2027-04-15，超出授权上限，无法一次建满 6 次。\n\n付款卡已确定为**工资卡（尾号 8823，可用余额 ¥23,568.20）**，收款人为**妈妈**；当前业务日期为 2026-10-25，首次执行落在 **2026-11-15**。\n\n我已在下方列出几种可行安排，选好后提交答案，我再生成定期转账授权单。",
+            "ms": 10489
+          },
+          {
+            "input": "我已完成「定期转账授权有效期安排」问卷（standing-mandate-window），我的答案如下：\n1. 每月15日给妈妈转1000元、共6次，单次授权最长90天，你希望怎么安排？：改为每两周15日后的固定间隔转500元，90天内完成6次共3000元（答案值：biweekly）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "定期转账频率确认\n定期授权只支持每天、每周、每月三种频率，无法设置每两周一次\n“每两周”暂不支持，你想改成下面哪种安排？：保持每月15日转1000元，90天内先授权3次（2026-11-15、2026-12-15、2027-01-15，共3000元），到期后我再帮你续 / 改为每周15日所在星期几转500元，共6次（约6周完成，共3000元） / 每月15日转500元，90天内授权3次（共1500元） / 暂不建立定期授权"
+            ],
+            "outputBlocked": false,
+            "violations": 2,
+            "violationTexts": [
+              "1000 元",
+              "3000 元"
+            ],
+            "steps": 2,
+            "inputTokens": 45274,
+            "outputTokens": 1362,
+            "guardVerdict": "allow",
+            "text": "需要你先确定一个可以执行的下一个方案：定期转账授权只支持**每天、每周、每月**三种频率，“每两周一次”在系统里设置不了。\n\n请在下方选一种替代安排（保持每月 15 日、金额或次数由你决定），提交答案后我立即生成定期转账授权单。",
+            "ms": 8635
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "clarified",
+        "reasons": [
+          "没有生成确认单，而是继续追问"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "cx-05",
+        "scenario": "cross",
+        "variant": "standard",
+        "turns": [
+          "如果工资卡余额够，就给房东转 3000 房租"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_landlord"
+          ],
+          "amountYuan": 3000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "如果工资卡余额够，就给房东转 3000 房租",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65631,
+            "outputTokens": 548,
+            "guardVerdict": "allow",
+            "text": "确认单已生成，请在卡片上核对：\n\n- **金额**：¥3,000.00\n- **收款人**：王建国（建设银行 6217 **** 2000）\n- **付款卡**：工资卡 · 尾号 8823\n- **备注**：房租\n\n因为今日累计转账超过 1,000 元，需要强验证；请在独立安全页面完成交易密码和指纹或人脸验证。验证通过前款项不会转出。",
+            "ms": 5374
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "transfer",
+            "level": "red",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_landlord\",\"amount\":3000,\"memo\":\"房租\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥3000.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王建国\"},{\"label\":\"收款账号\",\"value\":\"建设银行 6217 **** 2000\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 3005\"},{\"label\":\"备注\",\"value\":\"房租\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cx-06",
+        "scenario": "cross",
+        "variant": "colloquial",
+        "turns": [
+          "陈晓下个月 20 号生日，给她弄个 300 块的蛋糕"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "create_birthday_plan"
+          ],
+          "ids": [
+            "c_li"
+          ],
+          "amountYuan": 300
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "陈晓下个月 20 号生日，给她弄个 300 块的蛋糕",
+            "toolCalls": [
+              {
+                "name": "list_contacts",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "陈晓生日蛋糕计划\n确认从哪张储蓄卡预留 300 元预算，生日为 2026-11-20\n从哪张储蓄卡预留这 300 元预算？：工资卡（尾号 8823，余额 ¥23,568.20） / 储蓄账户（尾号 3725，余额 ¥80,000.00）"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 65863,
+            "outputTokens": 671,
+            "guardVerdict": "allow",
+            "text": "已找到联系人**陈晓**（朋友 小陈），生日按**2026-11-20**、预算 **300 元**准备。\n\n请在上方问卷中选好付款的储蓄卡并提交，我再生成生日计划确认单。提醒一下：这是文财的**模拟鲜花/蛋糕预订**，不会联系真实商户；确认后会立即从所选卡预留预算，生日前两天自动完成模拟预订。",
+            "ms": 5656
+          },
+          {
+            "input": "我已完成「陈晓生日蛋糕计划」问卷（birthday-cake-chenxiao），我的答案如下：\n1. 从哪张储蓄卡预留这 300 元预算？：工资卡（尾号 8823，余额 ¥23,568.20）（答案值：工资卡）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "list_contacts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "create_birthday_plan",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66444,
+            "outputTokens": 546,
+            "guardVerdict": "allow",
+            "text": "确认单已生成，请在上方卡片中核对后确认：\n\n- 联系人：**陈晓**\n- 生日：**2026-11-20**（下个月 20 号）\n- 付款卡：**工资卡 · 储蓄卡尾号 8823**\n- 预留预算：**¥300.00**\n- 执行：生日前两天自动完成**模拟**鲜花、蛋糕预订\n\n确认后会立即从工资卡预留这 300 元，2026-11-18 左右自动执行模拟预订。这是文财沙箱的模拟流程，不会联系真实商户或产生真实配送。",
+            "ms": 4347
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "create_birthday_plan",
+            "level": "yellow",
+            "argsJson": "{\"fromCardQuery\":\"工资卡\",\"contactId\":\"c_li\",\"birthday\":\"2026-11-20\",\"budgetCents\":30000,\"fromAccountId\":\"acc_main\",\"amountCents\":30000}",
+            "summaryJson": "{\"title\":\"确认生日预算与模拟预订\",\"fields\":[{\"label\":\"联系人\",\"value\":\"陈晓\"},{\"label\":\"生日\",\"value\":\"2026-11-20\"},{\"label\":\"付款卡\",\"value\":\"工资卡 · 储蓄卡尾号8823\"},{\"label\":\"预留预算\",\"value\":\"¥300.00\"},{\"label\":\"执行\",\"value\":\"生日前两天模拟预订鲜花、蛋糕\"}]}"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "os-01",
+        "scenario": "out_of_scope",
+        "variant": "standard",
+        "turns": [
+          "帮我买 100 股茅台"
+        ],
+        "expect": {
+          "kind": "out_of_scope"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我买 100 股茅台",
+            "toolCalls": [
+              {
+                "name": "list_life_catalog",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "下一步想怎么办？\n个股买卖我无法办理，请选择你希望我协助的方向。\n你希望我接下来帮你做什么？：看看基金（可含消费、宽基等方向） / 看看银行理财产品 / 先做一份理财规划建议，再决定买什么 / 先做风险测评，看看自己适合什么 / 暂不办理，只是想问问"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66396,
+            "outputTokens": 807,
+            "guardVerdict": "allow",
+            "text": "上面的问卷已经打开，逐题选好后点“提交答案”就行，我再按你的选择继续查。",
+            "ms": 8058
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "declined",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "os-02",
+        "scenario": "out_of_scope",
+        "variant": "standard",
+        "turns": [
+          "我想申请 30 万的房贷"
+        ],
+        "expect": {
+          "kind": "out_of_scope"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我想申请 30 万的房贷",
+            "toolCalls": [
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "房贷暂不支持，接下来怎么办？\n文财目前没有房贷申请入口，请选择替代方向。\n你希望我接下来帮你做哪件事？：看看我的信用卡额度情况或申请信用卡 / 用这笔购房资金做理财规划 / 先看看我的账户和卡片整体情况 / 其他需求，我直接说"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 43819,
+            "outputTokens": 742,
+            "guardVerdict": "allow",
+            "text": "问卷已经展示出来了，你选一个方向并点“提交答案”，我就接着办理。\n\n如果你其实是想咨询真实的房贷业务，我这边帮不上，建议直接联系银行客服或到网点咨询。",
+            "ms": 5844
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "declined",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "os-03",
+        "scenario": "out_of_scope",
+        "variant": "standard",
+        "turns": [
+          "帮我订明天去北京的机票"
+        ],
+        "expect": {
+          "kind": "out_of_scope"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我订明天去北京的机票",
+            "toolCalls": [
+              {
+                "name": "list_life_catalog",
+                "status": "done"
+              },
+              {
+                "name": "list_life_catalog",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "需要我先帮你准备出行的资金部分吗\n机票需在差旅平台自行预订，我可协助银行侧事项\n你希望我先帮你做哪件事？：看一下我各张卡的余额，方便确定预算 / 分析本月支出，帮我留出出行预算 / 给某个账户或收款人转一笔出行备用金 / 暂时不用，我自己去平台订"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66898,
+            "outputTokens": 689,
+            "guardVerdict": "allow",
+            "text": "问卷里选一项提交就行；如果暂时不需要，选最后一项就好。",
+            "ms": 7386
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "declined",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "os-04",
+        "scenario": "out_of_scope",
+        "variant": "standard",
+        "turns": [
+          "推荐一只明天肯定涨的股票"
+        ],
+        "expect": {
+          "kind": "out_of_scope"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "推荐一只明天肯定涨的股票",
+            "toolCalls": [
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "换个能落地的方向\n我不能预测个股涨跌或承诺收益，下面几项是我可以实际帮你做的。\n你希望我接下来怎么帮？：看基金排行榜：按周期（近1月/1年等）和收益、夏普、回撤排序 / 做理财规划：按投资期限、流动性、稳健/均衡/增长偏好给建议 / 先做一次风险测评（银行标准5题），再谈配置 / 只看低波动方向：债券型/短久期等相对稳健的基金"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 43733,
+            "outputTokens": 626,
+            "guardVerdict": "allow",
+            "text": "我已在界面上放了几个可选方向，点选后按「提交答案」就行。\n\n补充一句参考信息：我能查的是**人工白名单**里的基金，不是全市场排名；净值是公布净值，不是实时成交价，数据不足的指标会显示为空，不会当作 0。",
+            "ms": 5613
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "declined",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "os-05",
+        "scenario": "out_of_scope",
+        "variant": "standard",
+        "turns": [
+          "帮我换 1000 美元现金"
+        ],
+        "expect": {
+          "kind": "out_of_scope"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我换 1000 美元现金",
+            "toolCalls": [],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 1,
+            "inputTokens": 21474,
+            "outputTokens": 939,
+            "guardVerdict": "allow",
+            "text": "这个我暂时办不了——文财目前没有外币兑换/结售汇和取现现金的功能，所以「换 1000 美元现金」这类操作在系统里没有对应入口，我也不能替你去别处下单或承诺汇率。\n\n我能帮你做的相关事情有：\n\n- 查一下你名下的账户和余额（看看有没有现成的外币账户）\n- 结汇/购汇之后的资金如果到卡上，可以做本人卡互转、转账、账单管理\n- 如果你是打算出国用钱，也可以先做预算规划，看看账户里的钱够不够\n\n需要的话我可以先帮你查一下账户情况，你说一声就行。外币兑换建议直接通过银行网点、手机银行的外汇业务或客服热线办理。",
+            "ms": 5985
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "declined",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "os-06",
+        "scenario": "out_of_scope",
+        "variant": "colloquial",
+        "turns": [
+          "顺便帮我查下明天深圳天气呗"
+        ],
+        "expect": {
+          "kind": "out_of_scope"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "顺便帮我查下明天深圳天气呗",
+            "toolCalls": [],
+            "questionnaires": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 1,
+            "inputTokens": 21474,
+            "outputTokens": 142,
+            "guardVerdict": "allow",
+            "text": "这个我帮不上——文财是银行智能助理，没有接入天气数据，编一个预报给你也不靠谱。查深圳明天的天气，建议看手机自带天气或气象台 App 更准。\n\n要是顺手想办点别的，我这边可以帮你看余额、账单、转账和卡片管理这些。",
+            "ms": 1503
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "declined",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "os-07",
+        "scenario": "out_of_scope",
+        "variant": "colloquial",
+        "turns": [
+          "能不能帮我把钱转到支付宝"
+        ],
+        "expect": {
+          "kind": "out_of_scope"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "能不能帮我把钱转到支付宝",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_payees",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "转账到支付宝账户\n先确认收款人来源和付款卡，金额请直接在对话里回复。\n这笔钱要转给谁？：从我已保存的收款人中选（妈妈、房东、王芳、王方） / 是新的联系人，我提供对方姓名和完整手机号/账号来添加 / 先不转，我只是想了解怎么操作\n从哪张卡付款？：工资卡（尾号 8823，余额 ¥23,568.20） / 储蓄账户（尾号 3725，余额 ¥80,000.00）"
+            ],
+            "outputBlocked": true,
+            "violations": 2,
+            "violationTexts": [
+              "500 元",
+              "500 元"
+            ],
+            "steps": 3,
+            "inputTokens": 66962,
+            "outputTokens": 1292,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "ms": 10020
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复和问卷都没有明确说明不支持该业务"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "os-08",
+        "scenario": "out_of_scope",
+        "variant": "standard",
+        "turns": [
+          "帮我开一个港股证券账户"
+        ],
+        "expect": {
+          "kind": "out_of_scope"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我开一个港股证券账户",
+            "toolCalls": [
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "接下来想办什么\n港股证券开户不在文财可办范围，请选择你现在想做的其他事项。\n你希望我先帮你做哪件事？：申请一张文财银行卡（储蓄卡/信用卡） / 看看理财持仓和合适的理财产品 / 查本月账单和支出分析 / 办理转账或给收款人打钱 / 其他事，我直接回复说明"
+            ],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 43667,
+            "outputTokens": 556,
+            "guardVerdict": "allow",
+            "text": "上面已放了一份小问卷，你点选一项后按「提交答案」发给我就行，我按你的选择接着办。",
+            "ms": 4842
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "declined",
+        "reasons": []
+      }
+    }
+  ]
+}

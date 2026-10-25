@@ -38,8 +38,9 @@ export async function runBankTool(
     try {
       const output = await def.execute(args, ctx)
       const data = await sanitizeToolOutput(ctx, def.name, output, def.catalogFields)
-      await audit(ctx, 'tool_result', { tool: def.name, ok: true, output: data })
-      return { status: 'done', data }
+      const totals = def.totals?.(output)
+      await audit(ctx, 'tool_result', { tool: def.name, ok: true, output: data, ...(totals ? { totals } : {}) })
+      return { status: 'done', data, ...(totals ? { totals } : {}) }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       await audit(ctx, 'tool_result', { tool: def.name, ok: false, message })

@@ -14,6 +14,7 @@ import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
 import { businessMonth } from '#/lib/dashboard'
 import { defineBankTool } from './define'
+import { sumYuan } from './totals'
 import type { AgentContext } from '#/server/agent/context'
 import { runDueJobs, simNow } from './jobs'
 import { assertDebitAccount } from '#/server/cards/service'
@@ -256,6 +257,12 @@ export const getPortfolio = defineBankTool({
       locked: h.redeemableAt > now.toISOString(),
     }))
   },
+  totals: (rows) => ({
+    totalPrincipal: sumYuan(rows.map((h) => h.principal)),
+    redeemableTotal: sumYuan(rows.filter((h) => !h.locked).map((h) => h.principal)),
+    lockedTotal: sumYuan(rows.filter((h) => h.locked).map((h) => h.principal)),
+    holdingCount: rows.length,
+  }),
 })
 
 export const getRecommendations = defineBankTool({

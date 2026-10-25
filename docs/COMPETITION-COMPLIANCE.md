@@ -29,6 +29,7 @@
 | 4 | 源代码、README、GitHub 地址 | [README.md](../README.md)；仓库 `github.com/MTKD0/wencai_agent` | ✅ |
 | 4 | 部署说明 | [GOOGLEVM.md](GOOGLEVM.md)、`compose.production.yml`、[DEVELOPMENT.md](DEVELOPMENT.md) 的 Windows 启动 | ✅ |
 | 4 | 测试用例 | `tests/`：72 个测试文件、1001 项（2026-10-25 在独立库上全部通过） | ✅ |
+| 4 | 任务完成率证据（对应评分 40%） | `pnpm eval`：68 个端到端任务（六个场景 + 口语化 + 多轮改口 + 超范围兜底），基线报告与失败分析见 `eval/results/2026-10-25T14-51-49/` | ⚠️ 基线：全部 58 / 68（85.3%），六个业务场景 51 / 60（85.0%）；10 个失败中 7 个是数字核验误拦正确的汇总数。修复后账单 9/10、订阅 8/8（`eval/results/2026-10-25T15-17-57/`、`15-18-56/`），**待完整重跑** |
 | 5 | 安全自评报告：权限分级实现说明 | [SECURITY.md §3](SECURITY.md#3-权限分级)、本文 §3.1 | ✅ |
 | 5 | 安全自评报告：已知风险清单 | [SECURITY.md §18](SECURITY.md#18-未完成项与已知缺陷) | ✅ |
 

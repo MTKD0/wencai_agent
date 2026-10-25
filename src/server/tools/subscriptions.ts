@@ -3,12 +3,13 @@ import { and, eq } from 'drizzle-orm'
 import { db, schema } from '#/server/db/client'
 import { detectSubscriptions, notifications } from '#/server/automation/service'
 import { defineBankTool } from './define'
+import { subscriptionTotals } from './totals'
 import { cancelLifeSubscription } from '#/server/life/service'
 
 export const detectRecurring = defineBankTool({
   name: 'detect_subscriptions', kind: 'read', baseRisk: 'green',
   description: '从本人交易流水自动识别同商户同金额的月度/年度周期扣款，返回候选与证据次数，不能把候选当成已确认订阅。',
-  inputSchema: z.object({}), execute: (_a, ctx) => detectSubscriptions(ctx.userId),
+  inputSchema: z.object({}), execute: (_a, ctx) => detectSubscriptions(ctx.userId), totals: subscriptionTotals,
 })
 export const saveDetectedSubscription = defineBankTool({
   name: 'save_detected_subscription', kind: 'write', baseRisk: 'yellow',
