@@ -8,7 +8,8 @@ import { ArrowUp, ReceiptText, Send, Settings, Square, Wallet } from 'lucide-rea
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import type { WencaiUIMessage } from '#/server/agent/messages'
 import { AgentAvatar } from '#/components/banking/AgentAvatar'
-import ToolPart from './ToolPart'
+import ToolPart, { PlanView } from './ToolPart'
+import { planPlacements } from './plan-placement'
 import { toolPresentations } from './presentation'
 import AssistantText, { presentedTables } from './AssistantText'
 import { subscribeConfirmations } from '#/lib/confirmation-notices'
@@ -51,6 +52,7 @@ export default function ChatView({
   useEffect(() => { if (messages.length) interactionMemory.current.remember(interactionSnapshot(messages, messages.length - 1)) }, [messages])
   const [sendError, setSendError] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
   const followScroll = useRef(true)
   const handledRequest = useRef<number | undefined>(undefined)
   const seenConfirmations = useRef(new Set<string>())
@@ -61,6 +63,7 @@ export default function ChatView({
   const activeConfirmation = useRef<string | undefined>(undefined)
   const busy = status === 'submitted' || status === 'streaming'
   const stage = agentStage(messages, busy)
+  const placements = planPlacements(messages)
   const reduce = useReducedMotion()
   const [stoppedNotice, setStoppedNotice] = useState('')
   useEffect(() => { if (status === 'submitted') setStoppedNotice('') }, [status])
@@ -105,6 +108,14 @@ export default function ChatView({
           : 'smooth',
       })
   }, [messages, active, busy])
+  useEffect(() => {
+    if (!active || !messagesRef.current || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => {
+      if (followScroll.current && scrollRef.current) scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'instant' })
+    })
+    observer.observe(messagesRef.current)
+    return () => observer.disconnect()
+  }, [active])
   const send = (text: string, options?: AgentMessageOptions) => {
     if (!text.trim() || busy || dispatching.current) return false
     dispatching.current = true
@@ -184,6 +195,7 @@ export default function ChatView({
         </div>
         <div
           className="bank-chat-messages"
+          ref={messagesRef}
           aria-label="对话记录"
           aria-live="polite"
           aria-busy={busy}
@@ -192,21 +204,23 @@ export default function ChatView({
             const processing = busy && messageIndex === messages.length - 1
             const presentation = toolPresentations(message.parts, processing)
             const visibleParts = message.parts.map((part,index) => part.type === 'text' ? !!part.text.trim()
-              : ['data-confirmation','data-verify','data-blocked'].includes(part.type) || (part.type.startsWith('tool-') && !progressOnlyTool(part,processing,presentation[index])))
+              : ['data-plan','data-confirmation','data-verify','data-blocked'].includes(part.type) || (part.type.startsWith('tool-') && !progressOnlyTool(part,processing,presentation[index])))
             if (message.role === 'assistant' && !visibleParts.some(Boolean)) return null
             const tables = presentedTables(message.parts, presentation)
-            const securityConfirmation = message.parts.some((part) => 'output' in part && !!part.output && typeof part.output === 'object' && 'status' in part.output && ['needs_confirmation', 'needs_handoff', 'plan'].includes(String(part.output.status)))
+            const securityConfirmation = message.parts.some((part) => part.type === 'data-plan' || ('output' in part && !!part.output && typeof part.output === 'object' && 'status' in part.output && ['needs_confirmation', 'needs_handoff', 'plan'].includes(String(part.output.status))))
             const batchSelection = !securityConfirmation && message.parts.some((part) => part.type === 'tool-prepare_transfer_batch' && 'output' in part && !!part.output && typeof part.output === 'object' && 'status' in part.output && part.output.status === 'batch_transfer_ready')
+            const hasQuestionnaire = message.parts.some((part) => part.type === 'tool-ask_questions' && 'output' in part && !!part.output && typeof part.output === 'object' && 'status' in part.output && part.output.status === 'questionnaire')
             return (
               <MotionMessage
                 key={message.id}
                 className={`bank-message ${message.role === 'user' ? 'is-user' : 'is-assistant'}`}
               >
                 {message.role !== 'user' && <AgentAvatar small />}
-                <AgentInteractionContext.Provider value={{ send, enabled: true, busy: busy || sending, snapshot: interactionSnapshot(messages, messageIndex), memory: interactionMemory.current }}><div className="bank-message-content"><AgentInteractionGroup active={message.role === 'assistant' && !processing} securityConfirmation={securityConfirmation}>
+                <AgentInteractionContext.Provider value={{ send, enabled: true, busy: busy || sending, snapshot: interactionSnapshot(messages, messageIndex), memory: interactionMemory.current, relocatedPlanIds: placements.relocated, completedActionIds: placements.completedActionIds }}><div className="bank-message-content"><AgentInteractionGroup active={message.role === 'assistant' && !processing} securityConfirmation={securityConfirmation} selectionSuppressed={hasQuestionnaire}>
                   {message.parts.map((part, index) => {
                     if (!visibleParts[index]) return null
                     const key = `${message.id}-${index}`
+                    if (part.type === 'text' && message.role === 'assistant' && hasQuestionnaire) return null
                     if (part.type === 'text')
                       return message.role === 'user' ? (
                         <p key={key} className="bank-user-bubble">
@@ -215,6 +229,7 @@ export default function ChatView({
                       ) : (
                         <AssistantText key={key} text={part.text} tables={tables} processing={processing} batchSelection={batchSelection} />
                       )
+                    if (part.type === 'data-plan') return <PlanView key={key} state={part.data} />
                     if (part.type === 'data-confirmation') {
                       const receipt = part.data
                       // 对话里已有原确认卡时保留其完成态；表单/H5 发起的操作补充固定回执。
@@ -251,6 +266,8 @@ export default function ChatView({
                       )
                     return null
                   })}
+                  {hasQuestionnaire && <p className="bank-agent-disclaimer">请在上方问卷中选择并提交答案，我会根据你的选择继续办理。</p>}
+                  {placements.atMessage.get(message.id)?.map((state) => <PlanView key={`continuation-${state.id}`} state={state} placement="receipt" />)}
                 </AgentInteractionGroup></div></AgentInteractionContext.Provider>
                 {message.role === 'user' && <span className="bank-desktop-chat-user" aria-hidden="true">{userName?.slice(0, 1) ?? '我'}</span>}
               </MotionMessage>

@@ -8,6 +8,7 @@ export type InteractionSelections = Partial<Record<InteractionField, string>>
 export interface ResolvedInteractionTemplate {
   version: '1'
   intent: InteractionIntent
+  batchId?: string
   fields: InteractionSelections
   steps?: { id: string; recipientQuery: string; fields: InteractionSelections; recipientIds: string[] }[]
 }
@@ -54,7 +55,7 @@ const transferStep = z.object({
 }).strict()
 const resolvedTemplateSchema = z.union([
   z.object({ version: z.literal('1'), intent: z.enum(interactionIntents), fields: resolvedFields }).strict(),
-  z.object({ version: z.literal('1'), intent: z.literal('batch_transfer'), fields: z.object({ source: z.string().max(160).optional() }).strict(), steps: z.array(transferStep).min(2).max(8) }).strict(),
+  z.object({ version: z.literal('1'), intent: z.literal('batch_transfer'), batchId: z.string().uuid().optional(), fields: z.object({ source: z.string().max(160).optional() }).strict(), steps: z.array(transferStep).min(2).max(8) }).strict(),
 ])
 
 /** Persisted chat records are not assumed to have the shape of a fresh server response. */

@@ -100,8 +100,8 @@ export default function ToolPart({
   if (tool === 'prepare_interaction') return null
 
   if (tool === 'ask_questions' && part.state === 'output-available') {
-    const out = part.output as { status: string; questionnaire?: QuestionnaireData; errors?: string[] }
-    return out.status === 'questionnaire' && out.questionnaire ? <AgentQuestionnaire data={out.questionnaire} /> : <Chip>问卷未生成：{out.errors?.join('；')}</Chip>
+    const out = part.output as { status: string; questionnaire?: QuestionnaireData; submissionId?: string; errors?: string[] }
+    return out.status === 'questionnaire' && out.questionnaire ? <AgentQuestionnaire data={out.questionnaire} submissionId={out.submissionId} /> : <Chip>问卷未生成：{out.errors?.join('；')}</Chip>
   }
 
   if (part.state === 'input-streaming' || part.state === 'input-available') {
@@ -368,8 +368,13 @@ const NODE_ICON: Record<string, string> = {
   handoff: '👤',
 }
 
-export function PlanView({ state }: { state: PlanState }) {
-  const plans = useQuery({ queryKey: ['plans'], queryFn: async () => { const res = await fetch('/api/plans'); if (!res.ok) throw new Error('无法读取计划'); return res.json() as Promise<{ plans: { state: PlanState }[] }> } })
+export function PlanView({ state, placement = 'origin' }: { state: PlanState; placement?: 'origin' | 'receipt' }) {
+  const interaction = useContext(AgentInteractionContext)
+  const showPending = placement === 'receipt' || !interaction.relocatedPlanIds?.has(state.id)
+  const plans = useQuery({ queryKey: ['plans'], queryFn: async () => { const res = await fetch('/api/plans'); if (!res.ok) throw new Error('无法读取计划'); return res.json() as Promise<{ plans: { state: PlanState }[] }> }, refetchInterval: (query) => {
+    const status = query.state.data?.plans.find((plan) => plan.state.id === state.id)?.state.status ?? state.status
+    return ['running', 'suspended'].includes(status) ? 2000 : false
+  } })
   const latest = plans.data?.plans.find((p) => p.state.id === state.id)?.state ?? state
   return (
     <div className="space-y-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
@@ -381,7 +386,7 @@ export function PlanView({ state }: { state: PlanState }) {
           </li>
         ))}
       </ol>
-        {Object.entries(latest.nodes).filter(([, node]) => node.status === 'suspended').map(([id, node]) => {
+        {showPending && Object.entries(latest.nodes).filter(([, node]) => node.status === 'suspended' && !interaction.completedActionIds?.has(node.actionId ?? '')).map(([id, node]) => {
           const outcome = node.output as ToolOutcome | undefined
           const definition = latest.plan.nodes.find((item) => item.id === id)
           return outcome && <Outcome key={`${id}-${node.actionId}`} label={definition?.note ?? '核对操作'} tool={definition?.tool ?? ''} outcome={outcome} />

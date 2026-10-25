@@ -69,7 +69,7 @@ describe('逐题问卷交互',()=>{
     expect(form.send).toHaveBeenCalledTimes(1)
     expect(form.send.mock.calls[0][0]).toContain('风险测评答案：[1, 2, 3, 4, 5]')
     expect(form.send.mock.calls[0][0]).toContain('收入稳定性')
-    expect(screen.getByRole('button',{name:'提交答案'})).toBeTruthy()
+    expect((screen.getByRole('button',{name:'已提交'}) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(screen.getAllByRole('radio')[1])
     fireEvent.click(screen.getByRole('button',{name:'提交答案'}))
     expect(form.send).toHaveBeenCalledTimes(2)

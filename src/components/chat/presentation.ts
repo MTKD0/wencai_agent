@@ -169,5 +169,9 @@ export function toolPresentations(parts: WencaiUIMessage['parts'], processing = 
   if (finalViews.length || finalFixed.length) {
     for (const index of viewAttempts) if (!finalViews.some((view) => view.index === index)) modes[index] = 'hidden'
   }
+  const questionnaire = parts.some((part) => part.type === 'tool-ask_questions' && 'output' in part && record(part.output).status === 'questionnaire')
+  if (questionnaire || batch >= 0) parts.forEach((part, index) => {
+    if (part.type === 'tool-prepare_transfer_batch' && 'output' in part && record(part.output).status === 'needs_information') modes[index] = 'hidden'
+  })
   return modes
 }

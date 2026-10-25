@@ -29,6 +29,25 @@ async function prepared(): Promise<BatchTransferReady> {
 }
 
 describe('多笔转账独立步骤与统一确认', () => {
+  it.each(['给13100000000和13200000000各转10000', '给13100000000、13200000000每人转账10,000元'])('共享金额按每位手机号收款人绑定：%s', async (text) => {
+    const transfers = ['13100000000', '13200000000'].map((recipientQuery) => ({ recipientQuery, amountYuan: 10000 }))
+    const read = vi.fn(async (tool: string, args: Record<string, unknown>): Promise<ToolOutcome> => ({ status: 'done', data: tool === 'list_cards' ? cards : { candidates: [recipient(String(args.query), String(args.query))] } }))
+    const result = await prepareTransferBatch({ transfers }, text, read)
+    expect(result.status).toBe('batch_transfer_ready')
+    if (result.status === 'batch_transfer_ready') expect(result.recipients.map((group) => [group.query, group.amount])).toEqual([['13100000000', '10000.00'], ['13200000000', '10000.00']])
+    for (const invalid of [[transfers[0]], [transfers[0], transfers[0]], [transfers[0], { ...transfers[1], amountYuan: 5000 }]]) {
+      read.mockClear()
+      expect((await prepareTransferBatch({ transfers: invalid }, text, read)).status).toBe('needs_information')
+      expect(read).not.toHaveBeenCalled()
+    }
+  })
+  it('姓名共享金额不会误作合并收款人，也不能从其他子句借用金额', async () => {
+    const shared = [{ recipientQuery: '妈妈', amountYuan: 400 }, { recipientQuery: '王芳', amountYuan: 400 }]
+    expect((await prepareTransferBatch({ transfers: shared }, '给妈妈和王芳各转400', reader())).status).toBe('batch_transfer_ready')
+    expect((await prepareTransferBatch({ transfers: [shared[0], { ...shared[1], amountYuan: 600 }] }, '给妈妈和王芳各转400，再给房东转600', reader())).status).toBe('needs_information')
+    expect(requestedTransferMatches('给妈妈和王芳各转400', '妈妈和王芳', 400)).toEqual([])
+    expect(requestedTransferMatches('给妈妈和王芳转400', '妈妈', 400)).toEqual([])
+  })
   it('复现截图原话：逐笔保留金额与收款候选，共用正常储蓄卡，准备阶段只有只读查询', async () => {
     const read = reader(), result = await prepareTransferBatch(input, request, read)
     expect(result.status).toBe('batch_transfer_ready')

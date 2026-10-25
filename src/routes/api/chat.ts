@@ -10,10 +10,14 @@ import { getConfirmationResult } from '#/server/confirm/result'
 import { audit } from '#/server/audit/log'
 import { requireSession } from '#/server/session'
 import { runtimeLog } from '#/server/logging/runtime'
+import { BatchTransferSelectionSchema } from '#/lib/batch-transfer'
+import { startSelectedTransferBatch } from '#/server/agent/batch-plan'
+import { QuestionnaireSubmissionSchema } from '#/lib/questionnaire'
+import { resolveQuestionnaireRequest } from '#/server/agent/questionnaire-context'
 
 // 会话标识由认证会话决定，客户端传来的 id 仅用于兼容 ChatSDK 的传输协议
-const BodySchema = z.looseObject({ messages: z.array(z.any()), confirmedActionId: z.string().min(1).max(100).optional(), verificationActionId: z.string().min(1).max(100).optional(), cancelActionId: z.string().min(1).max(100).optional() })
-  .refine((body) => [body.confirmedActionId, body.verificationActionId, body.cancelActionId].filter(Boolean).length <= 1, '一次只能处理一个消息操作')
+const BodySchema = z.looseObject({ messages: z.array(z.any()), confirmedActionId: z.string().min(1).max(100).optional(), verificationActionId: z.string().min(1).max(100).optional(), cancelActionId: z.string().min(1).max(100).optional(), transferBatch: BatchTransferSelectionSchema.optional(), questionnaireSubmission: QuestionnaireSubmissionSchema.optional() })
+  .refine((body) => [body.confirmedActionId, body.verificationActionId, body.cancelActionId, body.transferBatch, body.questionnaireSubmission].filter(Boolean).length <= 1, '一次只能处理一个消息操作')
 
 export const Route = createFileRoute('/api/chat')({
   server: {
@@ -29,6 +33,11 @@ export const Route = createFileRoute('/api/chat')({
         if (!body.success) return new Response('bad request', { status: 400 })
         const messages = body.data.messages as WencaiUIMessage[]
         const ctx: AgentContext = { userId: session.userId, sessionId: session.sessionId, channel: 'web' }
+        let requestText: string | undefined
+        if (body.data.questionnaireSubmission) {
+          try { requestText = resolveQuestionnaireRequest(ctx.sessionId, body.data.questionnaireSubmission) }
+          catch (error) { return Response.json({ error: error instanceof Error ? error.message : '问卷答案无效' }, { status: 400 }) }
+        }
 
         const verdict = await screenInput(ctx, lastUserText(messages))
 
@@ -44,6 +53,16 @@ export const Route = createFileRoute('/api/chat')({
               return
             }
 
+            if (body.data.transferBatch) {
+              const plan = await startSelectedTransferBatch(ctx, body.data.transferBatch, request.signal)
+              writer.write({ type: 'start' })
+              writer.write({ type: 'data-plan', data: plan })
+              writer.write({ type: 'text-start', id: 'batch-plan' })
+              writer.write({ type: 'text-delta', id: 'batch-plan', delta: '已登记逐笔办理任务。请核对当前确认单并在独立安全页验证；完成后会自动展示下一笔确认单，每笔都需单独验证。' })
+              writer.write({ type: 'text-end', id: 'batch-plan' })
+              writer.write({ type: 'finish' })
+              return
+            }
             const actionId = await resolveInteractionCommand(ctx, body.data)
             if (actionId && (body.data.verificationActionId || body.data.cancelActionId)) {
               const receipt = await getConfirmationResult(ctx.userId, actionId)
@@ -62,6 +81,7 @@ export const Route = createFileRoute('/api/chat')({
               priorEvidence: historyEvidence(messages),
               abortSignal: request.signal,
               confirmedActionId: actionId,
+              requestText,
               onVerified: (violations) => {
                 if (violations.length) writer.write({ type: 'data-verify', data: { violations } })
               },

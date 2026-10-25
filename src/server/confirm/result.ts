@@ -15,7 +15,12 @@ export async function getConfirmationResult(userId: string, actionId: string) {
   )).orderBy(desc(schema.auditLogs.seq)).limit(1)
   if (receipt) {
     const payload = JSON.parse(receipt.payloadJson) as { output: unknown }
-    return { ...base, status: 'completed' as const, output: payload.output }
+    const [planRow] = row.planId ? await db.select().from(schema.plans).where(and(eq(schema.plans.id, row.planId), eq(schema.plans.userId, userId))) : []
+    const plan = planRow ? JSON.parse(planRow.stateJson) as import('#/server/executor/executor').PlanState : undefined
+    const planProgress = plan && planRow ? { planId: plan.id, status: planRow.status, completed: plan.completed.length, total: plan.plan.nodes.length,
+      pendingActionIds: Object.values(plan.nodes).filter((node) => node.status === 'suspended' && node.actionId !== actionId).map((node) => node.actionId!),
+    } : undefined
+    return { ...base, status: 'completed' as const, output: payload.output, ...(planProgress ? { planProgress } : {}) }
   }
   if (row.sessionId.startsWith('scheduled:') && row.status === 'consumed') {
     await (await import('#/server/automation/service')).ensureAutomationSchema()

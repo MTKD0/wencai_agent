@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm'
 import { resolvePhoneNumber } from '#/lib/phone-number'
 import { schema } from '#/server/db/client'
 import { recordPhoneLogin } from '#/server/auth/onboarding'
-import { runtimeLog } from '#/server/logging/runtime'
+import { recordDemoLoginCode, runtimeLog } from '#/server/logging/runtime'
 
 /**
  * 认证实例。仅负责「你是谁」，不涉及任何银行业务授权。
@@ -81,16 +81,16 @@ export const auth = betterAuth({
     phoneNumber({
       otpLength: 6,
       expiresIn: 300,
-      // 生产必须配置短信通道；仅本地开发的登录验证码允许演示日志。
+      // 非演示模式必须配置短信；演示登录码可在后台实时日志中查看。
       sendOTP: async ({ phoneNumber: phone, code }) => {
         try {
           if (env.SMS_DELIVERY_URL) {
             await sendVerificationSMS(phone, code)
             runtimeLog('info', 'auth', '登录验证码已交付短信通道')
-          } else if (env.AUTH_DEMO_MODE && process.env.NODE_ENV !== 'production') {
-            console.log(`[auth] 演示登录验证码 ${phone}: ${code}`)
-            runtimeLog('info', 'auth', '已生成演示登录验证码（仅服务端终端可见）')
+          } else if (env.AUTH_DEMO_MODE) {
+            if (process.env.NODE_ENV !== 'production') console.log(`[auth] 演示登录验证码 ${phone.slice(0, 3)}****${phone.slice(-4)}: ${code}`)
           } else throw new Error('登录短信通道尚未配置')
+          recordDemoLoginCode(phone, code)
         } catch (error) {
           runtimeLog('error', 'auth', error instanceof Error ? error.message : '登录验证码发送失败')
           throw error

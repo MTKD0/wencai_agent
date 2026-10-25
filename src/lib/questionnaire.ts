@@ -19,6 +19,10 @@ export const QuestionnaireSchema = z.object({
 })
 export type QuestionnaireData = z.infer<typeof QuestionnaireSchema>
 export type QuestionnaireAnswers = Record<string, string>
+export const QuestionnaireSubmissionSchema = z.object({
+  submissionId: z.string().uuid(), answers: z.record(z.string().max(60), z.string().max(60)),
+}).strict()
+export type QuestionnaireSubmission = z.infer<typeof QuestionnaireSubmissionSchema>
 
 const riskItems = [
   ['你的投资经验如何？', ['没有投资经验', '了解存款和低风险产品', '有少量基金或债券经验', '熟悉多类投资产品', '投资经验丰富']],

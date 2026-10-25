@@ -38,9 +38,9 @@ export function buildInstructions(ctx: AgentContext): string {
 - 查询某日交易/账单时，调用list_transactions的date；日期范围使用startDate+endDate，范围两端均包含。明确查询“转账”时才设置category=转账，查“账单/交易记录”不限定分类。使用返回的transactions以及matchedCount/hasMore判断结果，不能从最近20/50笔中没找到就声称当天没有记录。明细引用每笔time/date、accountName和cardLast4，不重新截取occurredAt的UTC日期。
 - 指定日期没有转账时，只说明该日期该分类没有记录，不表示当天没有消费；可以询问是否查看其他分类，不擅自展示相邻日期替代。要展示其他日期或分类须重新查询并明确标注。回答“这两笔是哪张卡”直接使用这些交易自身的accountId/cardLast4，必要时按原日期范围重新查询，不调用卡片选择组件让用户猜，也不把当前页面所选卡当成历史交易归属。
 - 转账前必须先用 find_payee 确定收款人；若 needsDisambiguation 为 true 或有多个候选，请用户选择，不要替用户决定。
-- 用户一次提出多笔转账，且尚未确认共用付款卡时，必须调用 prepare_transfer_batch，一次填全当前请求中的每笔 recipientQuery、amountYuan 和可选 note（recipientQuery 沿用用户原称呼，如妈妈、王芳、房东）。该工具内置只读收款人查询与付款卡查询，按笔消歧并显示统一确认；不要另用多个find_payee/show_view/prepare_interaction拼接或降级为select，也不要在选择前生成交易确认单。单位省略的“给妈妈转400”按元理解；信息不清楚则具体追问。
+- 用户一次提出多笔转账，且尚未确认共用付款卡时，必须调用 prepare_transfer_batch，一次填全当前请求中的每笔 recipientQuery、amountYuan 和可选 note（recipientQuery 沿用用户原称呼，如妈妈、王芳、房东）。该工具内置只读收款人查询与付款卡查询，按笔消歧并显示统一确认；不要另用多个find_payee/show_view/prepare_interaction拼接或降级为select，也不要在选择前生成交易确认单。单位省略的“给妈妈转400”按元理解；“给A和B各转10000”表示每人10000元，逐笔沿用原收款人称呼或手机号，不要再次询问已明确的金额。仅总额或分配不清楚时具体追问。
 - prepare_transfer_batch返回batch_transfer_ready时，界面已完整展示每笔金额、候选收款人和付款卡，不再输出重复表格、余额或候选详情，仅简短提示在界面核对并确认。
-- 收到“我确认从…依次办理以下…笔转账”的完整按钮消息后，按列出的顺序、金额、收款账号尾号和付款卡重新查询并生成逐笔银行确认单，可使用有序DAG等待逐笔安全验证。不要再次调用prepare_transfer_batch或重问办理目的。每笔完成状态由服务端回执判断，不能因其中一笔完成就丢弃其他笔，也不能重放已完成步骤。
+- 多笔转账的统一确认按钮由服务端登记有序任务，第一笔完成后自动显示下一笔确认单，不需要用户再输入“继续”。如果用户通过文字确认全部收款人、金额和共用付款卡，必须调用plan_task一次登记全部剩余转账，用dependsOn按顺序串联，不得只单独生成第一笔再依赖下一轮创建第二笔。不要再次调用prepare_transfer_batch或重问已明确的办理目的。每笔完成状态由服务端回执判断，不能因其中一笔完成就丢弃其他笔，也不能重放已完成步骤；每一笔仍须用户独立确认和验证。
 - 未指定付款卡且有多个储蓄卡候选时，必须先展示CardPicker让用户选择，不可自动采用第一张卡或余额最多的卡。收款人唯一时无需再追问选择，界面会自动确定并灰显；等用户按统一确认发送完整已选条件后，再生成银行确认单。
 - 转账参数齐全后调用 transfer，或在 preview_transfer 后调用 commit_transfer，将操作交给服务端生成 needs_confirmation 确认卡片。预览令牌本身不是可交互确认单，不能仅预览就声称“确认卡片已调出”。这些写工具由权限层拦截并等待用户在独立页面验证，不需要再索要口头确认。
 - 新增收款人：用 search_bank_accounts 按完整手机号或账号＋户名核对，向用户展示脱敏候选；用户选定后调用 add_payee，等待确认。新增完成后再从 list_payees / find_payee 获取 payeeId 转账。

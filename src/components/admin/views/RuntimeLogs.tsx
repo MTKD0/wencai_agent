@@ -158,7 +158,7 @@ export function AdminRuntimeLogs({ back }: { back: () => void }) {
           </div>
         </section>
         <p className="runtime-log-note">
-          记录本服务进程的接口结果、登录状态与关键服务错误。密码、验证码、Cookie 和请求正文不进入此日志；开发工具与独立
+          记录本服务进程的接口结果、登录状态与关键服务错误。演示模式显示登录验证码及有效期；密码、交易验证码、Cookie 和请求正文不进入此日志。开发工具与独立
           worker 的终端输出仍在各自终端查看。
         </p>
       </main>

@@ -16,6 +16,8 @@ function bankRunner(ctx: AgentContext, planId: string): NodeRunner {
   return {
     run: (node, args) => runBankTool(resolveTool(node.tool!)!, args, ctx, { planId, nodeId: node.id }),
     compensate: async (node, args, output) => {
+      // Each batch transfer is independently confirmed. A later cancellation must not reverse settled money.
+      if (planId.startsWith('plan_batch_') && node.tool === 'transfer') return false
       const def = resolveTool(node.tool!)
       if (!def || def.kind === 'read') return true // 只读操作无需补偿
       if (!def.compensate) return false
@@ -65,12 +67,21 @@ async function load(ctx: AgentContext, planId: string): Promise<PlanState> {
  * 这样执行途中计划对任务中心可见，也能在两个节点之间被暂停。
  * `signal` 来自对话的停止按钮：中断后计划停在当前位置，不会继续创建后续确认单。
  */
-export async function startPlan(ctx: AgentContext, input: unknown, allowedTools: Set<string>, signal?: AbortSignal) {
+export async function startPlan(ctx: AgentContext, input: unknown, allowedTools: Set<string>, signal?: AbortSignal, stableId?: string) {
   const v = validatePlan(input, allowedTools)
   if (!v.ok) return { ok: false as const, errors: v.errors }
-  const id = `plan_${randomUUID()}`
-  await audit(ctx, 'plan_created', { planId: id, plan: v.plan })
+  const id = stableId ?? `plan_${randomUUID()}`
   const state = await withUserExecutionLock(`plan:${id}`, async () => {
+    if (stableId) {
+      const [existing] = await db.select().from(schema.plans).where(eq(schema.plans.id, id))
+      if (existing) {
+        if (existing.userId !== ctx.userId || existing.sessionId !== ctx.sessionId) throw new Error('批次不属于当前会话')
+        const saved = await load(ctx, id)
+        if (JSON.stringify(saved.plan) !== JSON.stringify(v.plan)) throw new Error('该批次已开始，请核对原确认单；修改需求请重新发起')
+        return saved
+      }
+    }
+    await audit(ctx, 'plan_created', { planId: id, plan: v.plan })
     const initial = initPlanState(id, v.plan)
     await persist(ctx, initial)
     let stoppedByUser = false
