@@ -1,6 +1,6 @@
 # 文财 · 银行 AI 智能体 —— 系统架构
 
-> 版本 v1.0 · 2026-10-25，依据 `main`（`ebc6e23`）源码整理。
+> 版本 v1.0 · 2026-10-25，依据 `main`（`865e8b3`）源码整理。
 > 本文是参赛「技术文档」中的系统架构部分。安全机制的完整说明与已知缺陷见 [SECURITY.md](SECURITY.md)，核心算法见 [ALGORITHMS.md](ALGORITHMS.md)，赛题逐项对应见 [COMPETITION-COMPLIANCE.md](COMPETITION-COMPLIANCE.md)。内容与代码不一致时以代码为准。
 
 ## 0. 设计原则

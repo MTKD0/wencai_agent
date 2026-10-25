@@ -1,7 +1,7 @@
 # 2026-10-17 原仓库合并记录
 
 合并来源：`leset0ng/wencai_agent` 的 `main`（`a0bc9a2`）。
-合并前 fork：`MTKD0/wencai_agent` 的 `main`（`e292d50`）。
+合并前 fork：`MTKD0/wencai_agent` 的 `main`（`58f330a`；2026-10-26 改写提交说明前为 `e292d50`，下行分支名沿用旧值）。
 本地回退参考分支：`backup/pre-upstream-merge-20261017-e292d50`。
 
 ## 冲突取舍

@@ -3,7 +3,7 @@
     "startedAt": "2026-10-25T15:18:05.857Z",
     "finishedAt": "2026-10-25T15:18:55.339Z",
     "model": "deepseek-flash",
-    "commit": "518f434",
+    "commit": "c288c40",
     "database": "file:./.scratch/eval-2026-10-25T15-17-57.db",
     "repeats": 1,
     "guard": "规则启发式"
