@@ -1,4 +1,6 @@
 import type { WencaiUIMessage } from '#/server/agent/messages'
+import type { BatchTransferSelection } from '#/lib/batch-transfer'
+import type { QuestionnaireSubmission } from '#/lib/questionnaire'
 import { isResolvedInteractionTemplate, renderInteractionTemplate, type ResolvedInteractionTemplate, type InteractionField } from '#/lib/agent-interaction-template'
 
 export type ChoiceKind = 'card' | 'account' | 'product' | 'recipient' | 'subscription' | 'option'
@@ -8,7 +10,7 @@ export interface AgentChoice {
   card?: { cardId?: string; name: string; last4?: string; kind?: string; status?: string; balance?: number }
 }
 export interface InteractionSnapshot { requests: string[]; selections: string[]; taskKey?: string; cardRole?: 'source' | 'target'; template?: ResolvedInteractionTemplate }
-export interface AgentMessageOptions { verificationActionId?: string; cancelActionId?: string; confirmedActionId?: string }
+export interface AgentMessageOptions { verificationActionId?: string; cancelActionId?: string; confirmedActionId?: string; transferBatch?: BatchTransferSelection; questionnaireSubmission?: QuestionnaireSubmission }
 const REQUEST = '【办理需求】', SELECTED = '【已选条件】', END = '【交互说明】'
 const clean = (text: string) => text.replace(/[\u0000-\u001f\u007f]/g, ' ').trim()
 const unique = (values: string[]) => [...new Set(values.filter(Boolean))]
@@ -129,6 +131,18 @@ export function confirmationMessage(snapshot: InteractionSnapshot, choices: Agen
   return [`我已选择${facts.length ? `：${facts.join('；')}` : '当前项目'}。`,
     prompt ? `本次请求：${clean(prompt).slice(0, 300)}。` : '请先询问本次要办理的具体业务及缺少的必要信息。',
     '请重新查询当前状态；交易仍须独立安全验证，不得重复执行已完成的操作。'].join('')
+}
+
+export function confirmationOptions(snapshot: InteractionSnapshot, choices: AgentChoice[]): AgentMessageOptions | undefined {
+  const template = snapshot.template
+  if (template?.intent !== 'batch_transfer' || !template.batchId) return
+  const card = choices.find((choice) => choice.kind === 'card' && !choice.stepId)
+  if (!card) return
+  const recipients = (template.steps ?? []).map((step) => ({ stepId: step.id,
+    payeeId: choices.find((choice) => choice.stepId === step.id && choice.kind === 'recipient' && step.recipientIds.includes(choice.id))?.id ?? '',
+  }))
+  if (recipients.some((item) => !item.payeeId)) return
+  return { transferBatch: { batchId: template.batchId, cardId: card.id, recipients } }
 }
 
 function templateChoiceDescription(choice: AgentChoice) {

@@ -5,7 +5,7 @@ import { AgentInteractionContext } from './AgentInteraction'
 import { QuestionnaireSchema, questionnaireMessage, type QuestionnaireAnswers, type QuestionnaireData } from '#/lib/questionnaire'
 import './agent-questionnaire.css'
 
-export function AgentQuestionnaire({ data }: { data: QuestionnaireData }) {
+export function AgentQuestionnaire({ data, submissionId }: { data: QuestionnaireData; submissionId?: string }) {
   const interaction = useContext(AgentInteractionContext), reduce = useReducedMotion()
   const instance = useId()
   const [index, setIndex] = useState(0), [answers, setAnswers] = useState<QuestionnaireAnswers>({}), [submitted, setSubmitted] = useState(false)
@@ -25,7 +25,7 @@ export function AgentQuestionnaire({ data }: { data: QuestionnaireData }) {
     </motion.div></AnimatePresence>
     {submitted && <p role="status" className="bank-questionnaire-notice">答案已发送，可返回修改后重新提交。</p>}
     <div className="bank-agent-choice-actions"><Button className="bank-choice-button is-secondary" disabled={index === 0 || interaction.busy} onClick={() => setIndex(i => i - 1)}>上一题</Button>
-      {last ? <Button className="bank-choice-button" disabled={!complete || interaction.busy || !interaction.enabled} onClick={() => { if (interaction.send(questionnaireMessage(form, answers)) !== false) setSubmitted(true) }}>提交答案</Button>
+      {last ? <Button className="bank-choice-button" disabled={!complete || submitted || interaction.busy || !interaction.enabled} onClick={() => { if (interaction.send(questionnaireMessage(form, answers), submissionId ? { questionnaireSubmission: { submissionId, answers } } : undefined) !== false) setSubmitted(true) }}>{submitted ? '已提交' : '提交答案'}</Button>
         : <Button className="bank-choice-button" disabled={!selected || interaction.busy} onClick={() => setIndex(i => i + 1)}>下一题</Button>}
     </div>
   </section>

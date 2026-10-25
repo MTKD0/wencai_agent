@@ -10,8 +10,14 @@ export const BatchTransferRequestSchema = z.object({
 }).strict()
 export const BatchRecipientSchema = z.object({ id: z.string(), name: z.string(), alias: z.string().nullable().optional(), bank: z.string(), account: z.string() })
 export const BatchCardSchema = z.object({ id: z.string(), accountId: z.string().nullable().optional(), remark: z.string(), last4: z.string().regex(/^\d{4}$/), kind: z.literal('debit'), status: z.literal('active'), balance: z.number() })
+export const BatchTransferSelectionSchema = z.object({
+  batchId: z.string().uuid(), cardId: z.string().min(1).max(100),
+  recipients: z.array(z.object({ stepId: z.string().regex(/^step-[1-8]$/), payeeId: z.string().min(1).max(100) }).strict()).min(2).max(8),
+}).strict()
+export type BatchTransferSelection = z.infer<typeof BatchTransferSelectionSchema>
 export interface BatchTransferReady {
   status: 'batch_transfer_ready'
+  batchId: string
   interaction: ResolvedInteractionTemplate
   recipients: { stepId: string; query: string; amount: string; candidates: z.infer<typeof BatchRecipientSchema>[] }[]
   cards: z.infer<typeof BatchCardSchema>[]

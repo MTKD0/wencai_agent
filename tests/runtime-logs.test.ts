@@ -5,6 +5,7 @@ import {
   redactRuntimeMessage,
   runtimeLog,
   runtimeLogSnapshot,
+  recordDemoLoginCode,
 } from '#/server/logging/runtime'
 const { config } = vi.hoisted(() => ({
   config: {
@@ -20,11 +21,45 @@ afterEach(() => {
   config.ADMIN_ENABLED = true
   config.AUTH_DEMO_MODE = true
   vi.unstubAllEnvs()
+  vi.useRealTimers()
 })
 const request = (path = '/api/admin?action=logs', headers?: HeadersInit) =>
   new Request(`https://bank.test${path}`, { headers })
 
 describe('后台实时日志', () => {
+  it('演示登录码保留前导零、手机号脱敏，且不泄露内部元数据', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-25T00:00:00Z'))
+    vi.stubEnv('NODE_ENV', 'production')
+    recordDemoLoginCode('13800000000', '012345')
+    const snapshot = (await getRuntimeLogs(request()).json()).data
+    const entry = snapshot.entries.at(-1)
+    expect(entry.message).toContain('验证码 012345')
+    expect(entry.message).toContain('138****0000')
+    expect(entry.message).toContain('2026-10-25T00:05:00.000Z')
+    expect(JSON.stringify(entry)).not.toContain('13800000000')
+    expect(entry).not.toHaveProperty('demoLogin')
+    vi.setSystemTime(new Date('2026-10-25T00:05:00Z'))
+    expect(runtimeLogSnapshot().entries.at(-1)?.message).toBe('演示登录验证码（已过期）')
+    expect(JSON.stringify(runtimeLogSnapshot())).not.toContain('012345')
+  })
+  it('关闭演示模式既不记录新登录码，也不向已认证后台返回旧验证码', async () => {
+    recordDemoLoginCode('13800000000', '098765')
+    const before = runtimeLogSnapshot().entries.at(-1)!.id
+    config.AUTH_DEMO_MODE = false
+    recordDemoLoginCode('13800000000', '012349')
+    expect(runtimeLogSnapshot().entries.at(-1)!.id).toBe(before)
+    const response = getRuntimeLogs(request(undefined, { authorization: `Bearer ${config.ADMIN_TOKEN}` }))
+    const content = await response.text()
+    expect(content).not.toContain('098765')
+    expect(content).not.toContain('012349')
+  })
+  it('无效格式不能注入演示验证码日志', () => {
+    const before = runtimeLogSnapshot().entries.at(-1)?.id
+    recordDemoLoginCode('13800000000', '123456\nforged')
+    recordDemoLoginCode('13800000000\nforged', '123456')
+    expect(runtimeLogSnapshot().entries.at(-1)?.id).toBe(before)
+  })
   it('只展示固定认证校验提示，不采集未知错误正文', async () => {
     const before = runtimeLogSnapshot().entries.at(-1)?.id ?? 0
     await recordAuthFailure(Response.json({ message: '请输入有效的手机号' }, { status: 400 }))

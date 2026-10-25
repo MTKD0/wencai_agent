@@ -3,18 +3,18 @@ import { ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { BankCard } from '#/components/ui/BankCard'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '#/components/ui/carousel'
-import { choiceDescription, choiceFromRow, confirmationMessage, SelectionDraft, type AgentChoice, type InteractionSnapshot, type AgentMessageOptions, type InteractionMemory } from './interaction-message'
+import { choiceDescription, choiceFromRow, confirmationMessage, confirmationOptions, SelectionDraft, type AgentChoice, type InteractionSnapshot, type AgentMessageOptions, type InteractionMemory } from './interaction-message'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '#/components/ui/table'
 import './agent-interaction.css'
 import { canonicalChoiceGroups, type ChoiceGroup } from './selection-groups'
 
-export const AgentInteractionContext = createContext<{ send: (text: string, options?: AgentMessageOptions) => boolean | void; busy: boolean; enabled: boolean; snapshot: InteractionSnapshot; memory?: InteractionMemory }>({ send: () => {}, busy: true, enabled: false, snapshot: { requests: [], selections: [] } })
+export const AgentInteractionContext = createContext<{ send: (text: string, options?: AgentMessageOptions) => boolean | void; busy: boolean; enabled: boolean; snapshot: InteractionSnapshot; memory?: InteractionMemory; relocatedPlanIds?: ReadonlySet<string>; completedActionIds?: ReadonlySet<string> }>({ send: () => {}, busy: true, enabled: false, snapshot: { requests: [], selections: [] } })
 export const AgentChoiceContext = createContext<{
   register: (group: ChoiceGroup) => () => void; groups: ChoiceGroup[]; draft: SelectionDraft; hasChoices: boolean; securityConfirmation: boolean; host?: string; cancelled?: boolean; cancel?: () => void; confirm: (prompt?: string) => void
 } | null>(null)
 
 /** One interaction owns local choices and one submission. Security confirmations remain separate. */
-export function AgentInteractionGroup({ children, active = true, securityConfirmation = false }: { children: ReactNode; active?: boolean; securityConfirmation?: boolean }) {
+export function AgentInteractionGroup({ children, active = true, securityConfirmation = false, selectionSuppressed = false }: { children: ReactNode; active?: boolean; securityConfirmation?: boolean; selectionSuppressed?: boolean }) {
   const interaction = useContext(AgentInteractionContext), draft = useRef(new SelectionDraft()).current
   useSyncExternalStore(draft.subscribe, draft.getRevision, () => 0)
   const [groups, setGroups] = useState<ChoiceGroup[]>([])
@@ -36,18 +36,19 @@ export function AgentInteractionGroup({ children, active = true, securityConfirm
   const chosen = [...effective.values()].map((choices) => current.get(choices[0].slot ?? choices[0].kind) ?? draft.selected(choices, base))
   const ready = chosen.length > 0 && chosen.every(Boolean)
   const confirm = (prompt?: string) => {
-    if (!active || interaction.busy || securityConfirmation || (groups.length > 0 && !ready)) return
+    if (!active || interaction.busy || securityConfirmation || selectionSuppressed || (groups.length > 0 && !ready)) return
     const snapshot = draft.snapshot(base, chosen.filter((choice): choice is AgentChoice => !!choice))
-    if (interaction.send(confirmationMessage(snapshot, chosen.filter((choice): choice is AgentChoice => !!choice), prompt)) !== false) {
+    const confirmedChoices = chosen.filter((choice): choice is AgentChoice => !!choice)
+    if (interaction.send(confirmationMessage(snapshot, confirmedChoices, prompt), confirmationOptions(snapshot, confirmedChoices)) !== false) {
       chosen.filter((choice): choice is AgentChoice => !!choice).forEach((choice) => draft.select(choice))
       interaction.memory?.remember(snapshot)
       setCancelled(false)
     }
   }
   const cancel = () => { for (const slot of effective.keys()) draft.clear(slot); setCancelled(true) }
-  return <AgentChoiceContext.Provider value={{ register, groups: unique, draft, hasChoices: unique.length > 0, securityConfirmation, host, cancelled, cancel, confirm }}>
+  return <AgentChoiceContext.Provider value={{ register, groups: unique, draft, hasChoices: unique.length > 0, securityConfirmation: securityConfirmation || selectionSuppressed, host, cancelled, cancel, confirm }}>
     {children}
-    {active && !securityConfirmation && groups.length > 0 && !host && <AgentSelectionConfirm />}
+    {active && !securityConfirmation && !selectionSuppressed && groups.length > 0 && !host && <AgentSelectionConfirm />}
   </AgentChoiceContext.Provider>
 }
 
@@ -105,7 +106,8 @@ export function AgentCardPicker({ choices: inputChoices, title = '我的银行�
   const purpose = role ?? snapshot.cardRole ?? (snapshot.template
     ? ['transfer', 'purchase', 'batch_transfer'].includes(snapshot.template.intent) ? 'source' : snapshot.template.intent === 'redeem' ? 'target' : undefined
     : /(?:转账|转.{0,12}(?:元|块)|申购|投资|理财|付款|还款)/.test(snapshot.requests.join(' ')) ? 'source' : undefined)
-  const normalized = inputChoices.map((choice) => ({ ...choice, slot: purpose === 'source' ? '付款卡' : purpose === 'target' ? '收款卡' : choice.slot ?? '银行卡' }))
+  const eligible = purpose === 'source' ? inputChoices.filter((choice) => choice.card?.kind !== 'credit' && (!choice.card?.status || choice.card.status === 'active')) : inputChoices
+  const normalized = eligible.map((choice) => ({ ...choice, slot: purpose === 'source' ? '付款卡' : purpose === 'target' ? '收款卡' : choice.slot ?? '银行卡' }))
   const choices = normalized.length ? group?.groups.find((item) => item.choices[0]?.kind === 'card' && item.choices[0]?.slot === normalized[0]?.slot)?.choices ?? normalized : normalized
   const choice = choices[Math.min(index, choices.length - 1)]
   const state = useChoiceGroup(normalized, choice)

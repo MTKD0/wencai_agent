@@ -9,6 +9,7 @@ export type WencaiUIMessage = UIMessage<
     verify: { violations: NumberViolation[] }
     blocked: { categories: string[] }
     confirmation: Awaited<ReturnType<typeof getConfirmationResult>>
+    plan: import('#/server/executor/executor').PlanState
   }
 >
 

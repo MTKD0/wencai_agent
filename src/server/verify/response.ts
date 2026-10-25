@@ -16,7 +16,7 @@ export function checkedResponse(text: string, evidence: unknown[], completed: bo
 export function verifiedOutputTransform(ctx: AgentContext, initialEvidence: unknown[], completed = false): StreamTextTransform<ToolSet> {
   return () => {
     const buffers = new Map<string, string>(), evidence = [...initialEvidence]
-    let pending = false
+    let pending = false, questionnaire = false
     return new TransformStream({
       async transform(part, controller) {
         if (part.type === 'tool-result') {
@@ -24,11 +24,13 @@ export function verifiedOutputTransform(ctx: AgentContext, initialEvidence: unkn
           const output = part.output as { status?: string }
           if (['needs_confirmation', 'needs_handoff'].includes(output?.status ?? '')) pending = true
           if (output?.status === 'plan') pending = true
+          if (part.toolName === 'ask_questions' && output?.status === 'questionnaire') questionnaire = true
         }
         if (part.type === 'text-delta') { buffers.set(part.id, (buffers.get(part.id) ?? '') + part.text); return }
         if (part.type === 'text-end') {
           const text = buffers.get(part.id) ?? ''
-          const result = checkedResponse(text.slice(0, 40_000), evidence, completed, pending)
+          const visibleText = questionnaire && !pending ? '请在上方问卷中选择并提交答案，我会根据你的选择继续办理。' : text.slice(0, 40_000)
+          const result = checkedResponse(visibleText, evidence, completed, pending)
           if (result.blocked) await audit(ctx, 'output_verification', { blocked: true, violations: result.violations, reason: successClaim.test(text) && !completed ? 'unverified_execution_claim' : 'unsupported_numbers' })
           controller.enqueue({ type: 'text-delta', id: part.id, text: result.text })
           buffers.delete(part.id)

@@ -81,9 +81,10 @@ describe('评分', () => {
   })
   it('模拟用户按偏好作答问卷，提交文本与界面组件一致', () => {
     const form = { id: 'pay', title: '付款方式', purpose: 'general' as const, questions: [{ id: 'card', title: '用哪张卡付款？', options: [{ id: 'a', label: '尾号 5382 储蓄账户', value: 'save' }, { id: 'b', label: '尾号 8823 工资卡', value: 'main' }] }] }
-    const message = answerQuestionnaire(form, ['8823'])
+    const { message, answers } = answerQuestionnaire(form, ['8823'])
     expect(message).toContain('用哪张卡付款？：尾号 8823 工资卡（答案值：main）')
-    expect(answerQuestionnaire(form, ['不存在'])).toContain('尾号 5382 储蓄账户')
+    expect(answers).toEqual({ card: 'b' })
+    expect(answerQuestionnaire(form, ['不存在']).message).toContain('尾号 5382 储蓄账户')
   })
   it('Wilson 区间在样本少时不会退化成 0 宽度', () => {
     const [lo, hi] = wilson(10, 10)

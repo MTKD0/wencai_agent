@@ -1,6 +1,9 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
 import type { RuntimeLogEntry, RuntimeLogLevel, RuntimeLogSnapshot, RuntimeLogSource } from '#/lib/runtime-logs'
+import { env } from '#/server/env'
+
+type StoredEntry = RuntimeLogEntry & { demoLogin?: { code: string; maskedPhone: string; expiresAt: number } }
 
 const CAPACITY = 500
 // Preserve the buffer and request context across dev-server HMR. Each process has its own buffer.
@@ -8,7 +11,7 @@ const key = Symbol.for('wencai.runtime.logs')
 const globals = globalThis as typeof globalThis & { [key]?: ReturnType<typeof createState> }
 function createState() {
   return {
-    entries: [] as RuntimeLogEntry[],
+    entries: [] as StoredEntry[],
     sequence: 0,
     startedAt: new Date().toISOString(),
     context: new AsyncLocalStorage<string>(),
@@ -37,20 +40,53 @@ export function redactRuntimeMessage(input: string) {
 }
 
 export function runtimeLog(level: RuntimeLogLevel, source: RuntimeLogSource, message: string) {
-  const entry: RuntimeLogEntry = {
+  appendRuntimeEntry(level, source, message)
+}
+
+function appendRuntimeEntry(
+  level: RuntimeLogLevel,
+  source: RuntimeLogSource,
+  message: string,
+  demoLogin?: StoredEntry['demoLogin'],
+) {
+  const entry: StoredEntry = {
     id: ++state.sequence,
     at: new Date().toISOString(),
     level,
     source,
     message: redactRuntimeMessage(message),
     requestId: state.context.getStore(),
+    ...(demoLogin ? { demoLogin } : {}),
   }
   state.entries.push(entry)
   if (state.entries.length > CAPACITY) state.entries.splice(0, state.entries.length - CAPACITY)
 }
 
+/** Deliberate demo-only exception. Ordinary log redaction remains in force. */
+export function recordDemoLoginCode(phone: string, code: string) {
+  if (!env.AUTH_DEMO_MODE || !/^\+?\d{7,15}$/.test(phone) || !/^\d{6}$/.test(code)) return
+  appendRuntimeEntry('info', 'auth', '演示登录验证码', {
+    code,
+    maskedPhone: `${phone.slice(0, 3)}****${phone.slice(-4)}`,
+    expiresAt: Date.now() + 300_000,
+  })
+}
+
 export function runtimeLogSnapshot(): RuntimeLogSnapshot {
-  return { entries: state.entries.map((entry) => ({ ...entry })), capacity: CAPACITY, startedAt: state.startedAt }
+  const entries = state.entries.map((stored) => {
+    const { demoLogin, ...entry } = stored
+    if (!demoLogin) return entry
+    if (demoLogin.expiresAt <= Date.now()) {
+      demoLogin.code = ''
+      return { ...entry, message: '演示登录验证码（已过期）' }
+    }
+    if (!env.AUTH_DEMO_MODE) return { ...entry, message: '演示登录验证码（已隐藏）' }
+    return {
+      ...entry,
+      message: `${entry.message} · 手机 ${demoLogin.maskedPhone} · 验证码 ${demoLogin.code} · 有效至 ${new Date(demoLogin.expiresAt).toISOString()}（5 分钟）`,
+    }
+  })
+  return { entries, capacity: CAPACITY, startedAt: state.startedAt }
 }
 
 /** Do not log URL parameters or variable path segments such as credential/challenge IDs. */

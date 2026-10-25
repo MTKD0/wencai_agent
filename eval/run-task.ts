@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import { db, schema } from '#/server/db/client'
 import { DEMO_USER_ID } from '#/server/db/constants'
 import { runAgent, screenInput } from '#/server/agent/run'
+import { resolveQuestionnaireRequest } from '#/server/agent/questionnaire-context'
 import { simNow } from '#/server/tools/jobs'
 import type { AgentContext } from '#/server/agent/context'
 import { questionnaireMessage } from '#/lib/questionnaire'
@@ -37,7 +38,10 @@ async function pendingFor(sessionId: string) {
 }
 
 /** 与 /api/chat 相同的处理顺序：输入审核 → Agent 工具循环 → 核验后的正文 */
-async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: string): Promise<TurnObservation & { forms: QuestionnaireData[] }> {
+type ShownForm = { form: QuestionnaireData; submissionId?: string }
+
+/** requestText：提交问卷时由服务端合并原请求与所选答案得到，与 /api/chat 的 questionnaireSubmission 一致 */
+async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: string, requestText?: string): Promise<TurnObservation & { forms: ShownForm[] }> {
   const started = Date.now()
   const base = { input, toolCalls: [], questionnaires: [], outputBlocked: false, violations: 0, violationTexts: [], steps: 0, inputTokens: 0, outputTokens: 0, forms: [] }
   const verdict = await screenInput(ctx, input)
@@ -48,6 +52,7 @@ async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: strin
       ctx,
       messages,
       priorEvidence: [],
+      requestText,
       abortSignal: AbortSignal.timeout(TURN_TIMEOUT_MS),
     })
     let streamError: unknown
@@ -56,10 +61,10 @@ async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: strin
     if (streamError) throw streamError instanceof Error ? streamError : new Error(String(streamError))
     const [steps, text, response, usage] = await Promise.all([result.steps, result.text, result.response, result.totalUsage])
     messages.push(...response.messages)
-    const forms: QuestionnaireData[] = []
+    const forms: ShownForm[] = []
     const toolCalls = steps.flatMap((step) => step.toolCalls.map((call) => {
-      const output = step.toolResults.find((r) => r.toolCallId === call.toolCallId)?.output as { status?: string; questionnaire?: QuestionnaireData } | undefined
-      if (output?.status === 'questionnaire' && output.questionnaire) forms.push(output.questionnaire)
+      const output = step.toolResults.find((r) => r.toolCallId === call.toolCallId)?.output as { status?: string; questionnaire?: QuestionnaireData; submissionId?: string } | undefined
+      if (output?.status === 'questionnaire' && output.questionnaire) forms.push({ form: output.questionnaire, submissionId: output.submissionId })
       return { name: call.toolName, status: output?.status }
     }))
     return {
@@ -68,7 +73,7 @@ async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: strin
       text,
       toolCalls,
       // 问卷里的文字用户同样看得到，评分（例如超范围是否说明不支持）一并考虑
-      questionnaires: forms.map((f) => [f.title, f.description ?? '', ...f.questions.map((q) => `${q.title}：${q.options.map((o) => o.label).join(' / ')}`)].join('\n')),
+      questionnaires: forms.map(({ form: f }) => [f.title, f.description ?? '', ...f.questions.map((q) => `${q.title}：${q.options.map((o) => o.label).join(' / ')}`)].join('\n')),
       forms,
       outputBlocked: ['部分内容未通过银行数据核对', '目前没有可核对的执行成功回执', '操作尚未执行，请在确认卡上核对并确认'].some((s) => text.includes(s)),
       steps: steps.length,
@@ -82,13 +87,13 @@ async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: strin
   }
 }
 
-/** 像用户在问卷组件里点选并提交一样作答：优先选择包含偏好词的选项，否则选第一项 */
-export function answerQuestionnaire(form: QuestionnaireData, prefer: string[]): string {
+/** 像用户在问卷组件里点选并提交一样作答：优先选择包含偏好词的选项，否则选第一项。返回界面发送的文字与结构化答案。 */
+export function answerQuestionnaire(form: QuestionnaireData, prefer: string[]) {
   const answers = Object.fromEntries(form.questions.map((q) => {
     const option = prefer.map((word) => q.options.find((o) => o.label.includes(word))).find(Boolean) ?? q.options[0]
     return [q.id, option.id]
   }))
-  return questionnaireMessage(form, answers)
+  return { message: questionnaireMessage(form, answers), answers }
 }
 
 export async function runTask(task: EvalTask, runLabel: string): Promise<TaskObservation> {
@@ -103,9 +108,10 @@ export async function runTask(task: EvalTask, runLabel: string): Promise<TaskObs
   const followUps = [...(task.followUps ?? (answersExpected ? DEFAULT_WRITE_FOLLOW_UPS : []))]
   const prefer = [...(task.prefer ?? []), ...DEFAULT_PREFER]
   const inputs = [...task.turns]
+  const requestTexts = new Map<number, string>()
   try {
     for (let index = 0; index < inputs.length; index++) {
-      const { forms, ...observed } = await runTurn(ctx, messages, inputs[index])
+      const { forms, ...observed } = await runTurn(ctx, messages, inputs[index], requestTexts.get(index))
       const hits = await verificationHits(ctx.sessionId)
       observed.violationTexts = hits.slice(hitsSeen).flat()
       observed.violations = observed.violationTexts.length
@@ -123,8 +129,16 @@ export async function runTask(task: EvalTask, runLabel: string): Promise<TaskObs
       // 不要求出现问号——Agent 也会用付款卡选择组件（show_view）请用户选择。
       const extra = inputs.length - task.turns.length
       if (index === inputs.length - 1 && !created && answersExpected && extra < MAX_FOLLOW_UPS) {
-        const reply = forms.length ? answerQuestionnaire(forms[0], prefer) : followUps.shift()
-        if (reply) inputs.push(reply)
+        if (forms.length) {
+          // 与界面一致：发送问卷文字，同时用 {submissionId, answers} 让服务端合并出本轮 requestText
+          const { form, submissionId } = forms[0]
+          const { message, answers } = answerQuestionnaire(form, prefer)
+          if (submissionId) requestTexts.set(inputs.length, resolveQuestionnaireRequest(ctx.sessionId, { submissionId, answers }))
+          inputs.push(message)
+        } else {
+          const reply = followUps.shift()
+          if (reply) inputs.push(reply)
+        }
       }
     }
   } finally {
