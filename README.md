@@ -44,7 +44,7 @@ Google VM 的 HTTPS 演示部署、生产启动与日志操作见 [部署说明]
 | `pnpm dev:web` | 仅启动网页（已有环境变量时使用） |
 | `pnpm test` | 单元测试与红队用例（策略、令牌、审计链、执行器、注入、沙箱、生成式 UI、越权） |
 | `pnpm eval` | Agent 端到端任务评测：新建独立库，用真实模型执行 `eval/tasks.ts` 的 68 个任务，输出带分母和置信区间的完成率报告到 `eval/results/`（需配置模型密钥；可加 `--only=tr-01,bl-02`、`--scenario=transfer`、`--repeat=3`） |
-| `pnpm redteam` | 红队统计：新建独立库，102 条注入语料（攻击与正常样本）走真实输入审核，两个演示账户互相做越权实测，输出拦截率、误拒率与逐条结果到 `eval/redteam/`（不需要模型密钥） |
+| `pnpm redteam` | 红队统计：新建独立库，129 条注入语料（攻击与正常样本，含 27 条留出集）走真实输入审核，两个演示账户互相做越权实测，输出拦截率、误拒率与逐条结果到 `eval/redteam/`（不需要模型密钥） |
 | `pnpm typecheck` | 类型检查 |
 | `pnpm db:reset` | POSIX shell 下重建数据库并写入演示数据；Windows 见上方步骤 |
 | `pnpm bot:lark` | 启动飞书机器人（需 `LARK_APP_ID` / `LARK_APP_SECRET`） |

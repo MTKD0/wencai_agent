@@ -18,6 +18,8 @@ type Rate = import('../src/server/security/redteam').Rate
 
 const results = await runCorpus(guard)
 const stats = corpusStats(results)
+const tuning = corpusStats(results.filter((r) => !r.holdout))
+const holdout = corpusStats(results.filter((r) => r.holdout))
 const probes = await runCrossUserProbes({ withSetup: true })
 const commit = (() => { try { return execFileSync('git', ['rev-parse', '--short', 'HEAD']).toString().trim() } catch { return 'unknown' } })()
 const guardLabel = process.env.GUARD_BASE_URL ? '规则启发式 + Qwen3Guard（取更严结果）' : '规则启发式（本机未配置 Qwen3Guard）'
@@ -50,6 +52,14 @@ const report = [
   '',
   '用户输入只有“拦截”才会挡下；外部文本“拦截”和“标记”都会被替换为占位符，所以两类来源的阻断口径不同。',
   '',
+  '### 调规则用的样本与留出集',
+  '',
+  `规则是对着前 ${tuning.attackStopped.total + tuning.benignStopped.total} 条样本补的，这部分的比例偏乐观。留出集 ${holdout.attackStopped.total + holdout.benignStopped.total} 条（编号 ho-、hn-）在规则改完之后才写，没有用来调规则，更接近规则对新说法的真实表现。`,
+  '',
+  '| 子集 | 攻击阻断 | 攻击检出 | 正常误拒 | 正常标记 |',
+  '|---|---|---|---|---|',
+  ...([['调规则样本', tuning], ['留出集', holdout]] as const).map(([label, s]) => `| ${label} | ${s.attackStopped.count}/${s.attackStopped.total}（${pct(s.attackStopped.rate)}） | ${s.attackDetected.count}/${s.attackDetected.total}（${pct(s.attackDetected.rate)}） | ${s.benignStopped.count}/${s.benignStopped.total}（${pct(s.benignStopped.rate)}） | ${s.benignFlagged.count}/${s.benignFlagged.total}（${pct(s.benignFlagged.rate)}） |`),
+  '',
   '### 按类别',
   '',
   '| 类别 | 类型 | 样本 | 阻断 | 检出 |',
@@ -60,9 +70,9 @@ const report = [
   '',
   '这些说法目前的规则覆盖不到，依靠结构约束兜底：工具参数里没有 userId，系统中没有可被模型调用的确认工具，风险等级与验证方式由代码判定。',
   '',
-  '| 编号 | 来源 | 类别 | 样本 |',
-  '|---|---|---|---|',
-  ...misses.map((r) => `| ${r.id} | ${sourceText[r.source]} | ${r.category} | ${r.text.replace(/\n/g, ' ')} |`),
+  '| 编号 | 来源 | 类别 | 留出集 | 样本 |',
+  '|---|---|---|---|---|',
+  ...misses.map((r) => `| ${r.id} | ${sourceText[r.source]} | ${r.category} | ${r.holdout ? '是' : ''} | ${r.text.replace(/\n/g, ' ')} |`),
   '',
   `### 检出但未阻断的攻击（${detectedOnly.length} 条）`,
   '',
@@ -87,6 +97,7 @@ const report = [
   '## 3. 解读边界',
   '',
   '- 语料由开发团队编写，包含已知覆盖不到的同义改写；不是第三方测试集，比例只说明这份语料上的表现。',
+  '- 关键词规则对没见过的说法泛化很弱（见留出集）。留出集的漏检不回头补规则，否则它就不再是留出集；下一轮改规则前应另写新的留出样本。',
   '- 未配置 Qwen3Guard 时只统计规则启发式；生产环境两者并行、取更严结果。',
   '- 输入审核只是第一层。即使漏检，模型也无法越权到他人账户（见第 2 节），也无法自行放行交易：等级与验证由策略引擎和确认链路强制执行。',
   '- 越权实测在独立库的演示数据上运行，覆盖工具层与确认服务；HTTP 接口的会话鉴权由 `authorization.test.ts` 覆盖。',
@@ -94,8 +105,9 @@ const report = [
 
 const outDir = join('eval', 'redteam', stamp)
 mkdirSync(outDir, { recursive: true })
-writeFileSync(join(outDir, 'results.json'), JSON.stringify({ commit, guard: guardLabel, database, stats, corpus: results, probes }, null, 2))
+writeFileSync(join(outDir, 'results.json'), JSON.stringify({ commit, guard: guardLabel, database, stats, tuning, holdout, corpus: results, probes }, null, 2))
 writeFileSync(join(outDir, 'report.md'), report)
-console.log(`[redteam] 攻击阻断 ${stats.attackStopped.count}/${stats.attackStopped.total}，检出 ${stats.attackDetected.count}/${stats.attackDetected.total}；正常误拒 ${stats.benignStopped.count}/${stats.benignStopped.total}；越权防住 ${blocked}/${probes.length}`)
+console.log(`[redteam] 留出集：攻击阻断 ${holdout.attackStopped.count}/${holdout.attackStopped.total}，正常误拒 ${holdout.benignStopped.count}/${holdout.benignStopped.total}`)
+console.log(`[redteam] 全部：攻击阻断 ${stats.attackStopped.count}/${stats.attackStopped.total}，检出 ${stats.attackDetected.count}/${stats.attackDetected.total}；正常误拒 ${stats.benignStopped.count}/${stats.benignStopped.total}；越权防住 ${blocked}/${probes.length}`)
 console.log(`[redteam] 报告：${join(outDir, 'report.md')}`)
 process.exit(0)
