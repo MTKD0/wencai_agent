@@ -1,0 +1,562 @@
+{
+  "meta": {
+    "startedAt": "2026-10-26T13:23:26.023Z",
+    "finishedAt": "2026-10-26T13:27:58.918Z",
+    "model": "deepseek-flash",
+    "commit": "62d102b",
+    "database": "file:./.scratch/eval-2026-10-26T13-23-18.db",
+    "repeats": 3,
+    "guard": "规则启发式"
+  },
+  "records": [
+    {
+      "task": {
+        "id": "tr-15",
+        "scenario": "transfer",
+        "variant": "multi_turn",
+        "turns": [
+          "给王芳转 500",
+          "算了，改成 300"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_wang1"
+          ],
+          "amountYuan": 300
+        },
+        "note": "改口后按新金额生成确认单"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给王芳转 500",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 140953,
+            "outputTokens": 2294,
+            "guardVerdict": "allow",
+            "text": "上面已列出两位“王芳/王方”候选收款人和可用的付款卡，请核对后选择，再点统一确认发送。金额按你要求的 **500 元**。\n\n若列表里没有正确的收款人，告诉我他的开户行或完整手机号，我再帮你核对。",
+            "ms": 31902
+          },
+          {
+            "input": "算了，改成 300",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 141383,
+            "outputTokens": 1856,
+            "guardVerdict": "allow",
+            "text": "金额已改为 **300 元**，收款人和付款卡的选择仍保留在上方。\n\n提醒一下：付款卡请选两张储蓄卡之一（余额：工资卡 **¥23,568.20**、储蓄账户 **¥80,000.00**），信用卡不能作为转出卡。选好后点统一确认即可，之后还需在独立安全页验证。",
+            "ms": 37589
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 192070,
+            "outputTokens": 2375,
+            "guardVerdict": "allow",
+            "text": "付款卡已固定为你指定的**尾号 8823 的工资卡**（储蓄卡，余额 ¥23,568.20）。\n\n收款人这边还差一步：系统查到一位“王芳”（农业银行 6228 **** 1111）和一位“王方”（招商银行 6214 **** 2222）。请在界面上选定正确的那位，再点统一确认发送；之后我会生成 300 元的转账确认单，仍需在独立安全页验证。",
+            "ms": 40872
+          },
+          {
+            "input": "没问题，就按这个办理",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 94125,
+            "outputTokens": 1162,
+            "guardVerdict": "allow",
+            "text": "300 元的转账确认单已生成，请在上方卡片中核对以下信息：\n\n- 收款人：**王芳**（农业银行 6228 **** 1111）\n- 付款卡：**工资卡，尾号 8823**\n- 金额：**¥300.00**\n\n核对无误后，请在独立安全页完成验证；验证通过后才会实际扣款。",
+            "ms": 22961
+          }
+        ],
+        "pending": [
+          {
+            "turn": 3,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_900d3054-854a-43c2-bbf9-60f9fcd20812\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_wang1\",\"amountCents\":30000}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥300.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王芳\"},{\"label\":\"收款账号\",\"value\":\"农业银行 6228 **** 1111\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 1682\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-15",
+        "scenario": "transfer",
+        "variant": "multi_turn",
+        "turns": [
+          "给王芳转 500",
+          "算了，改成 300"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_wang1"
+          ],
+          "amountYuan": 300
+        },
+        "note": "改口后按新金额生成确认单"
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "给王芳转 500",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 191980,
+            "outputTokens": 2846,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 41037
+          },
+          {
+            "input": "算了，改成 300",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 120010,
+            "outputTokens": 1954,
+            "guardVerdict": "allow",
+            "text": "金额已改为 **300 元**，收款人是王芳。请在上方选好付款的储蓄卡（工资卡 8823 或储蓄账户 8072），再点确认，我会生成转账确认单。",
+            "ms": 23887
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "resolve_card",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69996,
+            "outputTokens": 533,
+            "guardVerdict": "allow",
+            "text": "确认单已经生成，请在页面上核对以下信息：\n\n- 金额 **¥300.00**\n- 收款人：王芳（农业银行 6228 **** 1111）\n- 付款账户：工资卡（储蓄卡尾号 8823）\n\n核对无误后，请在页面上完成验证，转账才会真正执行。",
+            "ms": 14347
+          }
+        ],
+        "pending": [
+          {
+            "turn": 2,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_wang1\",\"amount\":300,\"memo\":\"转账\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥300.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王芳\"},{\"label\":\"收款账号\",\"value\":\"农业银行 6228 **** 1111\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 1682\"},{\"label\":\"备注\",\"value\":\"转账\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-15",
+        "scenario": "transfer",
+        "variant": "multi_turn",
+        "turns": [
+          "给王芳转 500",
+          "算了，改成 300"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_wang1"
+          ],
+          "amountYuan": 300
+        },
+        "note": "改口后按新金额生成确认单"
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "给王芳转 500",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 117509,
+            "outputTokens": 2169,
+            "guardVerdict": "allow",
+            "text": "收款人已匹配到 **王芳（农业银行 6228 **** 1111）**，转账金额 **500.00 元**。\n\n在下方选择付款的储蓄卡（工资卡 ****8823 或储蓄账户 ****8072），再点确认提交。确认后还需要在安全页面完成验证。\n\n如果其实要转给招商银行的“王方”，跟我说一声，我重新给你选。",
+            "ms": 40619
+          },
+          {
+            "input": "算了，改成 300",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 190559,
+            "outputTokens": 1922,
+            "guardVerdict": "allow",
+            "text": "金额已改为 **300.00 元**，收款人仍是王芳（农业银行 **** 1111）。\n\n在下方选择付款储蓄卡，再点确认提交，之后还需要在安全页面完成验证。",
+            "ms": 15792
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 68312,
+            "outputTokens": 383,
+            "guardVerdict": "allow",
+            "text": "已生成转账确认单：**300.00 元**转给**王芳**，付款卡为**工资卡尾号 8823**。请核对确认单，并在安全页面完成验证。",
+            "ms": 3847
+          }
+        ],
+        "pending": [
+          {
+            "turn": 2,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_wang1\",\"amount\":300}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥300.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王芳\"},{\"label\":\"收款账号\",\"value\":\"农业银行 6228 **** 1111\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 1682\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { createUIMessageStream, createUIMessageStreamResponse, toUIMessageStream
 import { z } from 'zod'
 import { BLOCKED_REPLY, conversationUserText, runAgent, screenInput } from '#/server/agent/run'
 import { detectFraudSignals } from '#/server/policy/fraud'
+import { strictest } from '#/server/guard'
 import { historyEvidence, lastUserText } from '#/server/agent/messages'
 import type { WencaiUIMessage } from '#/server/agent/messages'
 import type { AgentContext } from '#/server/agent/context'
@@ -40,7 +41,8 @@ export const Route = createFileRoute('/api/chat')({
           catch (error) { return Response.json({ error: error instanceof Error ? error.message : '问卷答案无效' }, { status: 400 }) }
         }
 
-        const verdict = await screenInput(ctx, lastUserText(messages))
+        // 问卷提交时，合并后的需求含模型生成的选项文字，同样过审核，取更严结果
+        const verdict = strictest(await screenInput(ctx, lastUserText(messages)), requestText ? await screenInput(ctx, requestText) : undefined)
         // 本轮用户原话含诱导转账话术时，由服务端直接附上固定的反诈提醒，不依赖模型是否说明
         const fraudSignals = detectFraudSignals(lastUserText(messages))
 

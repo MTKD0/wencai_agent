@@ -10,6 +10,7 @@ import { questionnaireMessage } from '#/lib/questionnaire'
 import type { QuestionnaireData } from '#/lib/questionnaire'
 import { DEFAULT_PREFER, DEFAULT_WRITE_FOLLOW_UPS, FRAUD_FOLLOW_UPS, FRAUD_PREFER } from './tasks'
 import { detectFraudSignals } from '#/server/policy/fraud'
+import { strictest } from '#/server/guard'
 import type { EvalTask, Setup } from './tasks'
 import type { PendingObservation, TaskObservation, TurnObservation } from './grade'
 
@@ -47,7 +48,7 @@ async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: strin
   // 与 /api/chat 一致：本轮用户原话含诱导转账话术时，服务端附上固定反诈提醒
   const notices = detectFraudSignals(input).length ? ['反诈提醒：请先停一下，这可能是诈骗；拿不准时拨打 96110 反诈专线核实'] : []
   const base = { input, toolCalls: [], questionnaires: [], notices, outputBlocked: false, violations: 0, violationTexts: [], steps: 0, inputTokens: 0, outputTokens: 0, forms: [] }
-  const verdict = await screenInput(ctx, input)
+  const verdict = strictest(await screenInput(ctx, input), requestText ? await screenInput(ctx, requestText) : undefined)
   if (verdict.verdict === 'block') return { ...base, guardVerdict: 'block', text: '', ms: Date.now() - started }
   messages.push({ role: 'user', content: input })
   try {

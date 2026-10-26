@@ -4,6 +4,18 @@ import { createQwen3Guard } from './qwen3guard'
 import type { GuardProvider, GuardSource, GuardVerdict } from './types'
 
 const RANK = { allow: 0, flag: 1, block: 2 } as const
+const NONE: GuardVerdict = { verdict: 'allow', score: 0, categories: [], provider: 'none' }
+
+/** 多个判定取最严：先比等级，同级比可疑度 */
+export function strictest(...verdicts: (GuardVerdict | undefined)[]): GuardVerdict {
+  return verdicts.reduce<GuardVerdict>(
+    (worst, v) =>
+      v && (RANK[v.verdict] > RANK[worst.verdict] || (RANK[v.verdict] === RANK[worst.verdict] && v.score > worst.score))
+        ? v
+        : worst,
+    NONE,
+  )
+}
 
 /**
  * 组合审核：启发式与模型并行，取最严结果。
@@ -15,17 +27,7 @@ export function composeGuards(providers: GuardProvider[]): GuardProvider {
     name: providers.map((p) => p.name).join('+'),
     async check(text, source) {
       const results = await Promise.allSettled(providers.map((p) => p.check(text, source)))
-      const verdicts = results
-        .filter((r): r is PromiseFulfilledResult<GuardVerdict> => r.status === 'fulfilled')
-        .map((r) => r.value)
-      return verdicts.reduce<GuardVerdict>(
-        (worst, v) =>
-          RANK[v.verdict] > RANK[worst.verdict] ||
-          (RANK[v.verdict] === RANK[worst.verdict] && v.score > worst.score)
-            ? v
-            : worst,
-        { verdict: 'allow', score: 0, categories: [], provider: 'none' },
-      )
+      return strictest(...results.map((r) => (r.status === 'fulfilled' ? r.value : undefined)))
     },
   }
 }

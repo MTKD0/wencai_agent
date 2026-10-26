@@ -25,5 +25,6 @@ describe('QuickJS 沙箱', () => {
   it('内存超限被中断', async () => {
     const r = await runInSandbox('const a = []; while (true) a.push(new Array(1e5).fill(1))', {}, { memoryBytes: 8 * 1024 * 1024, timeoutMs: 3000 })
     expect(r.ok).toBe(false)
-  })
+    // 分配到 8MB 上限前要先触发多次 GC，本机耗时 5.0–5.6 秒，会超过 Vitest 默认的 5 秒
+  }, 20_000)
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { heuristicGuard } from '#/server/guard/heuristic'
-import { composeGuards } from '#/server/guard'
+import { composeGuards, strictest } from '#/server/guard'
 import { parseQwen3GuardOutput } from '#/server/guard/qwen3guard'
 import type { GuardProvider } from '#/server/guard'
 
@@ -77,5 +77,11 @@ describe('组合审核', () => {
   it('取最严结果（block 优先于高分 flag）', async () => {
     const g = composeGuards([heuristicGuard, flagging])
     expect((await g.check(ATTACKS[0], 'user')).verdict).toBe('block')
+  })
+  it('问卷提交时两段文字分别审核后取最严；缺省的一段不影响结果', async () => {
+    const allow = await heuristicGuard.check('给妈妈转100', 'user')
+    const block = await heuristicGuard.check(ATTACKS[0], 'user')
+    expect(strictest(allow, block).verdict).toBe('block')
+    expect(strictest(allow, undefined).verdict).toBe('allow')
   })
 })
