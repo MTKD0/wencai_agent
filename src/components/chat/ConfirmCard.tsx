@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ConfirmError } from '#/lib/queries'
 import { useSecureOperation, type SecureResult } from '#/components/ui/SecureOperation'
 import type { ConfirmSummary } from '#/server/tools/define'
+import { FRAUD_REASON_PREFIX } from '#/lib/fraud'
+import { FraudAdvice } from './FraudAdvice'
 import './confirm-card.css'
 
 export interface ConfirmCardProps {
@@ -46,12 +48,17 @@ export default function ConfirmCard(props: ConfirmCardProps) {
   const [verifying, setVerifying] = useState(false)
   const [escalated, setEscalated] = useState(false)
   const [latestReasons, setLatestReasons] = useState<string[]>()
+  // 合并而不是替换：确认失败返回的新原因不能让创建时的诈骗提示消失
+  const reasons = [...new Set([...props.reasons, ...(latestReasons ?? [])])]
+  const fraudWarning = reasons.some((r) => r.startsWith(FRAUD_REASON_PREFIX))
+  const [acknowledged, setAcknowledged] = useState(false)
   const red = props.level === 'red' || escalated
   const submitting = props.submitting || verifying
   const state = completed ? 'success' : done ? (props.doneState ?? 'success') : 'pending'
 
   async function confirm() {
     if (confirming.current || submitting || done) return
+    if (fraudWarning && !acknowledged) return
     if (props.onAgentAction && !props.onAgentAction('verify')) return
     confirming.current = true
     setVerifying(true)
@@ -90,12 +97,21 @@ export default function ConfirmCard(props: ConfirmCardProps) {
           </div>
         ))}
       </dl>
-      {(latestReasons ?? props.reasons).length > 0 && (
+      {reasons.length > 0 && (
         <ul className="mt-3 mb-0 list-none space-y-0.5 p-0 text-xs text-[var(--sea-ink-soft)]">
-          {(latestReasons ?? props.reasons).map((r) => (
+          {reasons.map((r) => (
             <li key={r}>· {r}</li>
           ))}
         </ul>
+      )}
+      {fraudWarning && !done && (
+        // 劝阻文案固定写在前端，不使用模型文字；勾选只是提醒用户停下来核实，验证仍由独立安全页面完成
+        <FraudAdvice>
+          <label className="bank-fraud-ack">
+            <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
+            <span>我已核实收款人身份，没有人指挥我转账</span>
+          </label>
+        </FraudAdvice>
       )}
 
       {done && (
@@ -110,7 +126,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
             <Button
               onClick={() => done && props.onAgentAction ? props.onAgentAction('repeat') : void confirm()}
               type="button"
-              disabled={submitting || props.agentBusy}
+              disabled={submitting || props.agentBusy || (fraudWarning && !acknowledged && !done)}
               className="bank-confirm-submit bank-lift flex-1 rounded-full py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               {submitting ? '处理中…' : done ? '重新办理' : '确认'}

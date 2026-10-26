@@ -142,7 +142,9 @@ async function confirmUnderLock(params: {
   const effectiveLevel = maxRisk(row.level, decision.level)
   if (effectiveLevel === 'red') {
     const integrity = signIntegrity(env.CONFIRM_SECRET, { id: row.id, userId: row.userId, tool: row.tool, paramsHash: row.paramsHash, level: 'red', expiresAt: row.expiresAt.getTime() })
-    await db.update(schema.pendingActions).set({ level: 'red', integrity, reasonsJson: JSON.stringify(decision.reasons) }).where(and(eq(schema.pendingActions.id, row.id), eq(schema.pendingActions.status, 'pending')))
+    // 保留创建时的原因（例如依据当时对话识别的诈骗话术提示），确认时只追加新出现的原因
+    const reasons = [...new Set([...(JSON.parse(row.reasonsJson) as string[]), ...decision.reasons])]
+    await db.update(schema.pendingActions).set({ level: 'red', integrity, reasonsJson: JSON.stringify(reasons) }).where(and(eq(schema.pendingActions.id, row.id), eq(schema.pendingActions.status, 'pending')))
   }
   if (facts.payeeRiskFlag === 'suspected' && facts.payeeRiskAccountId && facts.payeeRiskRevision !== undefined) {
     const shown = await pendingRiskSnapshot(actionId)

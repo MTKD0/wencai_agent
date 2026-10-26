@@ -27,3 +27,9 @@
 .bank-confirm-submit { background: #0756ee; border: 1px solid #0756ee; box-shadow: 0 3px 10px #0756ee15; }
 .bank-confirm-cancel { background: #fff; color: #52668f; }
 .bank-confirm-card input { color: #142653; background: #fff; font-size: 16px; }
+.bank-fraud-warning { margin-top: 12px; padding: 12px 14px; border: 1px solid #f0b8c2; border-radius: 14px; background: #fff4f5; color: #6b1f2c; font-size: 13px; line-height: 1.55; }
+.bank-fraud-warning ul { margin: 6px 0; padding-left: 18px; }
+.bank-fraud-title { margin: 0; font-weight: 700; color: #b3263e; }
+.bank-fraud-hotline { margin: 6px 0 0; font-weight: 600; }
+.bank-fraud-ack { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-weight: 600; cursor: pointer; }
+.bank-fraud-ack input { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; accent-color: #b3263e; }

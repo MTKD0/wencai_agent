@@ -14,6 +14,7 @@ import { toolPresentations } from './presentation'
 import AssistantText, { presentedTables } from './AssistantText'
 import { subscribeConfirmations } from '#/lib/confirmation-notices'
 import ConfirmCard from './ConfirmCard'
+import { FraudAdvice } from './FraudAdvice'
 import { MotionMessage, bankEase } from '#/components/ui/motion'
 import { AgentProgress } from './AgentProgress'
 import { agentStage, progressOnlyTool } from './progress'
@@ -204,7 +205,7 @@ export default function ChatView({
             const processing = busy && messageIndex === messages.length - 1
             const presentation = toolPresentations(message.parts, processing)
             const visibleParts = message.parts.map((part,index) => part.type === 'text' ? !!part.text.trim()
-              : ['data-plan','data-confirmation','data-verify','data-blocked'].includes(part.type) || (part.type.startsWith('tool-') && !progressOnlyTool(part,processing,presentation[index])))
+              : ['data-plan','data-confirmation','data-verify','data-blocked','data-fraud'].includes(part.type) || (part.type.startsWith('tool-') && !progressOnlyTool(part,processing,presentation[index])))
             if (message.role === 'assistant' && !visibleParts.some(Boolean)) return null
             const tables = presentedTables(message.parts, presentation)
             const securityConfirmation = message.parts.some((part) => part.type === 'data-plan' || ('output' in part && !!part.output && typeof part.output === 'object' && 'status' in part.output && ['needs_confirmation', 'needs_handoff', 'plan'].includes(String(part.output.status))))
@@ -249,6 +250,8 @@ export default function ChatView({
                           。请以数据卡片为准。
                         </p>
                       )
+                    // 服务端识别到诱导转账话术：固定劝阻文案，与模型回复无关，问卷出现时也照常显示
+                    if (part.type === 'data-fraud') return <FraudAdvice key={key} />
                     if (part.type === 'data-blocked')
                       return (
                         <p key={key} className="bank-verification-note">

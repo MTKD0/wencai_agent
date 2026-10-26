@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createUIMessageStream, createUIMessageStreamResponse, toUIMessageStream } from 'ai'
 import { z } from 'zod'
-import { BLOCKED_REPLY, runAgent, screenInput } from '#/server/agent/run'
+import { BLOCKED_REPLY, conversationUserText, runAgent, screenInput } from '#/server/agent/run'
+import { detectFraudSignals } from '#/server/policy/fraud'
 import { historyEvidence, lastUserText } from '#/server/agent/messages'
 import type { WencaiUIMessage } from '#/server/agent/messages'
 import type { AgentContext } from '#/server/agent/context'
@@ -40,6 +41,8 @@ export const Route = createFileRoute('/api/chat')({
         }
 
         const verdict = await screenInput(ctx, lastUserText(messages))
+        // 本轮用户原话含诱导转账话术时，由服务端直接附上固定的反诈提醒，不依赖模型是否说明
+        const fraudSignals = detectFraudSignals(lastUserText(messages))
 
         const stream = createUIMessageStream<WencaiUIMessage>({
           execute: async ({ writer }) => {
@@ -54,7 +57,7 @@ export const Route = createFileRoute('/api/chat')({
             }
 
             if (body.data.transferBatch) {
-              const plan = await startSelectedTransferBatch(ctx, body.data.transferBatch, request.signal)
+              const plan = await startSelectedTransferBatch({ ...ctx, riskText: conversationUserText(messages) }, body.data.transferBatch, request.signal)
               writer.write({ type: 'start' })
               writer.write({ type: 'data-plan', data: plan })
               writer.write({ type: 'text-start', id: 'batch-plan' })
@@ -86,11 +89,11 @@ export const Route = createFileRoute('/api/chat')({
                 if (violations.length) writer.write({ type: 'data-verify', data: { violations } })
               },
             })
-            if (confirmation) {
-              writer.write({ type: 'start' })
-              writer.write({ type: 'data-confirmation', data: confirmation })
-            }
-            writer.merge(toUIMessageStream({ stream: result.stream, tools, sendStart: !confirmation }))
+            const preface = !!confirmation || fraudSignals.length > 0
+            if (preface) writer.write({ type: 'start' })
+            if (confirmation) writer.write({ type: 'data-confirmation', data: confirmation })
+            if (fraudSignals.length) writer.write({ type: 'data-fraud', data: { signals: fraudSignals } })
+            writer.merge(toUIMessageStream({ stream: result.stream, tools, sendStart: !preface }))
           },
           // 详细错误只记服务端日志，不向客户端泄露
           onError: (error) => {

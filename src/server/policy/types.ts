@@ -30,6 +30,8 @@ export interface PolicyFacts {
   payeeRiskFlag?: 'suspected' | 'confirmed'
   payeeRiskAccountId?: string
   payeeRiskRevision?: number
+  /** 本人当前请求与转账备注中命中的诱导转账话术（见 policy/fraud.ts）。只用于升级，不会降级或放行。 */
+  fraudSignals?: import('./fraud').FraudSignal[]
 }
 
 export interface PolicyInput {

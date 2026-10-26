@@ -159,3 +159,5 @@ html.dark .bank-theme-selector button[aria-pressed='true'] { background:var(--ba
 @media(prefers-reduced-motion:no-preference) {
   .bank-theme-selector button,.bank-theme-toggle { transition:background-color .18s,color .18s,border-color .18s; }
 }
+html.dark .bank-fraud-warning { border-color:#8a4452; background:#3a1d24; color:#f3d6dc; }
+html.dark .bank-fraud-title { color:#ff9aab; }

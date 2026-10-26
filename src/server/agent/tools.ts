@@ -25,7 +25,7 @@ export function availableBankTools(ctx: AgentContext): BankToolDef[] {
 }
 
 /** 构建本次请求的 AI SDK 工具集。ctx 通过闭包注入，模型无法篡改身份。 */
-export function buildAgentTools(ctx: AgentContext, options: { readOnly?: boolean; requestText?: string } = {}): ToolSet {
+export function buildAgentTools(ctx: AgentContext, options: { readOnly?: boolean; requestText?: string; riskText?: string } = {}): ToolSet {
   const bankTools = availableBankTools(ctx).filter((tool) => !options.readOnly || tool.kind === 'read')
   const tools: ToolSet = {}
   const currentTools = new Set<string>()
@@ -35,7 +35,7 @@ export function buildAgentTools(ctx: AgentContext, options: { readOnly?: boolean
       description: `${def.description}${def.kind === 'write' ? '（写操作，系统会按风险等级要求用户确认）' : ''}`,
       inputSchema: modelToolSchema(def.inputSchema),
       execute: async (args) => {
-        const outcome = await runBankTool(def, args, { ...ctx, requestText: options.requestText })
+        const outcome = await runBankTool(def, args, { ...ctx, requestText: options.requestText, riskText: options.riskText })
         if (outcome.status === 'done') {
           putSessionData(ctx.sessionId, def.name, outcome.data)
           // 合计单独存一份，后续轮次复述时仍是服务端证据，show_view 也可引用 /<工具名>_totals
@@ -92,7 +92,8 @@ export function buildAgentTools(ctx: AgentContext, options: { readOnly?: boolean
       inputSchema: PlanSchema,
       execute: async (plan, { abortSignal }) => {
         // 用户按下停止时，计划停在当前步骤并保留为"已暂停"，不再创建后续确认单
-        const res = await startPlan(ctx, plan, allowed, abortSignal)
+        // 计划节点同样需要本人原文，用于诱导转账话术识别
+        const res = await startPlan({ ...ctx, requestText: options.requestText, riskText: options.riskText }, plan, allowed, abortSignal)
         if (!res.ok) return { status: 'invalid_plan' as const, errors: res.errors }
         return { status: 'plan' as const, planId: res.state.id, state: res.state }
       },

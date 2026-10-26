@@ -1,4 +1,5 @@
 import type { PolicyInput, RiskLevel } from './types'
+import { fraudReason } from './fraud'
 
 export const LIMITS = {
   /** UTC+8 自然日跨本人所有账户累计（含本笔），严格超过 1000 元需强验证。 */
@@ -29,6 +30,9 @@ function amountCents(input: PolicyInput): number {
 
 const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card', 'pay_split_request', 'create_birthday_plan', 'execute_birthday_order', 'create_standing_mandate', 'execute_standing_mandate'].includes(i.tool)
 
+/** 资金离开本人的操作：本人账户 / 卡片之间互转、信用卡还款、生日预留不在此列 */
+const paysOthers = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'pay_split_request', 'create_standing_mandate', 'add_payee'].includes(i.tool)
+
 export const RULES: Rule[] = [
   {
     id: 'life-payment-authorization',
@@ -44,6 +48,12 @@ export const RULES: Rule[] = [
       : facts.payeeRiskFlag === 'suspected'
         ? { kind: 'raise', to: 'red', reason: '该收款账户近期收款特征异常，请核实对方身份，并完成本次强验证' }
         : null,
+  },
+  {
+    // 识别到诱导转账话术：升红并在确认单上强制展示劝阻提示；不拒绝，避免误报挡住正常转账
+    id: 'scam-script-warning',
+    applies: paysOthers,
+    evaluate: ({ facts }) => facts.fraudSignals?.length ? { kind: 'raise', to: 'red', reason: fraudReason(facts.fraudSignals) } : null,
   },
   {
     id: 'sensitive-card-operation',

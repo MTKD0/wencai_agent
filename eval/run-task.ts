@@ -8,7 +8,8 @@ import { simNow } from '#/server/tools/jobs'
 import type { AgentContext } from '#/server/agent/context'
 import { questionnaireMessage } from '#/lib/questionnaire'
 import type { QuestionnaireData } from '#/lib/questionnaire'
-import { DEFAULT_PREFER, DEFAULT_WRITE_FOLLOW_UPS } from './tasks'
+import { DEFAULT_PREFER, DEFAULT_WRITE_FOLLOW_UPS, FRAUD_FOLLOW_UPS, FRAUD_PREFER } from './tasks'
+import { detectFraudSignals } from '#/server/policy/fraud'
 import type { EvalTask, Setup } from './tasks'
 import type { PendingObservation, TaskObservation, TurnObservation } from './grade'
 
@@ -43,7 +44,9 @@ type ShownForm = { form: QuestionnaireData; submissionId?: string }
 /** requestText：提交问卷时由服务端合并原请求与所选答案得到，与 /api/chat 的 questionnaireSubmission 一致 */
 async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: string, requestText?: string): Promise<TurnObservation & { forms: ShownForm[] }> {
   const started = Date.now()
-  const base = { input, toolCalls: [], questionnaires: [], outputBlocked: false, violations: 0, violationTexts: [], steps: 0, inputTokens: 0, outputTokens: 0, forms: [] }
+  // 与 /api/chat 一致：本轮用户原话含诱导转账话术时，服务端附上固定反诈提醒
+  const notices = detectFraudSignals(input).length ? ['反诈提醒：请先停一下，这可能是诈骗；拿不准时拨打 96110 反诈专线核实'] : []
+  const base = { input, toolCalls: [], questionnaires: [], notices, outputBlocked: false, violations: 0, violationTexts: [], steps: 0, inputTokens: 0, outputTokens: 0, forms: [] }
   const verdict = await screenInput(ctx, input)
   if (verdict.verdict === 'block') return { ...base, guardVerdict: 'block', text: '', ms: Date.now() - started }
   messages.push({ role: 'user', content: input })
@@ -104,9 +107,11 @@ export async function runTask(task: EvalTask, runLabel: string): Promise<TaskObs
   const pending: PendingObservation[] = []
   const seen = new Set<string>()
   let hitsSeen = 0
-  const answersExpected = task.expect.kind === 'write' || task.expect.kind === 'guided'
-  const followUps = [...(task.followUps ?? (answersExpected ? DEFAULT_WRITE_FOLLOW_UPS : []))]
-  const prefer = [...(task.prefer ?? []), ...DEFAULT_PREFER]
+  // 诱导转账任务模拟坚持要转的受害者，检验后续轮次生成的确认单仍带劝阻
+  const fraud = task.expect.kind === 'fraud_guard'
+  const answersExpected = task.expect.kind === 'write' || task.expect.kind === 'guided' || fraud
+  const followUps = [...(task.followUps ?? (fraud ? FRAUD_FOLLOW_UPS : answersExpected ? DEFAULT_WRITE_FOLLOW_UPS : []))]
+  const prefer = [...(task.prefer ?? []), ...(fraud ? FRAUD_PREFER : []), ...DEFAULT_PREFER]
   const inputs = [...task.turns]
   const requestTexts = new Map<number, string>()
   try {
@@ -122,7 +127,7 @@ export async function runTask(task: EvalTask, runLabel: string): Promise<TaskObs
         if (seen.has(row.id)) continue
         seen.add(row.id)
         created++
-        pending.push({ turn: index, tool: row.tool, level: row.level, argsJson: row.argsJson, summaryJson: row.summaryJson })
+        pending.push({ turn: index, tool: row.tool, level: row.level, argsJson: row.argsJson, summaryJson: row.summaryJson, reasonsJson: row.reasonsJson })
       }
       if (observed.guardVerdict === 'block' || observed.error) break
       // 办理类任务脚本轮次用完仍没有确认单时，模拟用户继续回应：有问卷就提交问卷，否则用文字补充。

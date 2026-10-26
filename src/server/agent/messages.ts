@@ -10,6 +10,8 @@ export type WencaiUIMessage = UIMessage<
     blocked: { categories: string[] }
     confirmation: Awaited<ReturnType<typeof getConfirmationResult>>
     plan: import('#/server/executor/executor').PlanState
+    /** 服务端识别到的诱导转账话术，前端显示固定的反诈提醒 */
+    fraud: { signals: string[] }
   }
 >
 

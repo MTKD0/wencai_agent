@@ -1,4 +1,4 @@
-import { SCENARIO_LABELS, VARIANT_LABELS } from './tasks'
+import { BUSINESS_SCENARIOS, SCENARIO_LABELS, VARIANT_LABELS } from './tasks'
 import type { EvalTask, Scenario, Variant } from './tasks'
 import { wilson } from './grade'
 import type { GradeResult, TaskObservation } from './grade'
@@ -38,7 +38,7 @@ const percentile = (values: number[], p: number) => {
 }
 
 export function buildReport(records: TaskRecord[], meta: RunMeta): string {
-  const inScope = records.filter((r) => r.task.scenario !== 'out_of_scope')
+  const inScope = records.filter((r) => BUSINESS_SCENARIOS.includes(r.task.scenario))
   const scenarios = Object.keys(SCENARIO_LABELS) as Scenario[]
   const variants = Object.keys(VARIANT_LABELS) as Variant[]
   const turns = records.flatMap((r) => r.observation.turns)
@@ -66,6 +66,7 @@ export function buildReport(records: TaskRecord[], meta: RunMeta): string {
     '|---|---|---|---|',
     row('六个业务场景合计', inScope),
     row('超范围兜底', records.filter((r) => r.task.scenario === 'out_of_scope')),
+    row('诱导转账防护', records.filter((r) => r.task.scenario === 'fraud')),
     row('全部任务', records),
     '',
     ...(outcomes.get('error') ? [`> ⚠️ 有 ${outcomes.get('error')} 个任务因模型调用或运行错误没有完成（见第 5 节），计入失败。如果是密钥、网络或限流问题，修复后应重新运行，不能把这部分当作 Agent 行为的结果。`, ''] : []),
