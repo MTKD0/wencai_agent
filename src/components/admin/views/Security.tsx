@@ -21,9 +21,10 @@ import {
   Eye,
 } from 'lucide-react'
 import { Panel, Empty, Badge, type ViewProps } from '../shared'
-import { adminApi, type AdminSecurityOverview, type AdminTrace, type SandboxProbeResult } from '../client'
+import { adminApi, type AdminSecurityOverview, type AdminTrace, type CrossUserProbeResult, type SandboxProbeResult } from '../client'
 import { dateTime } from '../utils'
 
+const pct = (rate: number) => `${(rate * 100).toFixed(1)}%`
 const LEVEL_LABEL: Record<string, string> = { green: '🟢 绿色 · 自动执行', yellow: '🟡 黄色 · 用户确认', red: '🔴 红色 · 强验证' }
 const OUTCOME: Record<AdminTrace['outcome'], { label: string; status: string }> = {
   blocked: { label: '输入审核拦截', status: 'lost' },
@@ -55,6 +56,12 @@ export function AdminSecurity({ s }: ViewProps) {
     queryKey: ['admin', 'sandbox'],
     queryFn: () => adminApi.sandbox(),
     // 沙箱样本含 1 秒超时与内存炸弹用例，只在用户点击时执行
+    enabled: false,
+  })
+  const crossUser = useQuery({
+    queryKey: ['admin', 'crossuser'],
+    queryFn: () => adminApi.crossUser(),
+    // 越权实测会以演示账户身份真实调用工具并写审计，只在用户点击时执行
     enabled: false,
   })
 
@@ -252,12 +259,14 @@ export function AdminSecurity({ s }: ViewProps) {
       {/* ③ 红队回归 */}
       <Panel
         title="红队回归"
-        subtitle="内置攻击样本逐条重放，现场可见拦截结果（走真实启发式规则，不调用模型）"
+        subtitle={overview
+          ? `完整语料 ${overview.redTeamStats.attackStopped.total} 条攻击、${overview.redTeamStats.benignStopped.total} 条正常样本走真实规则：攻击阻断 ${overview.redTeamStats.attackStopped.count}/${overview.redTeamStats.attackStopped.total}（${pct(overview.redTeamStats.attackStopped.rate)}），检出 ${overview.redTeamStats.attackDetected.count}/${overview.redTeamStats.attackDetected.total}（${pct(overview.redTeamStats.attackDetected.rate)}），正常误拒 ${overview.redTeamStats.benignStopped.count}/${overview.redTeamStats.benignStopped.total}。下表为代表性样本逐条重放。`
+          : '内置攻击样本逐条重放，现场可见拦截结果（走真实启发式规则，不调用模型）'}
         action={
           overview && (
             <span className={`chain-state ${overview.redTeamScore.passed === overview.redTeamScore.total ? 'ok' : 'broken'}`}>
               <ShieldAlert size={15} />
-              拦截 {overview.redTeamScore.passed}/{overview.redTeamScore.total}
+              样本拦截 {overview.redTeamScore.passed}/{overview.redTeamScore.total}
             </span>
           )
         }
@@ -306,6 +315,48 @@ export function AdminSecurity({ s }: ViewProps) {
             <Loader2 size={22} className="spin" />
             <span>正在重放攻击样本</span>
           </div>
+        )}
+      </Panel>
+
+      {/* ③b 越权实测：两个真实账户互相访问 */}
+      <Panel
+        title="越权实测"
+        subtitle="张小明与李小萌以本人会话身份，互相读取、操作对方的账户、银行卡、联系人和确认单（只读探测，不改变任何人数据）"
+        action={
+          <Button className="button button-outline button-sm" onClick={() => crossUser.refetch()} disabled={crossUser.isFetching} type="button">
+            {crossUser.isFetching ? <Loader2 size={14} className="spin" /> : <Play size={14} />}
+            运行越权实测
+          </Button>
+        }
+      >
+        {crossUser.data ? (
+          crossUser.data.length ? (
+            <div className="table-scroll">
+              <p className="muted">防住 {crossUser.data.filter((p) => p.blocked).length} / {crossUser.data.length}</p>
+              <Table className="data-table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>探测</TableHead>
+                    <TableHead>结果</TableHead>
+                    <TableHead>服务端返回</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {crossUser.data.map((probe: CrossUserProbeResult) => (
+                    <TableRow key={probe.id}>
+                      <TableCell>{probe.label}</TableCell>
+                      <TableCell>{probe.blocked ? <Badge status="active">防住</Badge> : <Badge status="lost">未防住</Badge>}</TableCell>
+                      <TableCell><small className="muted">{probe.evidence}</small></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <Empty icon={ShieldAlert} title="没有可用的演示账户" text="越权实测只在两个演示账户（张小明、李小萌）之间运行，当前数据库中找不到它们。" />
+          )
+        ) : (
+          <Empty icon={ShieldAlert} title="尚未运行越权实测" text="点击「运行越权实测」，两个演示账户会互相尝试付款、查流水、锁卡、挂失、调限额、查看卡号、拉联系人和读取确认单。" />
         )}
       </Panel>
 

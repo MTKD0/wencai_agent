@@ -109,6 +109,12 @@ export type AdminSecurityOverview = {
     caughtBy: string
   }>
   redTeamScore: { total: number; passed: number }
+  redTeamStats: {
+    attackStopped: RateStat
+    attackDetected: RateStat
+    benignStopped: RateStat
+    benignFlagged: RateStat
+  }
   policy: Array<{
     id: string
     label: string
@@ -158,6 +164,10 @@ export type AdminTrace = {
   redacted: number
   steps: TraceStep[]
 }
+
+type RateStat = { count: number; total: number; rate: number; ci: [number, number] }
+
+export type CrossUserProbeResult = { id: string; label: string; blocked: boolean; evidence: string }
 
 export type SandboxProbeResult = {
   id: string
@@ -209,4 +219,6 @@ export const adminApi = {
   trace: () => get<AdminTrace[]>('trace'),
   /** 沙箱样本执行（一次性跑完，含超时与越权用例） */
   sandbox: () => get<SandboxProbeResult[]>('sandbox'),
+  /** 越权实测：两个演示账户互相读取、操作对方资源（只读探测） */
+  crossUser: () => get<CrossUserProbeResult[]>('crossuser'),
 }

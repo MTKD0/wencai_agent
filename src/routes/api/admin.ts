@@ -24,6 +24,7 @@ import { runDueJobs, scoreRisk } from '#/server/tools/jobs'
 import { adminUserExists, listAdminUsers } from '#/server/admin/users'
 import { adminAuthorized, authorizeAdminTransfer } from '#/server/admin/access'
 import { recentTraces, restoreAuditLog, runSandboxProbes, securityOverview, tamperAuditLog } from '#/server/security/kernel'
+import { runCrossUserProbes } from '#/server/security/redteam'
 import { buildTraces } from '#/server/security/trace'
 import { runLifeRenewalsThrough } from '#/server/life/service'
 import { getRuntimeLogs } from '#/server/admin/runtime-logs'
@@ -624,6 +625,8 @@ export const Route = createFileRoute('/api/admin')({
           if (action === 'security') return Response.json({ data: await securityOverview() })
           if (action === 'trace') return Response.json({ data: buildTraces(await recentTraces()) })
           if (action === 'sandbox') return Response.json({ data: await runSandboxProbes() })
+          // 只在两个演示账户之间做不改变数据的越权探测
+          if (action === 'crossuser') return Response.json({ data: await runCrossUserProbes({ withSetup: false }) })
           if (!(await adminUserExists(userId))) {
             return Response.json({ error: { code: 'USER_NOT_FOUND', message: '用户不存在，请返回首页选择账户' } }, { status: 404 })
           }

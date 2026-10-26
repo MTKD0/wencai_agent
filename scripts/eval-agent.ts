@@ -8,6 +8,7 @@
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { prepareIsolatedDatabase, runStamp } from '../eval/isolated-db'
 
 const args = new Map(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=') as [string, string]))
 const repeats = Math.max(1, Number(args.get('repeat') ?? 1))
@@ -17,17 +18,8 @@ if (!process.env.DEEPSEEK_API_KEY && !process.env.FALLBACK_BASE_URL) {
   process.exit(1)
 }
 
-const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-mkdirSync('.scratch', { recursive: true })
-const database = `file:./.scratch/eval-${stamp}.db`
-// 评测必须在独立库上进行：子进程与本进程都显式使用这个地址，绝不回落到 data/bank.db
-const childEnv = { ...process.env, DATABASE_URL: database }
-console.log(`[eval] 新建独立库 ${database}`)
-execFileSync(process.execPath, ['./node_modules/drizzle-kit/bin.cjs', 'push', '--force'], { env: childEnv, stdio: 'ignore' })
-execFileSync(process.execPath, ['--import=tsx', 'src/server/db/seed.ts'], { env: childEnv, stdio: 'inherit' })
-process.env.DATABASE_URL = database
-// 基金数据用离线快照，避免公开接口的网络波动影响评测
-process.env.FUND_DATA_MODE = 'fixture'
+const stamp = runStamp()
+const database = prepareIsolatedDatabase('eval', stamp)
 
 const { TASKS } = await import('../eval/tasks')
 const { runTask } = await import('../eval/run-task')

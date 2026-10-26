@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildTraces, summarizeFacts } from '#/server/security/trace'
 import type { TraceInput } from '#/server/security/trace'
-import { RED_TEAM_CASES, POLICY_PROBES, SANDBOX_PROBES, runPolicyProbes, runRedTeam } from '#/server/security/kernel'
-import { heuristicGuard } from '#/server/guard/heuristic'
+import { RED_TEAM_CASES, POLICY_PROBES, SANDBOX_PROBES, runPolicyProbes, runRedTeam, securityOverview } from '#/server/security/kernel'
 
 const entry = (seq: number, type: string, payload: unknown, over: Partial<TraceInput> = {}): TraceInput => ({
   seq,
@@ -173,25 +172,23 @@ describe('红队样本', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('全部样本通过：越权靠结构约束，其余靠输入审核', async () => {
+  it('全部展示样本都被输入审核实际命中（不再有凭结构约束直接判通过的样本）', async () => {
     const results = await runRedTeam()
     expect(results).toHaveLength(RED_TEAM_CASES.length)
+    expect(results.some((r) => r.category.startsWith('越权'))).toBe(false)
     for (const r of results) expect(r.passed, `${r.id} 未通过：${r.input}`).toBe(true)
   })
 
-  it('越权样本不依赖输入审核（工具签名里没有 userId）', async () => {
-    const results = await runRedTeam()
-    const crossUser = results.find((r) => r.id === 'rt-cross-user')!
-    expect(crossUser.category).toContain('越权')
-    expect(crossUser.expect).toContain('userId')
-    // 这句中文本身不含注入特征，启发式不会拦——拦截它的是"身份只来自会话"这一结构
-    expect((await heuristicGuard.check(crossUser.input, 'user')).verdict).toBe('allow')
-    expect(crossUser.passed).toBe(true)
+  it('总览带完整语料统计；越权由两个真实账户的实测验证（见 redteam.test.ts）', async () => {
+    const stats = (await securityOverview()).redTeamStats
+    expect(stats.attackStopped.total).toBeGreaterThanOrEqual(50)
+    expect(stats.benignStopped.total).toBeGreaterThanOrEqual(40)
+    expect(stats.attackDetected.count).toBeGreaterThanOrEqual(stats.attackStopped.count)
   })
 
   it('注入类样本确实被启发式命中', async () => {
     const results = await runRedTeam()
-    for (const r of results.filter((x) => !x.category.startsWith('越权'))) {
+    for (const r of results) {
       expect(r.verdict, `${r.id} 应被判定为 block/flag`).not.toBe('allow')
       expect(r.score).toBeGreaterThan(0)
       expect(r.categories.length).toBeGreaterThan(0)
