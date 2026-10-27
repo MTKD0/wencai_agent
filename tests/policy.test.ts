@@ -25,6 +25,11 @@ describe('权限分级', () => {
     expect(decide({ ...input, args: { amountCents: 300_001 } }).level).toBe('red')
     expect(decide({ ...input, facts: facts({ recentTransferCount: 5 }) }).allowed).toBe(false)
   })
+  it.each(['transfer_between_cards', 'transfer_between_accounts', 'repay_credit_card'])('%s 是本人资金挪动，日累计超过 1000 元也不因此升红', (tool) => {
+    const input = { tool, baseRisk: 'yellow' as const, args: { amountCents: 50_000 }, facts: facts({ dailyOutgoingCents: 90_000 }) }
+    expect(decide(input)).toMatchObject({ allowed: true, level: 'yellow' })
+    expect(decide(transfer(500, { dailyOutgoingCents: 90_000 })).level).toBe('red')
+  })
   it('只读操作为绿色', () => {
     expect(decide({ tool: 'get_accounts', baseRisk: 'green', args: {}, facts: facts() }).level).toBe('green')
   })

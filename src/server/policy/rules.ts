@@ -2,7 +2,7 @@ import type { PolicyInput, RiskLevel } from './types'
 import { fraudReason } from './fraud'
 
 export const LIMITS = {
-  /** UTC+8 自然日跨本人所有账户累计（含本笔），严格超过 1000 元需强验证。 */
+  /** UTC+8 自然日跨本人所有账户转出给他人的累计（含本笔），严格超过 1000 元需强验证；本人账户互转与信用卡还款不计入。 */
   dailyOutgoingCents: 100_000,
   /** 单笔超过 3000 元需密码与生物识别双重验证（分）。 */
   singleLargeCents: 300_000,
@@ -29,6 +29,9 @@ function amountCents(input: PolicyInput): number {
 }
 
 const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card', 'pay_split_request', 'create_birthday_plan', 'execute_birthday_order', 'create_standing_mandate', 'execute_standing_mandate'].includes(i.tool)
+
+/** 本人名下资金挪动：不计入、也不受日累计限额约束（赛事答疑口径：自己转自己一般不算额度） */
+export const OWN_FUNDS_TOOLS = ['transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card']
 
 /** 资金离开本人的操作：本人账户 / 卡片之间互转、信用卡还款、生日预留不在此列 */
 const paysOthers = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'pay_split_request', 'create_standing_mandate', 'add_payee'].includes(i.tool)
@@ -78,7 +81,7 @@ export const RULES: Rule[] = [
   },
   {
     id: 'transfer-daily-total',
-    applies: isTransfer,
+    applies: (i) => isTransfer(i) && !OWN_FUNDS_TOOLS.includes(i.tool),
     evaluate: (input) => input.facts.dailyOutgoingCents + amountCents(input) > LIMITS.dailyOutgoingCents
       ? { kind: 'raise', to: 'red', reason: '今日累计转账超过 1000 元，需要强验证' }
       : null,

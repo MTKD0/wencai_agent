@@ -338,7 +338,6 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
       .where(and(eq(schema.accounts.id, a.fromAccountId), eq(schema.accounts.userId, ctx.userId)))
     const [sender] = await tx.select().from(schema.users).where(eq(schema.users.id, ctx.userId))
     if (!source) throw new Error('付款账户不存在')
-    if (!admin) await assertDailyTransferAuthorization(tx, ctx.userId, a.amountCents, occurredAt, ctx.authorization)
     await assertDebitAccount(tx, source.id, a.amountCents, occurredAt)
     if (sender?.lockedUntil && sender.lockedUntil > new Date()) throw new Error('账户已临时锁定')
     let targetId = a.toAccountId,
@@ -381,6 +380,8 @@ export async function settleTransfer(a: TransferInput, ctx: AgentContext, occurr
     if (targetId && !target) throw new Error('收款账户不存在')
     if (a.toAccountId && target?.userId !== ctx.userId && target?.userId !== options?.targetUserId)
       throw new Error('本人互转只能选择本人的账户')
+    // 收款账户属于本人时是本人互转，不计入也不受日累计限额约束；其余转出在扣款事务内再核一次日累计
+    if (!admin && target?.userId !== ctx.userId) await assertDailyTransferAuthorization(tx, ctx.userId, a.amountCents, occurredAt, ctx.authorization)
     if (source.currency !== 'CNY' || (target && target.currency !== source.currency))
       throw new Error('目前仅支持人民币同币种转账')
     if (target) {

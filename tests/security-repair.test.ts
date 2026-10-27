@@ -9,7 +9,7 @@ import { commitCardChange, commitPurchase, commitRedemption, issueToken, preview
 import { applyCard, adjustCreditLimit } from '#/server/tools/cards'
 import { changeCreditLimit, creditSpend, ownProfile } from '#/server/cards/service'
 import { rollbackInvestment } from '#/server/payments/investment-rollback'
-import { resolveTool } from '#/server/tools/bank'
+import { resolveTool, transfer } from '#/server/tools/bank'
 import { requestStepUpCode, verifyStrongStepUp } from '#/server/auth/step-up'
 import { Route as securityRoute } from '#/routes/api/security'
 import { verifyTxPassword } from '#/server/auth/tx-password'
@@ -18,7 +18,7 @@ import { hashParams } from '#/server/confirm/integrity'
 const { session } = vi.hoisted(() => ({ session: vi.fn() }))
 vi.mock('#/server/session', () => ({ requireSession: session }))
 const uid = 'repair_security', ctx = { userId: uid, sessionId: 'repair-security', channel: 'web' as const }
-const source = 'repair_source', target = 'repair_target', cardId = 'repair_card', product = 'repair_product'
+const source = 'repair_source', target = 'repair_target', cardId = 'repair_card', product = 'repair_product', payeeId = 'repair_payee'
 const confirm = (id: string, stepUp?: Parameters<typeof confirmPending>[0]['stepUp']) => confirmPending({ ctx, actionId: id, resolveTool, stepUp })
 async function sms(scope: string) {
   let code = ''
@@ -32,6 +32,7 @@ beforeAll(async () => {
   await db.insert(schema.accounts).values([{ id: source, userId: uid, name: '付款账户', balanceCents: 200_000 }, { id: target, userId: uid, name: '收款账户', balanceCents: 0 }])
   await db.insert(schema.cards).values({ id: cardId, userId: uid, accountId: source, last4: '7744', kind: 'debit', status: 'active', dailyLimitCents: 5_000_000 })
   await db.insert(schema.products).values({ id: product, name: '回归产品', riskRating: 'R1', minAmountCents: 100, expectedYield: .02, termDays: 0 })
+  await db.insert(schema.payees).values({ id: payeeId, userId: uid, name: '他行收款人', bank: '工商银行', accountNo: '6222000099995511', createdAt: new Date(0) })
   session.mockResolvedValue({ userId: uid, userName: '修复回归', sessionId: ctx.sessionId })
   // These scenarios start with an enrolled banking account.
   for (const id of [uid]) await setTxPassword(id, '983701')
@@ -56,6 +57,7 @@ afterAll(async () => {
   await db.delete(schema.cards).where(eq(schema.cards.userId, uid))
   await db.delete(schema.holdings).where(eq(schema.holdings.userId, uid))
   await db.delete(schema.pendingActions).where(eq(schema.pendingActions.userId, uid))
+  await db.delete(schema.payees).where(eq(schema.payees.id, payeeId))
   await db.delete(schema.confirmationTokens).where(eq(schema.confirmationTokens.userId, uid))
   await db.delete(schema.accounts).where(eq(schema.accounts.userId, uid))
   await db.delete(schema.products).where(eq(schema.products.id, product))
@@ -98,16 +100,24 @@ describe('安全要求修复回归', () => {
     expect(await balance()).toBe(200_000)
     expect((await db.select().from(schema.holdings).where(eq(schema.holdings.id, holdingId)))[0].principalCents).toBe(100_000)
   })
-  it('两笔600元并发确认，累计越线的一笔必须补强验证，短信可完成而不强制生物因子', async () => {
-    const input = { fromAccountId: source, toAccountId: target, amountCents: 60_000 }
-    const proposals = await Promise.all([runBankTool(transferBetweenAccounts, input, ctx), runBankTool(transferBetweenAccounts, input, ctx)])
+  it('两笔600元并发转给他人，累计越线的一笔必须补强验证，短信可完成而不强制生物因子', async () => {
+    const input = { fromAccountId: source, payeeId, amount: 600 }
+    const proposals = await Promise.all([runBankTool(transfer, input, ctx), runBankTool(transfer, input, ctx)])
     if (proposals.some((p) => p.status !== 'needs_confirmation')) throw new Error(JSON.stringify(proposals))
     const result = await Promise.all(proposals.map((p) => confirm((p as { actionId: string }).actionId)))
     expect(result.filter((r) => r.ok)).toHaveLength(1)
     expect(result.filter((r) => !r.ok && r.code === 'step_up_required')).toHaveLength(1)
-    expect(await balance(target)).toBe(60_000)
+    expect(await balance()).toBe(140_000)
     const retry = proposals[result[0].ok ? 1 : 0] as { actionId: string }
     expect((await confirm(retry.actionId, await sms(`action:${retry.actionId}`))).ok).toBe(true)
+    expect(await balance()).toBe(80_000)
+  })
+  it('两笔600元本人账户互转不计入日累计，并发确认都无需补强验证', async () => {
+    const input = { fromAccountId: source, toAccountId: target, amountCents: 60_000 }
+    const proposals = await Promise.all([runBankTool(transferBetweenAccounts, input, ctx), runBankTool(transferBetweenAccounts, input, ctx)])
+    if (proposals.some((p) => p.status !== 'needs_confirmation' || p.level !== 'yellow')) throw new Error(JSON.stringify(proposals))
+    const result = await Promise.all(proposals.map((p) => confirm((p as { actionId: string }).actionId)))
+    expect(result.every((r) => r.ok)).toBe(true)
     expect(await balance(target)).toBe(120_000)
   })
   it('扩展挂失也是红色，密码不能代替强验证，已挂失卡不可解锁', async () => {

@@ -157,6 +157,18 @@ describe('日累计分级与最终执行验证闭环', () => {
     expect(await transferActivity(uid, now)).toMatchObject({ dailyOutgoingCents: 80_000, recentTransferCount: 2 })
   })
 
+  it('本人账户互转不计入日累计，也不受限额约束；转给他人的累计照常计算', async () => {
+    await outgoing(90_000)
+    // 黄色授权下本人互转 5000 元：日累计已 900 元，仍可直接执行，且执行后累计不变
+    const own = await settleTransfer({ fromAccountId: accounts[0], toAccountId: accounts[1], amountCents: 500_000 }, { ...ctx, authorization: { level: 'yellow', actionId: 'own-yellow' } })
+    expect(own.transactionId).toBeTruthy()
+    expect((await transferActivity(uid, new Date())).dailyOutgoingCents).toBe(90_000)
+    // 互转仍算一笔转出，频率熔断照常统计
+    expect((await transferActivity(uid, new Date())).recentTransferCount).toBe(2)
+    // 转给他人 200 元会让累计超过 1000 元，黄色授权不能放行
+    await expect(settleTransfer({ fromAccountId: accounts[0], payeeId, amountCents: 20_000 }, { ...ctx, authorization: { level: 'yellow', actionId: 'other-yellow' } })).rejects.toThrow('今日累计转账超过 1000 元')
+  })
+
   it('最终红色等级与双重验证独立，单笔规则不能覆盖AA基础风险或累计风险', () => {
     expect(transferVerification('pay_split_request', { amountCents: 500 }, {}, 'red')).toMatchObject({ strongRequired: true, dualRequired: false })
     expect(transferVerification('transfer', { amount: 300 }, {}, 'red')).toMatchObject({ strongRequired: true, dualRequired: false })

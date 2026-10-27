@@ -20,6 +20,8 @@ export async function collectFacts(params: {
   const now = params.now ?? new Date()
 
   const [user] = await db.select().from(schema.users).where(eq(schema.users.id, params.userId))
+  // 日累计要按转账关联表区分本人互转，先确保表存在
+  await ensurePaymentsSchema()
   const { dailyOutgoingCents, recentTransferCount } = await transferActivity(params.userId, now)
 
   let payeeAgeDays: number | undefined
@@ -31,7 +33,6 @@ export async function collectFacts(params: {
     if (payee) payeeAgeDays = (now.getTime() - payee.createdAt.getTime()) / DAY
   }
 
-  await ensurePaymentsSchema()
   await ensureRiskSchema()
   const riskAccountId = await resolveRiskRecipient(params)
   const risk = riskAccountId ? await readAccountRiskFlag(riskAccountId) : null
