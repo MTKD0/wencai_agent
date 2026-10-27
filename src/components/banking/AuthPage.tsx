@@ -14,6 +14,61 @@ import '#/components/ui/bank-security.css'
 import './auth-page.css'
 
 export function AuthPage({ register = false }: { register?: boolean }) {
+  const [storySettled, setStorySettled] = useState(false)
+  return (
+    <main className="bank-stage bank-auth-stage">
+      <div className="bank-shell bank-auth-shell bank-auth-layout">
+        <Link className="auth-brand" to="/login" aria-label="文财银行首页">
+          <span aria-hidden="true">财</span>
+          <strong>文财银行</strong>
+        </Link>
+        <header className="bank-auth-top">
+          <Link to={register ? '/login' : '/'} aria-label="返回">
+            <ArrowLeft size={20} />
+          </Link>
+          <span>文财银行</span>
+          <ShieldCheck size={20} />
+        </header>
+        <section className="auth-brand-scene" aria-label="文财产品介绍">
+          <div className="auth-brand-copy">
+            <p className="auth-brand-kicker">WENCAI · YOUR AI BANK</p>
+            <h1>
+              有事直接说，
+              <br />
+              文财替你打理<span>。</span>
+            </h1>
+            <p>
+              查账户、看账单、做规划，
+              <br className="auth-compact-break" />
+              关键一步由你确认。
+            </p>
+          </div>
+          <AuthStory settled={storySettled} />
+        </section>
+        <Reveal className="bank-auth-hero">
+          <AgentAvatar />
+          <span className="bank-auth-eyebrow">WENCAI · YOUR AI BANK</span>
+          <h1>{register ? '开启你的文财账户' : '你好，欢迎回来'}</h1>
+          <p>{register ? '用一句话，开启更轻松的金融生活' : '查账、转账、管卡，让文财帮你办'}</p>
+          <span className="bank-auth-decoration">
+            <Sparkles size={24} />
+          </span>
+        </Reveal>
+        <Reveal className="bank-auth-panel" delay={0.08}>
+          <AuthForm
+            key={register ? 'register' : 'login'}
+            register={register}
+            onInteract={() => setStorySettled(true)}
+          />
+        </Reveal>
+        <footer className="bank-auth-footer">文财 AI 银行 · 模拟银行演示环境</footer>
+      </div>
+    </main>
+  )
+}
+
+/** Form state resets between login and registration; the surrounding story stays mounted. */
+function AuthForm({ register, onInteract }: { register: boolean; onInteract: () => void }) {
   const navigate = useNavigate(),
     queryClient = useQueryClient(),
     { refetch } = authClient.useSession()
@@ -25,7 +80,6 @@ export function AuthPage({ register = false }: { register?: boolean }) {
     [busy, setBusy] = useState(false)
   const [error, setError] = useState(''),
     [cooldown, setCooldown] = useState(0)
-  const [storySettled, setStorySettled] = useState(false)
   useEffect(() => {
     if (!cooldown) return
     const timer = setTimeout(() => setCooldown((value) => value - 1), 1000)
@@ -75,172 +129,131 @@ export function AuthPage({ register = false }: { register?: boolean }) {
     }
   }
   return (
-    <main className="bank-stage bank-auth-stage">
-      <div className="bank-shell bank-auth-shell bank-auth-layout">
-        <Link className="auth-brand" to="/login" aria-label="文财银行首页">
-          <span aria-hidden="true">财</span>
-          <strong>文财银行</strong>
+    <>
+      <div className="bank-auth-tabs">
+        <Link to="/login" className={!register ? 'is-active' : ''}>
+          手机登录
         </Link>
-        <header className="bank-auth-top">
-          <Link to={register ? '/login' : '/'} aria-label="返回">
-            <ArrowLeft size={20} />
-          </Link>
-          <span>文财银行</span>
-          <ShieldCheck size={20} />
-        </header>
-        <section className="auth-brand-scene" aria-label="文财产品介绍">
-          <div className="auth-brand-copy">
-            <p className="auth-brand-kicker">WENCAI · YOUR AI BANK</p>
-            <h1>
-              有事直接说，
-              <br />
-              文财替你打理<span>。</span>
-            </h1>
-            <p>
-              查账户、看账单、做规划，
-              <br className="auth-compact-break" />
-              关键一步由你确认。
-            </p>
-          </div>
-          <AuthStory settled={storySettled} />
-        </section>
-        <Reveal className="bank-auth-hero">
-          <AgentAvatar />
-          <span className="bank-auth-eyebrow">WENCAI · YOUR AI BANK</span>
-          <h1>{register ? '开启你的文财账户' : '你好，欢迎回来'}</h1>
-          <p>{register ? '用一句话，开启更轻松的金融生活' : '查账、转账、管卡，让文财帮你办'}</p>
-          <span className="bank-auth-decoration">
-            <Sparkles size={24} />
-          </span>
-        </Reveal>
-        <Reveal className="bank-auth-panel" delay={0.08}>
-          <div className="bank-auth-tabs">
-            <Link to="/login" className={!register ? 'is-active' : ''}>
-              手机登录
-            </Link>
-            <Link to="/register" className={register ? 'is-active' : ''}>
-              注册账户
-            </Link>
-          </div>
-          <div className="auth-form-heading">
-            <h2>{register ? '开启你的文财账户' : '手机号验证登录'}</h2>
-            <p>{register ? '填写户名与手机号，验证后即可注册' : '输入手机号与短信验证码'}</p>
-          </div>
-          <form
-            className="bank-security-form"
-            onFocusCapture={() => setStorySettled(true)}
-            onChangeCapture={() => setStorySettled(true)}
-            onSubmit={(event) => {
-              event.preventDefault()
-              void (sent ? verify() : send())
-            }}
-          >
-            {register && (
-              <>
-                <label htmlFor="register-name">户名</label>
-                <Input
-                  className="bank-auth-input"
-                  id="register-name"
-                  autoComplete="name"
-                  placeholder="请输入真实户名"
-                  maxLength={60}
-                  required
-                  value={name}
-                  disabled={busy || sent}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              </>
-            )}
-            <label htmlFor="auth-phone">手机号</label>
-            <PhoneInput
-              id="auth-phone"
-              className="bank-auth-input"
-              value={phone}
-              placeholder="请输入手机号"
-              disabled={busy || sent}
-              onChange={(value, info) => {
-                setPhone(value)
-                setMeta(info)
-              }}
-            />
-            <div className={`auth-code-field ${sent ? 'is-sent' : ''}`}>
-              <label htmlFor="auth-code">短信验证码</label>
-              <div className="auth-code-control">
-                <Input
-                  id="auth-code"
-                  className="bank-auth-input bank-code-input"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="输入 6 位验证码"
-                  maxLength={6}
-                  required={sent}
-                  value={code}
-                  disabled={busy}
-                  onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                />
-                <Button
-                  type="button"
-                  className="auth-send-code"
-                  disabled={busy || cooldown > 0 || !meta.isValid || (register && !name.trim())}
-                  onClick={() => void send()}
-                >
-                  {cooldown ? `${cooldown}s 后重发` : sent ? '重新发送' : '获取验证码'}
-                </Button>
-              </div>
-              {sent && (
-                <div className="bank-auth-code-actions">
-                  <Button
-                    type="button"
-                    className="bank-text-button"
-                    disabled={busy}
-                    onClick={() => {
-                      setSent(false)
-                      setCode('')
-                      setError('')
-                    }}
-                  >
-                    修改{register ? '注册信息' : '手机号'}
-                  </Button>
-                  <Button
-                    type="button"
-                    className="bank-text-button auth-mobile-resend"
-                    disabled={busy || cooldown > 0}
-                    onClick={() => void send()}
-                  >
-                    {cooldown ? `${cooldown}s 后重发` : '重新发送'}
-                  </Button>
-                </div>
-              )}
-            </div>
-            {error && (
-              <p role="alert" className="bank-auth-error">
-                {error}
-              </p>
-            )}
-            <Button
-              className="bank-primary-button bank-auth-submit auth-mobile-submit"
-              type="submit"
-              disabled={busy || !meta.isValid || (register && !name.trim()) || (sent && code.length !== 6)}
-            >
-              {busy ? '正在安全连接…' : sent ? (register ? '验证并注册' : '登录') : '获取验证码'}
-              <ArrowRight size={18} />
-            </Button>
-            <Button
-              className="bank-primary-button bank-auth-submit auth-desktop-submit"
-              type="submit"
-              disabled={busy || !meta.isValid || !sent || code.length !== 6 || (register && !name.trim())}
-            >
-              {busy ? '正在安全连接…' : register ? '验证并注册' : '登录'}
-              <ArrowRight size={22} />
-            </Button>
-          </form>
-          <p className="bank-auth-hint">
-            <ShieldCheck size={14} />
-            {register ? '注册后即可使用，申请银行卡时设置该卡密码' : '手机号验证登录 · 交易操作单独保护'}
-          </p>
-        </Reveal>
-        <footer className="bank-auth-footer">文财 AI 银行 · 模拟银行演示环境</footer>
+        <Link to="/register" className={register ? 'is-active' : ''}>
+          注册账户
+        </Link>
       </div>
-    </main>
+      <div className="auth-form-heading">
+        <h2>{register ? '开启你的文财账户' : '手机号验证登录'}</h2>
+        <p>{register ? '填写户名与手机号，验证后即可注册' : '输入手机号与短信验证码'}</p>
+      </div>
+      <form
+        className="bank-security-form"
+        onFocusCapture={onInteract}
+        onChangeCapture={onInteract}
+        onSubmit={(event) => {
+          event.preventDefault()
+          void (sent ? verify() : send())
+        }}
+      >
+        {register && (
+          <>
+            <label htmlFor="register-name">户名</label>
+            <Input
+              className="bank-auth-input"
+              id="register-name"
+              autoComplete="name"
+              placeholder="请输入真实户名"
+              maxLength={60}
+              required
+              value={name}
+              disabled={busy || sent}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </>
+        )}
+        <label htmlFor="auth-phone">手机号</label>
+        <PhoneInput
+          id="auth-phone"
+          className="bank-auth-input"
+          value={phone}
+          placeholder="请输入手机号"
+          disabled={busy || sent}
+          onChange={(value, info) => {
+            setPhone(value)
+            setMeta(info)
+          }}
+        />
+        <div className={`auth-code-field ${sent ? 'is-sent' : ''}`}>
+          <label htmlFor="auth-code">短信验证码</label>
+          <div className="auth-code-control">
+            <Input
+              id="auth-code"
+              className="bank-auth-input bank-code-input"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="输入 6 位验证码"
+              maxLength={6}
+              required={sent}
+              value={code}
+              disabled={busy}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+            <Button
+              type="button"
+              className="auth-send-code"
+              disabled={busy || cooldown > 0 || !meta.isValid || (register && !name.trim())}
+              onClick={() => void send()}
+            >
+              {cooldown ? `${cooldown}s 后重发` : sent ? '重新发送' : '获取验证码'}
+            </Button>
+          </div>
+          {sent && (
+            <div className="bank-auth-code-actions">
+              <Button
+                type="button"
+                className="bank-text-button"
+                disabled={busy}
+                onClick={() => {
+                  setSent(false)
+                  setCode('')
+                  setError('')
+                }}
+              >
+                修改{register ? '注册信息' : '手机号'}
+              </Button>
+              <Button
+                type="button"
+                className="bank-text-button auth-mobile-resend"
+                disabled={busy || cooldown > 0}
+                onClick={() => void send()}
+              >
+                {cooldown ? `${cooldown}s 后重发` : '重新发送'}
+              </Button>
+            </div>
+          )}
+        </div>
+        {error && (
+          <p role="alert" className="bank-auth-error">
+            {error}
+          </p>
+        )}
+        <Button
+          className="bank-primary-button bank-auth-submit auth-mobile-submit"
+          type="submit"
+          disabled={busy || !meta.isValid || (register && !name.trim()) || (sent && code.length !== 6)}
+        >
+          {busy ? '正在安全连接…' : sent ? (register ? '验证并注册' : '登录') : '获取验证码'}
+          <ArrowRight size={18} />
+        </Button>
+        <Button
+          className="bank-primary-button bank-auth-submit auth-desktop-submit"
+          type="submit"
+          disabled={busy || !meta.isValid || !sent || code.length !== 6 || (register && !name.trim())}
+        >
+          {busy ? '正在安全连接…' : register ? '验证并注册' : '登录'}
+          <ArrowRight size={22} />
+        </Button>
+      </form>
+      <p className="bank-auth-hint">
+        <ShieldCheck size={14} />
+        {register ? '注册后即可使用，申请银行卡时设置该卡密码' : '手机号验证登录 · 交易操作单独保护'}
+      </p>
+    </>
   )
 }

@@ -73,12 +73,22 @@ export function AuthStory({ settled }: { settled: boolean }) {
           </text>
         </motion.g>
         <motion.path
-          d="M215 96V146M371 51C446 51 446 120 477 120M596 255C734 255 731 349 666 349"
+          d="M215 96V146M371 51C446 51 446 120 477 120"
           stroke={`url(#${id}-line)`}
           strokeWidth="1.6"
           initial={still ? false : { pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
           transition={timing(1, 1.5)}
+        />
+        {/* The budget bars finish at 4.05s; connect to review before revealing its card. */}
+        <motion.path
+          className="auth-story-review-link"
+          d="M596 255C734 255 731 349 666 349"
+          stroke={`url(#${id}-line)`}
+          strokeWidth="1.6"
+          initial={still ? false : { pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={timing(4.1, 0.65)}
         />
         {/* Background plan remains mostly frontal and partially behind the result. */}
         <motion.g
@@ -167,11 +177,11 @@ export function AuthStory({ settled }: { settled: boolean }) {
             ))}
           </g>
         </motion.g>
-        {/* 4–5.5s: the story ends with the user, never with an automatic transaction. */}
+        {/* 4.8–5.5s: after the connection, the story ends with the user's confirmation. */}
         <motion.g
           initial={still ? false : { opacity: 0, y: 22, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={timing(4, 1)}
+          transition={timing(4.8, 0.7)}
           style={{ transformOrigin: '590px 381px' }}
         >
           <g transform="rotate(3 590 381)" filter={`url(#${id}-shadow)`}>
@@ -192,7 +202,7 @@ export function AuthStory({ settled }: { settled: boolean }) {
             </text>
             <rect x="502" y="380" width="9" height="9" rx="2" stroke="#9698ac" />
             <path d="M523 384H684M523 399H629" stroke="#3b3d52" strokeWidth="6" strokeLinecap="round" />
-            <motion.g initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={timing(4.8, 0.7)}>
+            <motion.g initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={timing(5.1, 0.4)}>
               <rect
                 x="500"
                 y="416"

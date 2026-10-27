@@ -43,9 +43,31 @@ afterEach(() => {
 })
 function mount(register = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
-  const result = render(createElement(QueryClientProvider, { client }, createElement(AuthPage, { register })))
-  return { ...result, desktopSubmit: () => result.container.querySelector<HTMLButtonElement>('.auth-desktop-submit')! }
+  const page = (register: boolean) =>
+    createElement(QueryClientProvider, { client }, createElement(AuthPage, { register }))
+  const result = render(page(register))
+  return {
+    ...result,
+    switchTab: (register: boolean) => result.rerender(page(register)),
+    desktopSubmit: () => result.container.querySelector<HTMLButtonElement>('.auth-desktop-submit')!,
+  }
 }
+
+it('keeps the story mounted and settled across auth tabs while resetting the separate forms', () => {
+  const { switchTab } = mount()
+  const story = screen.getByTestId('story')
+  fireEvent.focus(screen.getByLabelText('手机号'))
+  fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13800138000' } })
+  switchTab(true)
+  expect(screen.getByTestId('story')).toBe(story)
+  expect(story.dataset.settled).toBe('true')
+  expect(screen.getByLabelText('户名')).toBeTruthy()
+  expect((screen.getByLabelText('手机号') as HTMLInputElement).value).toBe('')
+  switchTab(false)
+  expect(screen.getByTestId('story')).toBe(story)
+  expect(story.dataset.settled).toBe('true')
+  expect(screen.queryByLabelText('户名')).toBeNull()
+})
 
 it('settles the illustration on first input without automatically focusing the form', () => {
   mount()

@@ -1,12 +1,10 @@
-import { createElement, type ReactElement } from 'react'
+import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ConfirmCardProps } from '#/components/chat/ConfirmCard'
 import type { DashboardData } from '#/lib/dashboard'
 import { AccountMonthlyTotals, AssetDetails, NotificationDetails, SubscriptionList } from '#/components/banking/BankingHome'
 import { PaymentApproval } from '#/components/banking/PaymentCenter'
-import { Route as RegisterRoute } from '#/routes/register'
-import { AuthPage } from '#/components/banking/AuthPage'
 
 const captured = vi.hoisted(() => ({ props: undefined as ConfirmCardProps | undefined, mutate: vi.fn() }))
 vi.mock('#/components/chat/ChatView', () => ({ default: () => null }))
@@ -84,13 +82,6 @@ describe('银行首页 main 功能对齐', () => {
     expect(html).toContain('暂无消息通知')
     expect(html).toContain('管理订阅提醒')
     expect(html).not.toContain('88.12')
-  })
-
-  it('/register 保留 fork 的独立注册界面入口', () => {
-    const component = RegisterRoute.options.component as () => ReactElement<{ register: boolean }>
-    const page = component()
-    expect(page.type).toBe(AuthPage)
-    expect(page.props.register).toBe(true)
   })
 
   it('安全页完成后把服务端回执传回付款流程，不重复发起确认 mutation', async () => {

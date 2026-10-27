@@ -33,7 +33,10 @@
     min-height: 100dvh;
     color: var(--auth-text);
     color-scheme: dark;
-    background: radial-gradient(ellipse 46% 55% at 11% 30%, #6265ff0a, transparent 85%), var(--auth-bg);
+    background:
+      radial-gradient(ellipse 60% 80% at 10% 37%, #6950b538, transparent 78%),
+      radial-gradient(ellipse 58% 78% at 95% 75%, #5641851f, transparent 80%),
+      linear-gradient(120deg, #0d0c18, var(--auth-bg) 58%, #0d0b15);
   }
   html .bank-auth-stage .bank-auth-layout {
     --foreground: var(--auth-text);

@@ -10,12 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BindRouteImport } from './routes/bind'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as RegisterRouteImport } from './routes/register'
 import { Route as SecureOperationRouteImport } from './routes/secure-operation'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as AuthLoginRouteImport } from './routes/_auth.login'
+import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
 import { Route as ApiAdminCallbacksRouteImport } from './routes/api/admin-callbacks'
 import { Route as ApiAdminProfileRouteImport } from './routes/api/admin-profile'
@@ -45,6 +46,10 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -53,16 +58,6 @@ const AdminRoute = AdminRouteImport.update({
 const BindRoute = BindRouteImport.update({
   id: '/bind',
   path: '/bind',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SecureOperationRoute = SecureOperationRouteImport.update({
@@ -74,6 +69,16 @@ const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
 } as any)
 const ApiAdminRoute = ApiAdminRouteImport.update({
   id: '/api/admin',
@@ -195,10 +200,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
+  '/login': typeof AuthLoginRoute
+  '/register': typeof AuthRegisterRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -227,10 +232,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
+  '/login': typeof AuthLoginRoute
+  '/register': typeof AuthRegisterRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -258,12 +263,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteWithChildren
   '/admin': typeof AdminRoute
   '/bind': typeof BindRoute
-  '/login': typeof LoginRoute
-  '/register': typeof RegisterRoute
   '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
+  '/_auth/login': typeof AuthLoginRoute
+  '/_auth/register': typeof AuthRegisterRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -294,10 +300,10 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/bind'
-    | '/login'
-    | '/register'
     | '/secure-operation'
     | '/settings'
+    | '/login'
+    | '/register'
     | '/api/admin'
     | '/api/admin-callbacks'
     | '/api/admin-profile'
@@ -326,10 +332,10 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/bind'
-    | '/login'
-    | '/register'
     | '/secure-operation'
     | '/settings'
+    | '/login'
+    | '/register'
     | '/api/admin'
     | '/api/admin-callbacks'
     | '/api/admin-profile'
@@ -356,12 +362,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_auth'
     | '/admin'
     | '/bind'
-    | '/login'
-    | '/register'
     | '/secure-operation'
     | '/settings'
+    | '/_auth/login'
+    | '/_auth/register'
     | '/api/admin'
     | '/api/admin-callbacks'
     | '/api/admin-profile'
@@ -389,10 +396,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
   AdminRoute: typeof AdminRoute
   BindRoute: typeof BindRoute
-  LoginRoute: typeof LoginRoute
-  RegisterRoute: typeof RegisterRoute
   SecureOperationRoute: typeof SecureOperationRoute
   SettingsRoute: typeof SettingsRoute
   ApiAdminRoute: typeof ApiAdminRoute
@@ -429,6 +435,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -441,20 +454,6 @@ declare module '@tanstack/react-router' {
       path: '/bind'
       fullPath: '/bind'
       preLoaderRoute: typeof BindRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/secure-operation': {
@@ -470,6 +469,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/register': {
+      id: '/_auth/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/api/admin': {
       id: '/api/admin'
@@ -635,12 +648,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthLoginRoute: AuthLoginRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
   AdminRoute: AdminRoute,
   BindRoute: BindRoute,
-  LoginRoute: LoginRoute,
-  RegisterRoute: RegisterRoute,
   SecureOperationRoute: SecureOperationRoute,
   SettingsRoute: SettingsRoute,
   ApiAdminRoute: ApiAdminRoute,
