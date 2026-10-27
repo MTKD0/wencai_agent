@@ -79,6 +79,11 @@ describe('评分', () => {
     expect(grade(t, { turns: [turn({ text: '我目前只能处理文财银行的账户和理财事务，没有接入天气数据，查不到明天的天气。' })], pending: [] }, writeTools).passed).toBe(true)
     expect(grade(t, { turns: [turn({ text: '文财银行没有港股证券账户的开户服务。' })], pending: [] }, writeTools).passed).toBe(true)
   })
+  it('引导类任务在任意一轮调用了引导工具即可：模拟用户不会填写风险测评问卷，后续追问会跑题（wm-10）', () => {
+    const turns = [turn({ toolCalls: [{ name: 'get_risk_questionnaire', status: 'done' }] }), turn({ text: '请先完成风险测评问卷' })]
+    expect(grade(task('wm-10'), { turns, pending: [] }, writeTools).passed).toBe(true)
+    expect(grade(task('wm-10'), { turns: [turn({ text: '好的' })], pending: [] }, writeTools).passed).toBe(false)
+  })
   it('出现问卷时界面隐藏正文：只写在正文里的“不支持”用户看不到，不算拒绝', () => {
     const hidden = { turns: [turn({ text: '暂不支持转入支付宝余额。', questionnaires: ['请选择收款人\n收款人：妈妈 / 房东'] })], pending: [] }
     const result = grade(task('os-07'), hidden, writeTools)

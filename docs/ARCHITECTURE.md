@@ -135,7 +135,7 @@ sequenceDiagram
 | 全栈框架 | TanStack Start + React 19 + Tailwind 4 | 1.168 | 前后端同仓，server route 直接承载 API；一条命令启动 |
 | 界面组件 | shadcn / Base UI + Motion + Recharts | — | 无障碍组件；桌面与手机两套布局，支持深色模式 |
 | 模型编排 | Vercel AI SDK | 7 | 工具循环、UI 消息流、流式输出转换（用于先核验再发送） |
-| 主模型 | DeepSeek（`DEEPSEEK_MODEL`，默认 `deepseek-flash`） | — | 中文理解与工具调用；温度 0.2，单轮最多 8 步 |
+| 主模型 | DeepSeek（`DEEPSEEK_MODEL`，默认 `deepseek-flash`） | — | 中文理解与工具调用；温度 0.2，单轮最多 8 步；默认关闭思考模式（`DEEPSEEK_THINKING`），实测单轮中位耗时 3.6 秒；系统提示词与工具定义约 2.2 万 token，命中 DeepSeek 前缀缓存 |
 | 备用模型 | OpenAI 兼容接口（`FALLBACK_*`） | — | 主模型在开始响应前失败（连接错误、限流、15 秒无响应）时自动切换，失败模型冷却 60 秒 |
 | 注入审核 | 规则启发式 + Qwen3Guard（可选，vLLM 自部署） | — | 两者并行、取更严结果；审核模型不可用时退回规则，不阻断业务 |
 | 生成式界面 | json-render | 0.21 | 组件目录用 zod 约束，输出是可严格校验的 JSON |

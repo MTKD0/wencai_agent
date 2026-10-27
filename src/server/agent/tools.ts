@@ -101,7 +101,7 @@ export function buildAgentTools(ctx: AgentContext, options: { readOnly?: boolean
     })
 
     tools.show_view = tool({
-      description: '用组件目录渲染一个展示类界面（看板、对比、明细）。数据必须用 $state 引用已调用工具的结果。',
+      description: '用组件目录渲染一个展示类界面（看板、对比、明细）。数据必须用 $state 引用已调用工具的结果，路径写作 /工具名/字段（工具结果外层的 data 不写），例如 /get_accounts 或 /list_transactions/transactions。',
       inputSchema: z.object({ spec: z.record(z.string(), z.unknown()) }),
       execute: async ({ spec }) => {
         const state = getSessionData(ctx.sessionId)

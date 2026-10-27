@@ -1,0 +1,1732 @@
+{
+  "meta": {
+    "startedAt": "2026-10-27T16:32:13.515Z",
+    "finishedAt": "2026-10-27T16:36:49.002Z",
+    "model": "deepseek-flash",
+    "commit": "d25dd31",
+    "database": "file:./.scratch/eval-2026-10-27T16-32-02.db",
+    "repeats": 1,
+    "guard": "规则启发式"
+  },
+  "records": [
+    {
+      "task": {
+        "id": "tr-01",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给妈妈转 200 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 200,
+          "level": "yellow"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给妈妈转 200 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.title: 文本中的「200 元」没有数据出处\",\"cp.data: 数据路径 /list_cards/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 137912,
+            "outputTokens": 1417,
+            "guardVerdict": "allow",
+            "text": "收款人已确认为**李秀兰**（工商银行 6222 **** 2233）。\n\n请在卡片中选择付款的储蓄卡，按统一确认发送，我会生成转账确认单，之后在安全页面完成验证。",
+            "ms": 12114
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 68119,
+            "outputTokens": 453,
+            "guardVerdict": "allow",
+            "text": "确认单已生成：**200.00 元**，收款人李秀兰（工商银行 6222 **** 2233），付款账户是工资卡 8800 **** 4587（尾号 8823）。\n\n请在确认卡片上核对，然后进入独立安全页面完成验证；验证通过后转账才会执行。",
+            "ms": 5451
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amount\":200,\"memo\":\"给妈妈\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥200.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"},{\"label\":\"备注\",\"value\":\"给妈妈\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-02",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给妈妈转 1500 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 1500,
+          "level": "red"
+        },
+        "note": "日累计超过 1000 元升红"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给妈妈转 1500 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.subtitle: 文本中的「1500 元」没有数据出处\",\"c.data: 数据路径 /get_accounts/accounts 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"c.data: 数据路径 /get_accounts/data 不存在\"]"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"c.data: 数据路径 /list_cards/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 7,
+            "inputTokens": 164046,
+            "outputTokens": 2124,
+            "guardVerdict": "allow",
+            "text": "有两张储蓄卡可付款：**工资卡（尾号8823）** 和 **储蓄账户（尾号5883）**。\n\n请在下方选择付款卡并确认，我会据此生成转账确认单（转账 **1500 元** 给妈妈）。",
+            "ms": 16192
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 91730,
+            "outputTokens": 517,
+            "guardVerdict": "allow",
+            "text": "确认单已生成：向 **李秀兰（妈妈，工商银行 6222 **** 2233）** 转账 **¥1500.00**，从**工资卡（尾号8823）** 付款。\n\n因为这是首次向该收款人转账，且触发了强验证要求，请在确认卡片上核对信息，并在独立安全页面完成验证。确认前这笔钱不会转出。",
+            "ms": 6744
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "red",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amount\":1500,\"memo\":\"转账\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥1500.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"},{\"label\":\"备注\",\"value\":\"转账\"}]}",
+            "reasonsJson": "[\"交易异常：首次向该收款人转账、深夜大额转账，已升级为强验证\",\"今日累计转账超过 1000 元，需要强验证\"]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-03",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给房东转 500 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_landlord"
+          ],
+          "amountYuan": 500
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给房东转 500 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.subtitle: 文本中的「500 元」没有数据出处\",\"c.data: 数据路径 /list_cards/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"c.data: 数据路径 /list_cards/cards 不存在\"]"
+              },
+              {
+                "name": "resolve_card",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 140785,
+            "outputTokens": 1796,
+            "guardVerdict": "allow",
+            "text": "已找到收款人**房东 王建国**（建设银行 ****2000），金额 **500 元**。请在上方选一张储蓄卡付款，再统一确认；确认后才会生成转账确认单，并进入安全验证。",
+            "ms": 13784
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90658,
+            "outputTokens": 466,
+            "guardVerdict": "allow",
+            "text": "确认单已经生成，请核对：\n\n- 收款人：**王建国**（建设银行 ****2000）\n- 金额：**¥500.00**\n- 付款卡：**工资卡，尾号 8823**\n- 备注：房租\n\n请在确认单上点击确认，并完成安全验证。验证通过后，款项才会真正转出。",
+            "ms": 6624
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_landlord\",\"amount\":500,\"memo\":\"房租\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥500.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王建国\"},{\"label\":\"收款账号\",\"value\":\"建设银行 6217 **** 2000\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"},{\"label\":\"备注\",\"value\":\"房租\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-04",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给王方转 200 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_wang2"
+          ],
+          "amountYuan": 200
+        },
+        "note": "王芳、王方同时存在，姓名完全匹配王方"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给王方转 200 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.title: 文本中的「200.00 元」没有数据出处\",\"c.data: 数据路径 /list_cards/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 140936,
+            "outputTokens": 1940,
+            "guardVerdict": "allow",
+            "text": "已找到两位收款人：**王方**（招商银行，尾号 2222）和**王芳**（农业银行，尾号 1111）；付款卡也请您选定。请在界面中选好收款人和付款储蓄卡，再点确认发送。",
+            "ms": 15237
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 91893,
+            "outputTokens": 856,
+            "guardVerdict": "allow",
+            "text": "确认单已生成，请在卡片上核对：给 **王方**（招商银行 6214 **** 2222）转 **¥200.00**，付款账户是**工资卡 · 尾号8823**。确认后按提示完成安全验证即可。",
+            "ms": 8388
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_wang2\",\"amount\":200}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥200.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王方\"},{\"label\":\"收款账号\",\"value\":\"招商银行 6214 **** 2222\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-05",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给手机号 13800001111 的收款人转 100 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 100
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给手机号 13800001111 的收款人转 100 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction",
+                "errors": "[\"interaction.fields.recipient: 数据路径 /find_payee/data/candidates/0 不存在\"]"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.subtitle: 文本中的「100 元」没有数据出处\",\"n.text: 文本中的「100 元」没有数据出处\",\"c.data: 数据路径 /get_accounts/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 7,
+            "inputTokens": 162520,
+            "outputTokens": 1361,
+            "guardVerdict": "allow",
+            "text": "已找到收款人：**李秀兰（妈妈，工商银行 6222 **** 2233）**，转账金额为 **100 元**。\n\n请在上方选择付款的储蓄卡（工资卡 8823 或储蓄账户 5883），然后在交互区统一确认，我会生成转账确认单。",
+            "ms": 11381
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "resolve_recipient",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 92392,
+            "outputTokens": 690,
+            "guardVerdict": "allow",
+            "text": "转账确认单已生成，请在上方卡片核对：\n\n- **金额**：¥100.00\n- **收款人**：李秀兰（妈妈），工商银行 6222 **** 2233\n- **付款账户**：工资卡 · 储蓄卡尾号 8823\n\n核对无误后在独立安全页面完成交易密码或指纹、人脸验证，这笔转账才会真正执行。",
+            "ms": 6040
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_9ef02daf-20c0-4bcf-a087-77f105d085d5\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amountCents\":10000}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥100.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-06",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给账号尾号 2233 的收款人转 50 元"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 50
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给账号尾号 2233 的收款人转 50 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.subtitle: 文本中的「50元」没有数据出处\",\"c.data: 数据路径 /get_accounts/accounts 不存在\"]"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"c.data: 数据路径 /get_accounts/data/accounts 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"c.data: 数据路径 /get_accounts/result/accounts 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 7,
+            "inputTokens": 167532,
+            "outputTokens": 3075,
+            "guardVerdict": "allow",
+            "text": "已为你调出付款卡选择（请选储蓄卡：尾号 8823 或 5883；信用卡不能用于转账）。确认后我会生成转账确认单，收款人、金额和付款卡都会列在确认单上，之后需在独立安全页面验证。",
+            "ms": 19481
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": true,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 93154,
+            "outputTokens": 831,
+            "guardVerdict": "allow",
+            "text": "操作尚未执行，请在确认卡上核对并确认。",
+            "ms": 7180
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_c50cb9f7-83d7-481c-9de0-41f3677b290d\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amountCents\":5000,\"memo\":\"转账\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥50.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"},{\"label\":\"备注\",\"value\":\"转账\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-07",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "给姓王的那位朋友转 300 元"
+        ],
+        "expect": {
+          "kind": "clarify"
+        },
+        "note": "王建国、王芳、王方都姓王，必须追问"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给姓王的那位朋友转 300 元",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67478,
+            "outputTokens": 499,
+            "guardVerdict": "allow",
+            "text": "我在收款人中找到 3 位姓王的，请在下方选择具体是哪一位，然后点确认提交。",
+            "ms": 4447
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "clarified",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-08",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "从储蓄账户转 1000 元到工资卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer_between_accounts",
+            "transfer_between_cards"
+          ],
+          "ids": [
+            [
+              "acc_save"
+            ],
+            [
+              "acc_main",
+              "card_debit"
+            ]
+          ],
+          "amountYuan": 1000
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "从储蓄账户转 1000 元到工资卡",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "transfer_between_cards",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90591,
+            "outputTokens": 615,
+            "guardVerdict": "allow",
+            "text": "已按你的要求生成确认单：从**储蓄账户（尾号5883）**转 **¥1000.00** 到**工资卡（尾号8823）**。\n\n请在卡片上核对信息并确认，确认后按页面提示完成安全验证。",
+            "ms": 5995
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "transfer_between_cards",
+            "level": "yellow",
+            "argsJson": "{\"fromCardQuery\":\"储蓄账户\",\"toCardQuery\":\"工资卡\",\"amountCents\":100000,\"memo\":\"转入工资卡\",\"fromCardId\":\"card_account_acc_save\",\"toCardId\":\"card_debit\",\"fromAccountId\":\"acc_save\",\"toAccountId\":\"acc_main\"}",
+            "summaryJson": "{\"title\":\"确认本人账户互转\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥1000.00\"},{\"label\":\"付款卡\",\"value\":\"储蓄账户 · 储蓄卡尾号5883\"},{\"label\":\"收款卡\",\"value\":\"工资卡 · 储蓄卡尾号8823\"},{\"label\":\"备注\",\"value\":\"转入工资卡\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-09",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "下周五给房东转 5500 元房租"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_scheduled_transfer"
+          ],
+          "ids": [
+            "p_landlord"
+          ],
+          "amountYuan": 5500
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "下周五给房东转 5500 元房租",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "check_schedule_window",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.subtitle: 文本中的「5500 元」没有数据出处\",\"cp.data: 数据路径 /list_cards/cards 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"a.data: 数据路径 /list_cards/data 不存在\",\"b.data: 数据路径 /get_accounts/accounts 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 191803,
+            "outputTokens": 3463,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 22880
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "check_schedule_window",
+                "status": "done"
+              },
+              {
+                "name": "preview_scheduled_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_scheduled_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 118130,
+            "outputTokens": 871,
+            "guardVerdict": "allow",
+            "text": "系统已生成定时转账确认单，请你核对：\n\n- **金额**：¥5,500.00\n- **收款人**：王建国（房东）\n- **付款卡**：工资卡（尾号 8823）\n- **执行时间**：2026-11-06（下周五）09:00\n- **附言**：房租\n\n这笔记账金额较大，需要**交易密码 + 指纹或人脸**双重验证，请在安全页面完成。确认后系统会在下周五早上自动执行，你不用再操作。",
+            "ms": 7410
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_scheduled_transfer",
+            "level": "red",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_landlord\",\"amountCents\":550000,\"executeAt\":\"2026-11-06T09:00:00+08:00\",\"memo\":\"房租\",\"confirmationToken\":\"tok_73747c7f-0b0a-4b82-8785-be5ff6781d98\"}",
+            "summaryJson": "{\"title\":\"确认定时转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥5,500.00\"},{\"label\":\"收款人\",\"value\":\"王建国\"},{\"label\":\"执行时间\",\"value\":\"2026-11-06T09:00:00+08:00\"}]}",
+            "reasonsJson": "[\"交易异常：金额明显高于您平时的转账、深夜大额转账，已升级为强验证\",\"今日累计转账超过 1000 元，需要强验证\",\"单笔转账超过 3000 元，需要交易密码与指纹或人脸双重验证\"]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-10",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "我有哪些还没执行的定时转账？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_scheduled_tasks"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我有哪些还没执行的定时转账？",
+            "toolCalls": [
+              {
+                "name": "list_scheduled_tasks",
+                "status": "done"
+              },
+              {
+                "name": "list_standing_mandates",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44502,
+            "outputTokens": 468,
+            "guardVerdict": "allow",
+            "text": "你现在有 **1 笔**待执行的定时转账，没有其他定期转账授权：\n\n- **2026-10-31 00:32（北京时间）**：转账 **¥5,500.00**，附言“10月房租”，状态为待执行\n\n需要我取消这笔，或者帮你查一下具体付到哪个收款人吗？",
+            "ms": 3857
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-11",
+        "scenario": "transfer",
+        "variant": "colloquial",
+        "turns": [
+          "妈那边打两百块过去"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 200
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "妈那边打两百块过去",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction",
+                "errors": "[\"interaction.fields.amount: 金额必须来自当前用户需求或本轮工具的办理金额字段\"]"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.subtitle: 文本中的「200 元」没有数据出处\",\"c.data: 数据路径 /get_accounts/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.subtitle: 文本中的「200 元」没有数据出处\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 185416,
+            "outputTokens": 1685,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 15400
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 68169,
+            "outputTokens": 410,
+            "guardVerdict": "allow",
+            "text": "转账确认单已经生成，请你在卡片上核对以下信息：\n\n- 金额：**¥200.00**\n- 收款人：李秀兰（妈妈）\n- 收款账号：工商银行 6222 **** 2233\n- 付款卡：工资卡（尾号 **8823**）\n\n确认无误后，请在卡片上点击确认并完成验证。",
+            "ms": 5662
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amount\":200}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥200.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-12",
+        "scenario": "transfer",
+        "variant": "colloquial",
+        "turns": [
+          "房租五百先给房东转了吧"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_landlord"
+          ],
+          "amountYuan": 500
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "房租五百先给房东转了吧",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction",
+                "errors": "[\"interaction.fields.amount: 金额必须来自当前用户需求或本轮工具的办理金额字段\"]"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction",
+                "errors": "[\"interaction.fields.amount: 数据路径 /check_transfer_limit/data/amountCents 不存在\"]"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"c.data: 数据路径 /get_accounts/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 8,
+            "inputTokens": 187291,
+            "outputTokens": 2044,
+            "guardVerdict": "allow",
+            "text": "",
+            "ms": 15615
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 92140,
+            "outputTokens": 630,
+            "guardVerdict": "allow",
+            "text": "转账确认单已生成，请核对：\n\n- 金额 **¥500.00**\n- 收款人 **王建国（房东）**，建设银行 6217 **** 2000\n- 付款卡 **工资卡 尾号 8823**\n- 备注 **房租**\n\n请在卡片上确认，并通过独立安全页面完成验证后才会实际扣款。",
+            "ms": 6668
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_16707c14-bb78-419c-b981-6cb5c343fc2d\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_landlord\",\"amountCents\":50000,\"memo\":\"房租\"}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥500.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王建国\"},{\"label\":\"收款账号\",\"value\":\"建设银行 6217 **** 2000\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"},{\"label\":\"备注\",\"value\":\"房租\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-13",
+        "scenario": "transfer",
+        "variant": "colloquial",
+        "turns": [
+          "上回给房东打了多少钱来着"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_transactions",
+            "analyze_spending",
+            "get_spending_report"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "上回给房东打了多少钱来着",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_transactions",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 46801,
+            "outputTokens": 287,
+            "guardVerdict": "allow",
+            "text": "最近一笔给房东（王建国）的转账是 **2026-10-23 12:32**，金额 **¥105.95**，从工资卡（尾号 8823）转出。\n\n再往前一笔是 10 月 18 日的 ¥281.09。需要我按日期把给房东的转账记录都列出来看看吗？",
+            "ms": 3041
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-14",
+        "scenario": "transfer",
+        "variant": "multi_turn",
+        "turns": [
+          "给妈妈转点钱",
+          "就转 300 吧"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_mom"
+          ],
+          "amountYuan": 300
+        },
+        "note": "第一轮缺金额应追问"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给妈妈转点钱",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44612,
+            "outputTokens": 341,
+            "guardVerdict": "allow",
+            "text": "找到「妈妈」（李秀兰，工商银行 6222 **** 2233）。\n\n请问要转多少元？直接回复金额即可，比如「500」。另外，您也可以用哪张储蓄卡付款，一起告诉我就行。",
+            "ms": 4004
+          },
+          {
+            "input": "就转 300 吧",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.subtitle: 文本中的「300 元」没有数据出处\",\"c.data: 数据路径 /list_cards/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 138245,
+            "outputTokens": 715,
+            "guardVerdict": "allow",
+            "text": "请在下方选一张付款储蓄卡：工资卡，¥23,568.20；储蓄账户，¥80,000.00。选好后点确认，我会生成转账确认单。",
+            "ms": 7542
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 91165,
+            "outputTokens": 400,
+            "guardVerdict": "allow",
+            "text": "确认单已生成：向**李秀兰**（工商银行 6222 **** 2233）转账 **¥300.00**，付款卡为**工资卡（尾号8823）**。\n\n请在卡片上核对并完成验证，验证通过后才会实际转账。",
+            "ms": 5780
+          }
+        ],
+        "pending": [
+          {
+            "turn": 2,
+            "tool": "transfer",
+            "level": "yellow",
+            "argsJson": "{\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_mom\",\"amount\":300}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥300.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"李秀兰\"},{\"label\":\"收款账号\",\"value\":\"工商银行 6222 **** 2233\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-15",
+        "scenario": "transfer",
+        "variant": "multi_turn",
+        "turns": [
+          "给王芳转 500",
+          "算了，改成 300"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "transfer",
+            "commit_transfer"
+          ],
+          "ids": [
+            "p_wang1"
+          ],
+          "amountYuan": 300
+        },
+        "note": "改口后按新金额生成确认单"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "给王芳转 500",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.title: 文本中的「500 元」没有数据出处\",\"r.data: 数据路径 /find_payee/data/candidates 不存在\",\"a.data: 数据路径 /get_accounts/data 不存在\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 115602,
+            "outputTokens": 1361,
+            "guardVerdict": "allow",
+            "text": "收款人查到两个相近名字，另有 **王方**（招商银行），请你确认具体是哪一位，并选择付款账户。选好后点统一确认，我再生成转账确认单。",
+            "ms": 10114
+          },
+          {
+            "input": "算了，改成 300",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "invalid_interaction",
+                "errors": "[\"interaction.fields.amount: 金额必须来自当前用户需求或本轮工具的办理金额字段\"]"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"p.title: 文本中的「300 元」没有数据出处\",\"rec.data: 数据路径 /find_payee/data/candidates 不存在\",\"card.data: 数据路径 /get_accounts/data 不存在\"]"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "prepare_interaction",
+                "status": "interaction_ready"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 117198,
+            "outputTokens": 1775,
+            "guardVerdict": "allow",
+            "text": "金额已改为 **300 元**。请在上方选择**收款人**（注意「王芳」是农业银行，「王方」是招商银行）和**付款账户**，然后点统一确认，我再生成转账确认单，由你在安全页面验证。",
+            "ms": 12134
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "find_payee",
+                "status": "done"
+              },
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_transfer_limit",
+                "status": "done"
+              },
+              {
+                "name": "preview_transfer",
+                "status": "done"
+              },
+              {
+                "name": "commit_transfer",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 93742,
+            "outputTokens": 1260,
+            "guardVerdict": "allow",
+            "text": "确认单已生成：**300.00 元**，转给**王芳**（农业银行 6228 **** 1111），从**工资卡（尾号 8823，余额 ¥23,568.20）**付款。\n\n请在上方卡片核对后在安全页面完成验证；确认前不会扣款。",
+            "ms": 9945
+          }
+        ],
+        "pending": [
+          {
+            "turn": 2,
+            "tool": "commit_transfer",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_f2543621-d94a-46b0-beb2-bb85465e2c57\",\"fromAccountId\":\"acc_main\",\"payeeId\":\"p_wang1\",\"amountCents\":30000}",
+            "summaryJson": "{\"title\":\"确认转账\",\"fields\":[{\"label\":\"金额\",\"value\":\"¥300.00\"},{\"label\":\"收款人 / 账户\",\"value\":\"王芳\"},{\"label\":\"收款账号\",\"value\":\"农业银行 6228 **** 1111\"},{\"label\":\"付款账户\",\"value\":\"工资卡 · 储蓄卡尾号8823 8800 **** 4587\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "tr-16",
+        "scenario": "transfer",
+        "variant": "standard",
+        "turns": [
+          "周末聚餐一共 300 元，我和王伟、陈晓 AA"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_split"
+          ],
+          "ids": [
+            "c_zhang",
+            "c_li"
+          ],
+          "amountYuan": 300
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "周末聚餐一共 300 元，我和王伟、陈晓 AA",
+            "toolCalls": [
+              {
+                "name": "list_contacts",
+                "status": "done"
+              },
+              {
+                "name": "list_contacts",
+                "status": "done"
+              },
+              {
+                "name": "preview_split",
+                "status": "done"
+              },
+              {
+                "name": "commit_split",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 91284,
+            "outputTokens": 719,
+            "guardVerdict": "allow",
+            "text": "AA 收款确认单已生成：**周末聚餐**，总额 **¥300.00**，3 人（含你自己）各 **¥100.00** —— 你、王伟、陈晓。\n\n请在卡片上核对并确认，确认后王伟、陈晓会收到站内付款请求。",
+            "ms": 6276
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "commit_split",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_4cff169a-0d52-4a91-b982-462209b1e6da\",\"title\":\"周末聚餐\",\"totalCents\":30000,\"contactIds\":[\"c_zhang\",\"c_li\"]}",
+            "summaryJson": "{\"title\":\"确认发起 AA 收款\",\"fields\":[{\"label\":\"事由\",\"value\":\"周末聚餐\"},{\"label\":\"总金额\",\"value\":\"¥300.00\"},{\"label\":\"参与人数\",\"value\":\"3 人（含自己）\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    }
+  ]
+}

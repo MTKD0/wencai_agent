@@ -58,3 +58,23 @@ describe('生成式 UI 校验', () => {
     expect(r.ok).toBe(false)
   })
 })
+
+describe('减少被拒重试', () => {
+  it('/工具/data/… 按快照里的 /工具/… 解析，并改写为实际路径', () => {
+    const r = checkSpec(spec({ c: { type: 'PieChart', props: { title: '构成', data: { $state: '/analyze_spending/data/result/byCategory' }, labelKey: 'category', valueKey: 'total' } } }), state)
+    if (!r.ok) throw new Error(r.errors.join())
+    expect(JSON.stringify(r.spec)).toContain('"$state":"/analyze_spending/result/byCategory"')
+  })
+  it('路径不存在时提示实际可用的字段，其他写法不猜', () => {
+    const r = checkSpec(spec({ c: { type: 'PieChart', props: { title: '构成', data: { $state: '/analyze_spending/result/categories' }, labelKey: 'category', valueKey: 'total' } } }), state)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.errors.join()).toContain('/analyze_spending/result 下可用字段：totalSpent、byCategory')
+    const unknown = checkSpec(spec({ c: { type: 'PieChart', props: { title: '构成', data: { $state: '/get_accounts' }, labelKey: 'category', valueKey: 'total' } } }), state)
+    if (!unknown.ok) expect(unknown.errors.join()).toContain('当前可引用的工具结果：/analyze_spending')
+  })
+  it('标题可以写用户本次说出的办理金额，其他无出处的金额仍被拒', () => {
+    const titled = (title: string) => checkSpec({ root: 'p', elements: { p: { type: 'Panel', props: { title, subtitle: null }, children: [] } } }, state, '给妈妈转 200')
+    expect(titled('给妈妈转账 200 元').ok).toBe(true)
+    expect(titled('给妈妈转账 300 元').ok).toBe(false)
+  })
+})

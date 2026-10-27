@@ -16,6 +16,7 @@ import { quarantineForModel } from '#/server/tools/sanitize'
 import { verifiedOutputTransform } from '#/server/verify/response'
 import { getSessionData } from './session'
 import { runtimeLog } from '#/server/logging/runtime'
+import { env } from '#/server/env'
 
 function logAgentProgress(message: string) {
   console.info(message)
@@ -68,6 +69,7 @@ export async function runAgent(params: {
     tools,
     stopWhen: isStepCount(8),
     temperature: 0.2,
+    providerOptions: { deepseek: { thinking: { type: env.DEEPSEEK_THINKING } } },
     experimental_transform: verifiedOutputTransform(ctx, [...trustedEvidence, ...(confirmation ? [confirmation] : [])], confirmation?.status === 'completed'),
     abortSignal: params.abortSignal,
     onStepEnd: ({ toolCalls, finishReason, usage }) => {

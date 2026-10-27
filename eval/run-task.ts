@@ -67,9 +67,10 @@ async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: strin
     messages.push(...response.messages)
     const forms: ShownForm[] = []
     const toolCalls = steps.flatMap((step) => step.toolCalls.map((call) => {
-      const output = step.toolResults.find((r) => r.toolCallId === call.toolCallId)?.output as { status?: string; questionnaire?: QuestionnaireData; submissionId?: string } | undefined
+      const output = step.toolResults.find((r) => r.toolCallId === call.toolCallId)?.output as { status?: string; questionnaire?: QuestionnaireData; submissionId?: string; errors?: unknown } | undefined
       if (output?.status === 'questionnaire' && output.questionnaire) forms.push({ form: output.questionnaire, submissionId: output.submissionId })
-      return { name: call.toolName, status: output?.status }
+      // 被校验拒绝的调用记下原因，用于分析工具调用被拒率（每次被拒都多花一个模型步骤）
+      return { name: call.toolName, status: output?.status, ...(output?.status?.startsWith('invalid') && output.errors ? { errors: JSON.stringify(output.errors).slice(0, 400) } : {}) }
     }))
     return {
       ...base,
@@ -83,6 +84,7 @@ async function runTurn(ctx: AgentContext, messages: ModelMessage[], input: strin
       steps: steps.length,
       inputTokens: usage.inputTokens ?? 0,
       outputTokens: usage.outputTokens ?? 0,
+      reasoningTokens: usage.outputTokenDetails?.reasoningTokens ?? 0,
       ms: Date.now() - started,
     }
   } catch (error) {

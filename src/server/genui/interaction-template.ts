@@ -1,5 +1,6 @@
 import { InteractionTemplateSchema, type InteractionField, type InteractionIntent, type ResolvedInteractionTemplate } from '#/lib/agent-interaction-template'
 import { requestedAmounts } from '#/lib/requested-amounts'
+import { missingPathHint, resolveStatePath } from './state-path'
 
 const allowed: Record<InteractionIntent, readonly InteractionField[]> = {
   transfer: ['amount', 'source', 'target', 'recipient', 'note'], purchase: ['amount', 'source', 'product'],
@@ -14,15 +15,6 @@ const plain = (text: string) => text.replace(/[\u0000-\u001f\u007f]/g, ' ').trim
 const masked = (text: string) => plain(text).replace(/\d[\d -]{10,}\d/g, (number) => `**** ${number.replace(/\D/g, '').slice(-4)}`)
 const record = (value: unknown): Record<string, unknown> | undefined => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : undefined
 const string = (value: unknown) => typeof value === 'string' ? masked(value) : ''
-
-function getByPointer(state: unknown, pointer: string): unknown {
-  let current = state
-  for (const segment of pointer.split('/').slice(1)) {
-    if (!current || typeof current !== 'object') return undefined
-    current = (current as Record<string, unknown>)[segment]
-  }
-  return current
-}
 
 function describeEntity(value: unknown, field: InteractionField): string | undefined {
   const row = record(value)
@@ -54,10 +46,11 @@ export function checkInteractionTemplate(input: unknown, state: Record<string, u
     const field = key as InteractionField
     if (!allowed[template.intent].includes(field)) { errors.push(`interaction.fields.${field}: 不属于当前步骤`); continue }
     if (typeof binding === 'string') { fields[field] = binding; continue }
-    const reference = '$state' in binding ? binding.$state : undefined
-    if (reference && forbiddenPath.test(reference)) { errors.push(`interaction.fields.${field}: 禁止引用安全凭证`); continue }
-    const resolved = reference ? getByPointer(state, reference) : undefined
-    if (reference && resolved === undefined) { errors.push(`interaction.fields.${field}: 数据路径 ${reference} 不存在`); continue }
+    const requested = '$state' in binding ? binding.$state : undefined
+    if (requested && forbiddenPath.test(requested)) { errors.push(`interaction.fields.${field}: 禁止引用安全凭证`); continue }
+    // /工具/data/… 与 /工具/… 指向同一份快照数据（见 state-path.ts）
+    const { path: reference, value: resolved } = requested ? resolveStatePath(state, requested) : { path: undefined, value: undefined }
+    if (reference && resolved === undefined) { errors.push(`interaction.fields.${field}: 数据路径 ${reference} 不存在${missingPathHint(state, reference)}`); continue }
     if (field === 'amount') {
       const yuan = 'yuan' in binding ? binding.yuan : typeof resolved === 'number' ? resolved / (/cents$/i.test(reference ?? '') ? 100 : 1) : NaN
       // A balance/minimum/yield cannot serve as a user's requested transaction amount.

@@ -31,13 +31,14 @@ export async function runBankTool(
 
   await audit(ctx, 'tool_call', { tool: def.name, args, plan })
 
-  const facts = await collectFacts({ userId: ctx.userId, channel: ctx.channel, sessionId: ctx.sessionId, ...def.factsHint?.(args) })
   // 本人在本次对话中的话与备注里的诈骗话术是事实；是否升级由 rules.ts 决定
   const fraudSignals = detectFraudSignals(ctx.riskText ?? ctx.requestText, typeof args.memo === 'string' ? args.memo : undefined, typeof args.note === 'string' ? args.note : undefined)
+  // 第三层：关键词没有命中时，由模型判断本人原话是否像被人指挥转账；只会升级。与数据库事实采集并行，不额外排队
+  const judging = !fraudSignals.length && PAYS_OTHERS_TOOLS.includes(def.name) ? judgeScamScript(ctx.userId, ctx.riskText ?? ctx.requestText) : undefined
+  const facts = await collectFacts({ userId: ctx.userId, channel: ctx.channel, sessionId: ctx.sessionId, ...def.factsHint?.(args) })
   if (fraudSignals.length) facts.fraudSignals = fraudSignals
-  else if (PAYS_OTHERS_TOOLS.includes(def.name)) {
-    // 第三层：关键词没有命中时，由模型判断本人原话是否像被人指挥转账；只会升级
-    const judged = await judgeScamScript(ctx.userId, ctx.riskText ?? ctx.requestText)
+  else if (judging) {
+    const judged = await judging
     if (judged.status !== 'skipped') await audit(ctx, 'fraud_model_judgment', { tool: def.name, status: judged.status, signals: judged.signals, evidence: judged.evidence })
     if (judged.signals.length) facts.fraudSignals = judged.signals
   }

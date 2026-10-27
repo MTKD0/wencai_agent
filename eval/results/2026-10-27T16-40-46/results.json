@@ -1,0 +1,552 @@
+{
+  "meta": {
+    "startedAt": "2026-10-27T16:40:54.195Z",
+    "finishedAt": "2026-10-27T16:41:30.076Z",
+    "model": "deepseek-flash",
+    "commit": "d25dd31",
+    "database": "file:./.scratch/eval-2026-10-27T16-40-46.db",
+    "repeats": 1,
+    "guard": "规则启发式"
+  },
+  "records": [
+    {
+      "task": {
+        "id": "bl-01",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "我的账户余额是多少？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_accounts",
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ],
+          "textAny": [
+            "23,568.20",
+            "23568.2",
+            "80,000",
+            "80000"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我的账户余额是多少？",
+            "toolCalls": [
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67092,
+            "outputTokens": 143,
+            "guardVerdict": "allow",
+            "text": "你的账户余额合计 **¥103,568.20**，共 2 个账户：\n\n- 工资卡（尾号 8823）：**¥23,568.20**\n- 储蓄账户（尾号 3106）：**¥80,000.00**\n\n卡片详情已在下方展示，左右滑动可查看。",
+            "reasoningTokens": 0,
+            "ms": 2851
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-02",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "这个月一共花了多少钱？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "这个月一共花了多少钱？",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "show_view"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "880 元"
+            ],
+            "steps": 4,
+            "inputTokens": 90118,
+            "outputTokens": 582,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "reasoningTokens": 0,
+            "ms": 4414
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": false,
+        "outcome": "other",
+        "reasons": [
+          "回复未通过数字核验，被替换为固定提示（被拦片段：880 元）"
+        ]
+      }
+    },
+    {
+      "task": {
+        "id": "bl-03",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "上个月餐饮花了多少？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report",
+            "analyze_spending"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "上个月餐饮花了多少？",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44540,
+            "outputTokens": 101,
+            "guardVerdict": "allow",
+            "text": "上个月（2026年9月）餐饮支出为 **¥755.60**。\n\n当月总支出 **¥5,253.69**，餐饮在各类支出中排第六，占比不高。需要我看看餐饮具体花在哪些商户，或者对比一下本月的情况吗？",
+            "reasoningTokens": 0,
+            "ms": 1712
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-04",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "帮我检查最近有没有异常交易"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_anomalies"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我检查最近有没有异常交易",
+            "toolCalls": [
+              {
+                "name": "get_anomalies",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44376,
+            "outputTokens": 102,
+            "guardVerdict": "allow",
+            "text": "我检查了你的账户，**最近没有发现异常交易**。\n\n系统按两类规则做了筛查：\n- 大额支出：超过前 3 个月平均支出 2 倍以上的交易\n- 短时间内的重复扣款\n\n这两类都没有命中。如果你想更仔细地核对，我可以帮你查某段时间的明细，或者做一次本月消费分类分析。",
+            "reasoningTokens": 0,
+            "ms": 2133
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-05",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "生成今年的年度账单报告"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "生成今年的年度账单报告",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67263,
+            "outputTokens": 507,
+            "guardVerdict": "allow",
+            "text": "2026 年度账单已生成，上方卡片包含全年总支出、总收入、净额和分类构成。\n\n几个要点：\n- 全年支出 **14155.95 元**，共 **91 笔**交易。\n- 支出最多的是**娱乐**（2603.25 元），其次是**转账**（2578.95 元）和**交通**（2327.55 元）。\n- 全年收入仅 **1 元**，净额为 **-14154.95 元**，说明这一年的资金流入主要不在本行账户里。\n\n需要我进一步拆解某一类（比如娱乐或餐饮）的明细，或者对比某个月份的支出吗？",
+            "reasoningTokens": 0,
+            "ms": 4241
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-06",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "列出最近 10 笔交易"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_transactions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "列出最近 10 笔交易",
+            "toolCalls": [
+              {
+                "name": "list_transactions",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69735,
+            "outputTokens": 309,
+            "guardVerdict": "allow",
+            "text": "已按时间倒序列出最近 10 笔交易，均来自工资卡（尾号 8823）。近 30 天共有 35 笔，需要继续往下翻或按分类筛选，告诉我即可。",
+            "reasoningTokens": 0,
+            "ms": 3383
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-07",
+        "scenario": "bill",
+        "variant": "standard",
+        "turns": [
+          "用图表展示这个月各类支出的占比"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "用图表展示这个月各类支出的占比",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67128,
+            "outputTokens": 311,
+            "guardVerdict": "allow",
+            "text": "本月支出构成已生成，总支出 **¥4,733.35**，共 32 笔。\n\n从占比看，**娱乐（889.25 元）**和**餐饮（887.10 元）**最接近，是本月最大的两项；**生活缴费（685.20 元）**占比最小。需要看某一类的具体明细，告诉我分类就行。",
+            "reasoningTokens": 0,
+            "ms": 3357
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-08",
+        "scenario": "bill",
+        "variant": "colloquial",
+        "turns": [
+          "我钱都花哪儿去了"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report",
+            "analyze_spending"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我钱都花哪儿去了",
+            "toolCalls": [
+              {
+                "name": "get_spending_report",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67270,
+            "outputTokens": 497,
+            "guardVerdict": "allow",
+            "text": "本月（2026年10月）你一共支出 **4733.35 元**，共 32 笔，其中消费支出 **3952.20 元**。\n\n花得最多的是**娱乐 889.25 元**，其次是**餐饮 887.10 元**、**购物 793.30 元**，这三项加起来占了大部分；另外**转账 781.15 元**、**交通 697.35 元**、**生活缴费 685.20 元**。\n\n需要我帮你看看某个分类的具体明细，或者对比一下上个月吗？",
+            "reasoningTokens": 0,
+            "ms": 4611
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-09",
+        "scenario": "bill",
+        "variant": "colloquial",
+        "turns": [
+          "工资卡里还剩多少啊"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_accounts",
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ],
+          "textAny": [
+            "23,568.20",
+            "23568.2"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "工资卡里还剩多少啊",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 66869,
+            "outputTokens": 113,
+            "guardVerdict": "allow",
+            "text": "你的工资卡（尾号 **8823**）当前余额为 **¥23,568.20**，卡片状态正常。",
+            "reasoningTokens": 0,
+            "ms": 3392
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "bl-10",
+        "scenario": "bill",
+        "variant": "colloquial",
+        "turns": [
+          "最近打车花得多不多"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_spending_report",
+            "analyze_spending",
+            "list_transactions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "最近打车花得多不多",
+            "toolCalls": [
+              {
+                "name": "analyze_spending",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 68269,
+            "outputTokens": 874,
+            "guardVerdict": "allow",
+            "text": "近30天你打车一共 **6 笔**，合计 **¥762.24**，占全部支出的 **14.76%**，单笔平均 **¥127.04**。\n\n从明细看，10月21日那笔 **¥264.33** 明显偏高，10月5日 **¥189.75** 也不低，这两笔拉高了整体水平；其余几笔多在几十到一百多元。\n\n如果想把打车支出压下来，可以考虑错峰出行，或者把长途改成公共交通。需要我帮你看看本月整体支出结构，或者对比一下上个月打车花了多少吗？",
+            "reasoningTokens": 0,
+            "ms": 5715
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    }
+  ]
+}

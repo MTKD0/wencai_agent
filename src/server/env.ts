@@ -8,6 +8,11 @@ const EnvSchema = z.object({
 
   DEEPSEEK_API_KEY: z.string().optional(),
   DEEPSEEK_MODEL: z.string().default('deepseek-flash'),
+  /**
+   * 主 Agent 是否开启 DeepSeek 思考模式。默认关闭（2026-10-28 实测）：75 个任务完成 74 个，单轮中位耗时 3.6 秒；
+   * 开启时每一步先推理再调用工具，同组任务耗时约多 40%–70%，且 temperature 不生效。
+   */
+  DEEPSEEK_THINKING: z.enum(['enabled', 'disabled']).default('disabled'),
   // 降级模型（OpenAI 兼容接口，如 Qwen3）
   FALLBACK_BASE_URL: z.string().optional(),
   FALLBACK_API_KEY: z.string().optional(),

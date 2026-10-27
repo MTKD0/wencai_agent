@@ -2,6 +2,10 @@ import { catalog } from '#/genui/catalog'
 import type { GenUISpec } from '#/genui/catalog'
 import { collectEvidence, verifyNumbers } from '#/server/verify/numbers'
 import { checkInteractionTemplate } from './interaction-template'
+import { getByPointer, missingPathHint, resolveStatePath } from './state-path'
+import { requestedAmounts } from '#/lib/requested-amounts'
+
+export { getByPointer }
 
 export type SpecCheck = { ok: true; spec: GenUISpec } | { ok: false; errors: string[] }
 
@@ -31,21 +35,23 @@ export function checkSpec(input: unknown, state: Record<string, unknown>, reques
   }
   const spec = result.data
   const errors: string[] = []
-  const evidence = collectEvidence([state])
+  // 用户在本次需求里说出的办理金额（如“给妈妈转 200”）可以出现在标题里；其他数字仍须来自服务端数据
+  const evidence = collectEvidence([state, requestedAmounts(requestText)])
 
   const elements = (spec as { elements: Record<string, { type: string; props: Record<string, unknown> }> }).elements
   for (const [key, el] of Object.entries(elements)) {
     if (el.type === 'CardDisplay' && Array.isArray(el.props.cardIds)) {
       const ref = el.props.data as { $state: string }
-      const rows = getByPointer(state, ref.$state)
+      const rows = resolveStatePath(state, ref.$state).value
       const ids = new Set(Array.isArray(rows) ? rows.map(row => row && typeof row === 'object' ? String(row.cardId ?? row.id) : '') : [])
       if (el.props.cardIds.some(id => !ids.has(String(id)))) errors.push(`${key}.cardIds: 不能显示数据中不存在的银行卡`)
     }
     for (const [prop, value] of Object.entries(el.props ?? {})) {
       if (value && typeof value === 'object' && '$state' in value) {
-        const path = (value as { $state: string }).$state
-        const resolved = getByPointer(state, path)
-        if (resolved === undefined) errors.push(`${key}.${prop}: 数据路径 ${path} 不存在`)
+        const reference = value as { $state: string }
+        const { path, value: resolved } = resolveStatePath(state, reference.$state)
+        if (resolved === undefined) errors.push(`${key}.${prop}: 数据路径 ${path} 不存在${missingPathHint(state, path)}`)
+        else reference.$state = path
         if (path.startsWith('/get_wealth_advice/')) errors.push(`${key}.${prop}: 理财专家结果已由固定建议卡展示，请沿用该卡，不重复生成摘要或转换金额单位`)
         if (el.type === 'Metric' && prop === 'value') {
           if (typeof resolved !== 'number' || !Number.isFinite(resolved)) errors.push(`${key}.${prop}: 指标必须引用有限数值，不能把风险等级、空值或文字转换成0`)
@@ -69,11 +75,3 @@ function containsNumber(v: unknown): boolean {
   return false
 }
 
-export function getByPointer(obj: unknown, pointer: string): unknown {
-  let cur = obj
-  for (const seg of pointer.split('/').slice(1)) {
-    if (cur === null || typeof cur !== 'object') return undefined
-    cur = (cur as Record<string, unknown>)[seg.replace(/~1/g, '/').replace(/~0/g, '~')]
-  }
-  return cur
-}
