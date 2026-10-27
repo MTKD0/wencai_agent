@@ -22,6 +22,12 @@ export async function getConfirmationResult(userId: string, actionId: string) {
     } : undefined
     return { ...base, status: 'completed' as const, output: payload.output, ...(planProgress ? { planProgress } : {}) }
   }
+  if (row.status === 'consumed') {
+    // 冷静期中的转账尚未执行：不能报“已完成”，也不是“执行中”
+    const hold = await (await import('#/server/payments/holds')).holdForAction(userId, actionId)
+    if (hold && (hold.status === 'held' || hold.status === 'releasing')) return { ...base, status: 'held' as const, hold }
+    if (hold?.status === 'cancelled') return { ...base, status: 'cancelled' as const, hold }
+  }
   if (row.sessionId.startsWith('scheduled:') && row.status === 'consumed') {
     await (await import('#/server/automation/service')).ensureAutomationSchema()
     const [link] = await db.select().from(schema.bankTaskApprovals).where(eq(schema.bankTaskApprovals.actionId, actionId))

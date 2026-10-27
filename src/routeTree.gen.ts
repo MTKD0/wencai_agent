@@ -17,6 +17,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as SecureOperationRouteImport } from './routes/secure-operation'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
+import { Route as ApiAdminCallbacksRouteImport } from './routes/api/admin-callbacks'
 import { Route as ApiAdminProfileRouteImport } from './routes/api/admin-profile'
 import { Route as ApiAdminRiskRouteImport } from './routes/api/admin-risk'
 import { Route as ApiBindRouteImport } from './routes/api/bind'
@@ -24,6 +25,7 @@ import { Route as ApiCardNumberRouteImport } from './routes/api/card-number'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiConfirmRouteImport } from './routes/api/confirm'
 import { Route as ApiDashboardRouteImport } from './routes/api/dashboard'
+import { Route as ApiHoldsRouteImport } from './routes/api/holds'
 import { Route as ApiMandatesRouteImport } from './routes/api/mandates'
 import { Route as ApiOnboardingRouteImport } from './routes/api/onboarding'
 import { Route as ApiPaymentsRouteImport } from './routes/api/payments'
@@ -78,6 +80,11 @@ const ApiAdminRoute = ApiAdminRouteImport.update({
   path: '/api/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminCallbacksRoute = ApiAdminCallbacksRouteImport.update({
+  id: '/api/admin-callbacks',
+  path: '/api/admin-callbacks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminProfileRoute = ApiAdminProfileRouteImport.update({
   id: '/api/admin-profile',
   path: '/api/admin-profile',
@@ -111,6 +118,11 @@ const ApiConfirmRoute = ApiConfirmRouteImport.update({
 const ApiDashboardRoute = ApiDashboardRouteImport.update({
   id: '/api/dashboard',
   path: '/api/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHoldsRoute = ApiHoldsRouteImport.update({
+  id: '/api/holds',
+  path: '/api/holds',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMandatesRoute = ApiMandatesRouteImport.update({
@@ -188,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
   '/api/admin-risk': typeof ApiAdminRiskRoute
   '/api/bind': typeof ApiBindRoute
@@ -195,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/holds': typeof ApiHoldsRoute
   '/api/mandates': typeof ApiMandatesRoute
   '/api/onboarding': typeof ApiOnboardingRoute
   '/api/payments': typeof ApiPaymentsRoute
@@ -218,6 +232,7 @@ export interface FileRoutesByTo {
   '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
   '/api/admin-risk': typeof ApiAdminRiskRoute
   '/api/bind': typeof ApiBindRoute
@@ -225,6 +240,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/holds': typeof ApiHoldsRoute
   '/api/mandates': typeof ApiMandatesRoute
   '/api/onboarding': typeof ApiOnboardingRoute
   '/api/payments': typeof ApiPaymentsRoute
@@ -249,6 +265,7 @@ export interface FileRoutesById {
   '/secure-operation': typeof SecureOperationRoute
   '/settings': typeof SettingsRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
   '/api/admin-risk': typeof ApiAdminRiskRoute
   '/api/bind': typeof ApiBindRoute
@@ -256,6 +273,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/holds': typeof ApiHoldsRoute
   '/api/mandates': typeof ApiMandatesRoute
   '/api/onboarding': typeof ApiOnboardingRoute
   '/api/payments': typeof ApiPaymentsRoute
@@ -281,6 +299,7 @@ export interface FileRouteTypes {
     | '/secure-operation'
     | '/settings'
     | '/api/admin'
+    | '/api/admin-callbacks'
     | '/api/admin-profile'
     | '/api/admin-risk'
     | '/api/bind'
@@ -288,6 +307,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/holds'
     | '/api/mandates'
     | '/api/onboarding'
     | '/api/payments'
@@ -311,6 +331,7 @@ export interface FileRouteTypes {
     | '/secure-operation'
     | '/settings'
     | '/api/admin'
+    | '/api/admin-callbacks'
     | '/api/admin-profile'
     | '/api/admin-risk'
     | '/api/bind'
@@ -318,6 +339,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/holds'
     | '/api/mandates'
     | '/api/onboarding'
     | '/api/payments'
@@ -341,6 +363,7 @@ export interface FileRouteTypes {
     | '/secure-operation'
     | '/settings'
     | '/api/admin'
+    | '/api/admin-callbacks'
     | '/api/admin-profile'
     | '/api/admin-risk'
     | '/api/bind'
@@ -348,6 +371,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/holds'
     | '/api/mandates'
     | '/api/onboarding'
     | '/api/payments'
@@ -372,6 +396,7 @@ export interface RootRouteChildren {
   SecureOperationRoute: typeof SecureOperationRoute
   SettingsRoute: typeof SettingsRoute
   ApiAdminRoute: typeof ApiAdminRoute
+  ApiAdminCallbacksRoute: typeof ApiAdminCallbacksRoute
   ApiAdminProfileRoute: typeof ApiAdminProfileRoute
   ApiAdminRiskRoute: typeof ApiAdminRiskRoute
   ApiBindRoute: typeof ApiBindRoute
@@ -379,6 +404,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiConfirmRoute: typeof ApiConfirmRoute
   ApiDashboardRoute: typeof ApiDashboardRoute
+  ApiHoldsRoute: typeof ApiHoldsRoute
   ApiMandatesRoute: typeof ApiMandatesRoute
   ApiOnboardingRoute: typeof ApiOnboardingRoute
   ApiPaymentsRoute: typeof ApiPaymentsRoute
@@ -452,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin-callbacks': {
+      id: '/api/admin-callbacks'
+      path: '/api/admin-callbacks'
+      fullPath: '/api/admin-callbacks'
+      preLoaderRoute: typeof ApiAdminCallbacksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin-profile': {
       id: '/api/admin-profile'
       path: '/api/admin-profile'
@@ -499,6 +532,13 @@ declare module '@tanstack/react-router' {
       path: '/api/dashboard'
       fullPath: '/api/dashboard'
       preLoaderRoute: typeof ApiDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/holds': {
+      id: '/api/holds'
+      path: '/api/holds'
+      fullPath: '/api/holds'
+      preLoaderRoute: typeof ApiHoldsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/mandates': {
@@ -604,6 +644,7 @@ const rootRouteChildren: RootRouteChildren = {
   SecureOperationRoute: SecureOperationRoute,
   SettingsRoute: SettingsRoute,
   ApiAdminRoute: ApiAdminRoute,
+  ApiAdminCallbacksRoute: ApiAdminCallbacksRoute,
   ApiAdminProfileRoute: ApiAdminProfileRoute,
   ApiAdminRiskRoute: ApiAdminRiskRoute,
   ApiBindRoute: ApiBindRoute,
@@ -611,6 +652,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiConfirmRoute: ApiConfirmRoute,
   ApiDashboardRoute: ApiDashboardRoute,
+  ApiHoldsRoute: ApiHoldsRoute,
   ApiMandatesRoute: ApiMandatesRoute,
   ApiOnboardingRoute: ApiOnboardingRoute,
   ApiPaymentsRoute: ApiPaymentsRoute,

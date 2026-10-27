@@ -51,6 +51,12 @@ export type AuditType =
   | 'risk_analysis_failed'
   | 'profile_generated'
   | 'wealth_advice'
+  // 诱导转账：模型话术判断、冷静期（延时执行）与人工回访
+  | 'fraud_model_judgment'
+  | 'transfer_held'
+  | 'transfer_hold_released'
+  | 'transfer_hold_cancelled'
+  | 'callback_ticket'
 
 export function hashEntry(prevHash: string, entry: AuditEntry): string {
   return createHash('sha256').update(prevHash).update(stableStringify(entry)).digest('hex')

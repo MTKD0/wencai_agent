@@ -5,6 +5,7 @@ import { ensurePaymentsSchema } from '#/server/payments/migrate'
 import { ensureRiskSchema, readAccountRiskFlag } from '#/server/risk/accounts'
 import { resolveRiskRecipient } from '#/server/risk/recipient'
 import { transferActivity } from './transfer-activity'
+import { collectTransferBaseline } from './behavior'
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -15,6 +16,8 @@ export async function collectFacts(params: {
   payeeId?: string
   toAccountId?: string
   splitRequestId?: string
+  /** 当前登录会话，用于“刚登录就大额转账”信号 */
+  sessionId?: string
   now?: Date
 }): Promise<PolicyFacts> {
   const now = params.now ?? new Date()
@@ -35,6 +38,7 @@ export async function collectFacts(params: {
 
   await ensureRiskSchema()
   const riskAccountId = await resolveRiskRecipient(params)
+  const transferBaseline = params.payeeId ? await collectTransferBaseline({ userId: params.userId, now, payeeId: params.payeeId, sessionId: params.sessionId }) : undefined
   const risk = riskAccountId ? await readAccountRiskFlag(riskAccountId) : null
 
   return {
@@ -44,6 +48,7 @@ export async function collectFacts(params: {
     dailyOutgoingCents,
     payeeAgeDays,
     recentTransferCount,
+    ...(transferBaseline ? { transferBaseline } : {}),
     ...(risk && risk.status !== 'cleared' ? { payeeRiskFlag: risk.status, payeeRiskAccountId: risk.accountId, payeeRiskRevision: risk.revision } : {}),
   }
 }

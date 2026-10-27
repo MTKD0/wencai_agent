@@ -165,7 +165,7 @@ function PendingControl({
   const pending = useQuery({ queryKey: ['confirm', outcome.actionId], queryFn: async () => {
     const response = await fetch(`/api/confirm?actionId=${encodeURIComponent(outcome.actionId)}`)
     if (!response.ok) throw new Error('无法读取确认状态')
-    return response.json() as Promise<{ status: string }>
+    return response.json() as Promise<{ status: string; hold?: import('./ConfirmCard').HoldInfo }>
   }, enabled: interaction.enabled, staleTime: 30_000, retry: false })
 
   // 强验证输错（step_up_failed）允许重试；not_found / tampered / expired 等是终态，
@@ -178,6 +178,7 @@ function PendingControl({
   return (
     <ConfirmCard
       {...outcome}
+      hold={pending.data?.hold}
       submitting={confirm.isPending || cancel.isPending || pending.data?.status === 'processing'}
       error={failedForGood ? undefined : (confirm.error ?? cancel.error)?.message}
       done={

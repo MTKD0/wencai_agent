@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ConfirmError } from '#/lib/queries'
 import { useSecureOperation, type SecureResult } from '#/components/ui/SecureOperation'
 import type { ConfirmSummary } from '#/server/tools/define'
-import { FRAUD_REASON_PREFIX } from '#/lib/fraud'
+import { FRAUD_REASON_PREFIX, UNUSUAL_REASON_PREFIX } from '#/lib/fraud'
 import { FraudAdvice } from './FraudAdvice'
 import './confirm-card.css'
 
@@ -29,7 +29,12 @@ export interface ConfirmCardProps {
   doneState?: 'success' | 'cancelled' | 'failed'
   onAgentAction?: (action: 'verify' | 'cancel' | 'repeat' | 'receipt') => boolean
   agentBusy?: boolean
+  /** 服务端返回的冷静期记录（见 server/payments/holds.ts） */
+  hold?: HoldInfo
 }
+
+export type HoldInfo = { holdId: string; status: string; releaseAt: string }
+const beijingTime = (iso: string) => new Date(new Date(iso).getTime() + 8 * 3600_000).toISOString().replace('T', ' ').slice(5, 16)
 
 export type StepUpPayload = import('#/server/auth/step-up').StrongStepUp
 
@@ -40,21 +45,47 @@ export type StepUpPayload = import('#/server/auth/step-up').StrongStepUp
 export default function ConfirmCard(props: ConfirmCardProps) {
   const [message, setMessage] = useState<string>()
   const [completed, setCompleted] = useState(false)
+  const [heldNow, setHeldNow] = useState<HoldInfo>()
+  const [holdCancelled, setHoldCancelled] = useState(false)
+  const [cancellingHold, setCancellingHold] = useState(false)
+  const hold = heldNow ?? props.hold
+  const held = !holdCancelled && (hold?.status === 'held' || hold?.status === 'releasing')
   const openSecure = useSecureOperation()
   const queries = useQueryClient()
   // A successful secure-page receipt takes precedence over stale parent query/error state.
-  const done = completed ? '操作已完成' : props.done
+  const done = holdCancelled || hold?.status === 'cancelled' ? '已在冷静期内撤销，资金未转出'
+    : held ? `已进入冷静期：${beijingTime(hold!.releaseAt)}（北京时间）后执行，期间可随时撤销`
+    : completed ? '操作已完成' : props.done
   const confirming = useRef(false)
   const [verifying, setVerifying] = useState(false)
   const [escalated, setEscalated] = useState(false)
   const [latestReasons, setLatestReasons] = useState<string[]>()
   // 合并而不是替换：确认失败返回的新原因不能让创建时的诈骗提示消失
   const reasons = [...new Set([...props.reasons, ...(latestReasons ?? [])])]
-  const fraudWarning = reasons.some((r) => r.startsWith(FRAUD_REASON_PREFIX))
+  const scamWarning = reasons.some((r) => r.startsWith(FRAUD_REASON_PREFIX))
+  // 话术提示与行为异常都要求先停下核实；两者同时出现时显示更强的诈骗提示
+  const fraudWarning = scamWarning || reasons.some((r) => r.startsWith(UNUSUAL_REASON_PREFIX))
   const [acknowledged, setAcknowledged] = useState(false)
   const red = props.level === 'red' || escalated
   const submitting = props.submitting || verifying
-  const state = completed ? 'success' : done ? (props.doneState ?? 'success') : 'pending'
+  const state = held ? 'held' : holdCancelled || hold?.status === 'cancelled' ? 'cancelled' : completed ? 'success' : done ? (props.doneState ?? 'success') : 'pending'
+
+  async function cancelHold() {
+    if (!hold || cancellingHold) return
+    setCancellingHold(true)
+    setMessage(undefined)
+    try {
+      const response = await fetch('/api/holds', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId }) })
+      const body = await response.json() as { ok: boolean; message?: string }
+      if (!body.ok) throw new Error(body.message ?? '撤销失败')
+      setHoldCancelled(true)
+      void queries.invalidateQueries({ queryKey: ['confirm', props.actionId] })
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : '撤销失败')
+    } finally {
+      setCancellingHold(false)
+    }
+  }
 
   async function confirm() {
     if (confirming.current || submitting || done) return
@@ -67,6 +98,13 @@ export default function ConfirmCard(props: ConfirmCardProps) {
       const result = await openSecure({ purpose: 'confirm_action', actionId: props.actionId })
       if (result.cancelled) return
       if (!result.ok) throw new Error(result.message ?? '本次操作未完成')
+      const output = result.output as { status?: string; holdId?: string; releaseAt?: string } | undefined
+      if (output?.status === 'held' && output.holdId && output.releaseAt) {
+        // 冷静期不是“已完成”：不通知外层标记成功，只刷新状态
+        setHeldNow({ holdId: output.holdId, status: 'held', releaseAt: output.releaseAt })
+        void queries.invalidateQueries({ queryKey: ['confirm', props.actionId] })
+        return
+      }
       setCompleted(true)
       await props.onCompleted?.(result)
     } catch (err) {
@@ -86,7 +124,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
       <div className="mb-3 flex items-center justify-between">
         <p className="m-0 font-semibold text-[var(--sea-ink)]">{props.summary.title}</p>
         <span className="bank-confirm-badge">
-          {done ? ({ success: '已完成', cancelled: '已取消', failed: '未完成' }[state as 'success' | 'cancelled' | 'failed']) : red ? '强验证' : '需确认'}
+          {held ? '冷静期' : done ? ({ success: '已完成', cancelled: '已取消', failed: '未完成' }[state as 'success' | 'cancelled' | 'failed']) : red ? '强验证' : '需确认'}
         </span>
       </div>
       <dl className="m-0 space-y-1.5 text-sm">
@@ -106,7 +144,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
       )}
       {fraudWarning && !done && (
         // 劝阻文案固定写在前端，不使用模型文字；勾选只是提醒用户停下来核实，验证仍由独立安全页面完成
-        <FraudAdvice>
+        <FraudAdvice variant={scamWarning ? 'scam' : 'unusual'}>
           <label className="bank-fraud-ack">
             <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
             <span>我已核实收款人身份，没有人指挥我转账</span>
@@ -117,7 +155,17 @@ export default function ConfirmCard(props: ConfirmCardProps) {
       {done && (
         <p className="bank-confirm-status" role="status">{state === 'success' ? '✓ ' : ''}{done}</p>
       )}
-      {(!done || props.onAgentAction) && (
+      {held && (
+        // 冷静期：钱还没有转出。撤销只作用于这一笔，不需要再次验证
+        <div className="bank-hold-notice">
+          <p>这笔转账识别到疑似诈骗话术，已为您保留 24 小时冷静期。银行工作人员可能会联系您核实；如有疑虑，请立即撤销。</p>
+          <Button type="button" onClick={() => void cancelHold()} disabled={cancellingHold} className="bank-hold-cancel bank-lift w-full rounded-full py-2 text-sm font-semibold">
+            {cancellingHold ? '正在撤销…' : '撤销这笔转账'}
+          </Button>
+          {message && <p className="m-0 text-center text-xs text-red-600">{message}</p>}
+        </div>
+      )}
+      {!held && (!done || props.onAgentAction) && (
         <div className="mt-4 space-y-2">
           <div className="flex gap-2">
             <Button type="button" onClick={() => props.onAgentAction ? props.onAgentAction(done ? 'receipt' : 'cancel') : props.onCancel?.()} disabled={submitting || props.agentBusy} className="bank-confirm-cancel bank-lift flex-1 rounded-full border border-[var(--line)] py-2 text-sm">

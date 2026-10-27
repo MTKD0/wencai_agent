@@ -3169,6 +3169,10 @@
 .risk-review-detail > .badge { justify-self: start; }
 .risk-review-detail h3 { margin: 0; color: #18243c; font-size: 13px; }
 .risk-review-detail .risk-review-reasons { max-width: none; }
+/* 反诈回访：识别依据是完整句子，表格单元格默认不换行，这里允许折行 */
+.callback-table td { white-space: normal; vertical-align: top; }
+.callback-table .risk-review-reasons { min-width: 220px; }
+.callback-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .risk-review-effect { margin: 0; padding: 12px 14px; border: 1px solid #dce7fa; border-radius: 9px; color: #425778; background: #f4f8ff; font-size: 12px; line-height: 1.7; }
 .risk-review-effect p { margin: 4px 0 0; }
 .risk-review-features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }

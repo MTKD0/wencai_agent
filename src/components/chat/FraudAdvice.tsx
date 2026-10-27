@@ -2,7 +2,20 @@
  * 诱导转账劝阻文案：固定写在前端，不使用模型文字。
  * 对话中由服务端识别到话术时单独显示（data-fraud），确认卡在原因含“疑似诈骗”时嵌入显示。
  */
-export function FraudAdvice({ children }: { children?: React.ReactNode }) {
+export function FraudAdvice({ children, variant = 'scam' }: { children?: React.ReactNode; variant?: 'scam' | 'unusual' }) {
+  if (variant === 'unusual') return (
+    // 行为画像异常：用户没说出可疑话术，但这笔转账与平时差别很大。语气比诈骗提示温和，不下结论
+    <div className="bank-fraud-warning" role="alert">
+      <p className="bank-fraud-title">这笔转账和您平时的习惯差别较大</p>
+      <ul>
+        <li>请再次核实收款人是谁、为什么要转这笔钱。</li>
+        <li>如果有人正在电话、视频或聊天软件里指导您操作，请立即停下。</li>
+        <li>陌生人要求“先转钱、再返还”或“转到指定账户”，都是常见骗局。</li>
+      </ul>
+      <p className="bank-fraud-hotline">拿不准时，请联系家人或拨打 96110 反诈专线核实。</p>
+      {children}
+    </div>
+  )
   return (
     <div className="bank-fraud-warning" role="alert">
       <p className="bank-fraud-title">请先停一下，这可能是诈骗</p>

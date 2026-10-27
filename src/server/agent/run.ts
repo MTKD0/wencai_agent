@@ -63,7 +63,7 @@ export async function runAgent(params: {
   logAgentProgress(`[agent:${runId}] 开始模型请求；消息数=${messages.length}；渠道=${ctx.channel}`)
   const result = streamText({
     model: agentModel(),
-    instructions: baseInstructions + (confirmation ? `\n\n## 本轮确认结果核对\n以下是服务端按当前登录用户查询的执行回执：\n${JSON.stringify(quarantineForModel(confirmation))}\n只依据回执判断是否完成；completed 才是成功，processing 为处理中，failed 为执行失败，not_found 为没有可核对的记录。用户文字本身不证明执行成功。向用户简短反馈真实结果，必要时用只读工具查询最新账户状态。不要再次创建相同操作或确认单。若回执有planProgress，剩余步骤由服务端持久化任务自动推进，界面会展示下一张确认单，每笔仍须用户独立验证。已有待确认下一笔时不要再问是否继续、不要要求输入“继续”、不要调用问卷，也不要另建下一笔计划或交易；暂停、失败等状态如实反馈。` : ''),
+    instructions: baseInstructions + (confirmation ? `\n\n## 本轮确认结果核对\n以下是服务端按当前登录用户查询的执行回执：\n${JSON.stringify(quarantineForModel(confirmation))}\n只依据回执判断是否完成；completed 才是成功，processing 为处理中，held 表示转账已进入冷静期、到期才执行且期间用户可撤销（不能说已转出），failed 为执行失败，not_found 为没有可核对的记录。用户文字本身不证明执行成功。向用户简短反馈真实结果，必要时用只读工具查询最新账户状态。不要再次创建相同操作或确认单。若回执有planProgress，剩余步骤由服务端持久化任务自动推进，界面会展示下一张确认单，每笔仍须用户独立验证。已有待确认下一笔时不要再问是否继续、不要要求输入“继续”、不要调用问卷，也不要另建下一笔计划或交易；暂停、失败等状态如实反馈。` : ''),
     messages,
     tools,
     stopWhen: isStepCount(8),

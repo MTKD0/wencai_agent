@@ -135,7 +135,7 @@ async function confirmUnderLock(params: {
   const def = params.resolveTool(row.tool)
   if (!def) return fail('execution_failed', `未知工具 ${row.tool}`)
   const args = JSON.parse(row.argsJson)
-  const facts = await collectFacts({ userId: ctx.userId, channel: ctx.channel, ...def.factsHint?.(args) })
+  const facts = await collectFacts({ userId: ctx.userId, channel: ctx.channel, sessionId: ctx.sessionId, ...def.factsHint?.(args) })
   const decision = decide({ tool: def.name, baseRisk: def.baseRisk, args, facts })
   await audit(ctx, 'policy_decision', { actionId, stage: 'execution', tool: row.tool, decision, facts })
   if (!decision.allowed) return fail('locked', decision.reasons.join('；'))
@@ -212,6 +212,20 @@ async function confirmUnderLock(params: {
   })
   if (consumed.length === 0) return fail('already_used', '该操作已处理')
 
+  // 识别到诈骗话术、用户看过劝阻仍坚持确认的转给他人转账：进入冷静期，到期由 worker 执行，期间可撤销（payments/holds.ts）
+  const shownReasons = [...new Set([...(JSON.parse(row.reasonsJson) as string[]), ...decision.reasons])]
+  const holds = await import('#/server/payments/holds')
+  if (holds.shouldHold(row, shownReasons)) {
+    try {
+      const output = await holds.holdTransfer(ctx, row, args, shownReasons,
+        facts.payeeRiskFlag === 'suspected' && facts.payeeRiskAccountId && facts.payeeRiskRevision !== undefined ? { accountId: facts.payeeRiskAccountId, revision: facts.payeeRiskRevision } : undefined)
+      await audit(ctx, 'confirm_attempt', { actionId, ok: true, held: true })
+      return { ok: true, tool: row.tool, output }
+    } catch (err) {
+      return fail('execution_failed', err instanceof Error ? err.message : String(err))
+    }
+  }
+
   try {
     const output = await def.execute(JSON.parse(row.argsJson), { ...ctx, authorization: {
       level: effectiveLevel === 'red' ? 'red' : 'yellow', actionId,
@@ -242,7 +256,10 @@ export async function getPendingForUser(ctx: AgentContext, actionId: string) {
     .from(schema.pendingActions)
     .where(and(eq(schema.pendingActions.id, actionId), eq(schema.pendingActions.userId, ctx.userId)))
   if (!row) return null
+  // 冷静期中的转账：卡片据此显示到期时间与撤销按钮
+  const hold = row.status === 'consumed' ? await (await import('#/server/payments/holds')).holdForAction(ctx.userId, actionId) : undefined
   return {
+    ...(hold ? { hold } : {}),
     actionId: row.id,
     level: row.level,
     status: row.expiresAt.getTime() < Date.now() && row.status === 'pending' ? 'expired' : row.status,

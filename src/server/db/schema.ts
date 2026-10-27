@@ -460,3 +460,46 @@ export const bankProfileNarratives = sqliteTable('bank_profile_narratives', {
   rejected: text('rejected'),
   generatedAt: integer('generated_at', { mode: 'timestamp_ms' }).notNull(),
 })
+
+/**
+ * 冷静期（延时执行）：识别到诈骗话术、用户仍坚持确认的转给他人转账，不立即扣款，
+ * 到期后由 worker 按原授权执行；到期前用户可随时撤销，后台回访可提前放行或撤销。
+ */
+export const bankTransferHolds = sqliteTable('bank_transfer_holds', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  /** 原确认单；一张确认单最多一笔冷静期 */
+  actionId: text('action_id').notNull().unique(),
+  tool: text('tool').notNull(),
+  /** 结算参数（fromAccountId、payeeId、amountCents、memo），确认时已核对 */
+  inputJson: text('input_json').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  payeeName: text('payee_name').notNull(),
+  reasonsJson: text('reasons_json').notNull(),
+  /** held | releasing | released | cancelled | failed */
+  status: text('status').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  releaseAt: integer('release_at', { mode: 'timestamp_ms' }).notNull(),
+  resolvedAt: integer('resolved_at', { mode: 'timestamp_ms' }),
+  /** user | admin | worker：谁结束了冷静期 */
+  resolvedBy: text('resolved_by'),
+  resultJson: text('result_json'),
+})
+
+/** 反诈回访工单：后台人工联系用户核实；结论只能撤销或提前放行冷静期中的转账，不能代替用户确认新的交易 */
+export const bankCallbackTickets = sqliteTable('bank_callback_tickets', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  holdId: text('hold_id'),
+  actionId: text('action_id').notNull(),
+  reasonsJson: text('reasons_json').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  payeeName: text('payee_name').notNull(),
+  /** open | closed */
+  status: text('status').notNull(),
+  /** confirmed_safe | confirmed_scam | unreachable：回访结论 */
+  outcome: text('outcome'),
+  note: text('note'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})

@@ -16,6 +16,14 @@ export type FraudSignal =
   | 'share_code'
   | 'impersonation'
   | 'investment_lure'
+  // 以下类型只由第三层模型判断产生（policy/fraud-model.ts），关键词规则不覆盖
+  | 'romance'
+  | 'prize_fee'
+  | 'credit_repair'
+  | 'pressure'
+
+/** 模型判断可以输出的全部类型 */
+export const MODEL_FRAUD_SIGNALS = ['safe_account', 'task_rebate', 'unlock_fee', 'loan_fee', 'refund_service', 'share_code', 'impersonation', 'investment_lure', 'romance', 'prize_fee', 'credit_repair', 'pressure'] as const satisfies readonly FraudSignal[]
 
 export const FRAUD_SIGNAL_TEXT: Record<FraudSignal, string> = {
   safe_account: '公检法或"安全账户"',
@@ -26,6 +34,10 @@ export const FRAUD_SIGNAL_TEXT: Record<FraudSignal, string> = {
   share_code: '把验证码告诉他人',
   impersonation: '冒充领导、熟人借钱',
   investment_lure: '带单投资、内幕高收益',
+  romance: '网恋对象要钱',
+  prize_fee: '中奖或补贴前先交税费',
+  credit_repair: '征信修复、注销校园贷',
+  pressure: '有人催促、要求保密或分笔转账',
 }
 
 /** 规则在去掉空白与不可见字符、统一全半角后的文本上匹配（与输入审核相同的规范化） */

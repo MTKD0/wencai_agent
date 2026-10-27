@@ -32,6 +32,8 @@ export interface PolicyFacts {
   payeeRiskRevision?: number
   /** 本人当前请求与转账备注中命中的诱导转账话术（见 policy/fraud.ts）。只用于升级，不会降级或放行。 */
   fraudSignals?: import('./fraud').FraudSignal[]
+  /** 本人转账基线（见 policy/behavior.ts），只在转给已保存收款人时采集；与本笔金额比较后得出行为异常信号 */
+  transferBaseline?: import('./behavior').TransferBaseline
 }
 
 export interface PolicyInput {

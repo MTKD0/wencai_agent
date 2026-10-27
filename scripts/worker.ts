@@ -6,6 +6,7 @@ import { runRiskAnalysisPass } from '../src/server/risk/accounts'
 import { runLifeAutomation } from '../src/server/life/service'
 import { refreshFunds } from '../src/server/funds/store'
 import { confirmFundOrders } from '../src/server/funds/trading'
+import { releaseDueHolds } from '../src/server/payments/holds'
 
 let stopping = false
 let riskPass: Promise<unknown> | undefined
@@ -26,6 +27,7 @@ async function tick() {
     if (stopping) break
     await runAutomaticTransfers(user.id, now)
     await runDueMandates(user.id, now)
+    await releaseDueHolds(user.id, now)
     await runLifeAutomation(user.id, now)
     await sendSubscriptionReminders(user.id, now)
     for (const candidate of await detectSubscriptions(user.id)) {

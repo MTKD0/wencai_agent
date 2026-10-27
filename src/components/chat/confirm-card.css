@@ -33,3 +33,9 @@
 .bank-fraud-hotline { margin: 6px 0 0; font-weight: 600; }
 .bank-fraud-ack { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-weight: 600; cursor: pointer; }
 .bank-fraud-ack input { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; accent-color: #b3263e; }
+
+/* 冷静期：转账已确认但尚未执行，突出撤销入口 */
+.bank-confirm-card.is-held { border-color: color-mix(in srgb, #d97706 45%, var(--line)); }
+.bank-hold-notice { margin-top: 12px; display: grid; gap: 10px; padding: 12px; border-radius: 14px; background: color-mix(in srgb, #f59e0b 12%, transparent); }
+.bank-hold-notice p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--sea-ink); }
+.bank-hold-cancel { color: #fff; background: #c2410c; }

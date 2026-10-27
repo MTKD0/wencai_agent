@@ -14,6 +14,7 @@ import {
   Gift,
   ScrollText,
   ShieldCheck,
+  PhoneCall,
   ShieldAlert,
   UserRoundSearch,
   Clock3,
@@ -45,6 +46,7 @@ import { AdminPlans } from './views/Plans'
 import { AdminAudit } from './views/Audit'
 import { AdminSecurity } from './views/Security'
 import { AdminRiskReview } from './views/RiskReview'
+import { AdminCallbacks } from './views/Callbacks'
 import { AdminProfile } from './views/Profile'
 import type { Section } from './shared'
 
@@ -58,6 +60,7 @@ export const navigation = [
   { id: 'plans', name: '生日计划', icon: Gift },
   { id: 'security', name: '安全内核', icon: ShieldCheck },
   { id: 'risk-review', name: '收款风险复核', icon: ShieldAlert },
+  { id: 'callbacks', name: '反诈回访', icon: PhoneCall },
   { id: 'profile', name: '用户画像', icon: UserRoundSearch },
   { id: 'audit', name: '操作审计', icon: ScrollText },
   { id: 'logs', name: '实时日志', icon: ScrollText },
@@ -73,6 +76,7 @@ const descriptions: Record<Section, string> = {
   plans: '把预算、时间与礼物，安排在同一条计划里。',
   security: '风险等级由代码判定，确认只能来自用户，每一步都留痕。',
   'risk-review': '核对收款账户风险线索，人工确认高危或解除标记。',
+  callbacks: '联系冷静期中的用户核实，撤销被骗的转账或确认安全后放行。',
   profile: '用数据看清每位用户的收支、资产与风险偏好。',
   audit: '每次业务操作，都有迹可循。',
   logs: '查看登录认证、接口状态和运行错误。',
@@ -376,6 +380,8 @@ export function AdminWorkspace({
                   <AdminSecurity {...view} />
                 ) : section === 'risk-review' ? (
                   <AdminRiskReview />
+                ) : section === 'callbacks' ? (
+                  <AdminCallbacks />
                 ) : section === 'profile' ? (
                   <AdminProfile />
                 ) : (

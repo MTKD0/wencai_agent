@@ -4,6 +4,8 @@ import { createPending } from '#/server/confirm/pending'
 import { decide } from '#/server/policy/engine'
 import { collectFacts } from '#/server/policy/facts'
 import { detectFraudSignals } from '#/server/policy/fraud'
+import { judgeScamScript } from '#/server/policy/fraud-model'
+import { PAYS_OTHERS_TOOLS } from '#/server/policy/rules'
 import type { AgentContext } from '#/server/agent/context'
 import type { BankToolDef, ToolOutcome } from './define'
 import { sanitizeToolOutput } from './sanitize'
@@ -29,10 +31,16 @@ export async function runBankTool(
 
   await audit(ctx, 'tool_call', { tool: def.name, args, plan })
 
-  const facts = await collectFacts({ userId: ctx.userId, channel: ctx.channel, ...def.factsHint?.(args) })
+  const facts = await collectFacts({ userId: ctx.userId, channel: ctx.channel, sessionId: ctx.sessionId, ...def.factsHint?.(args) })
   // 本人在本次对话中的话与备注里的诈骗话术是事实；是否升级由 rules.ts 决定
   const fraudSignals = detectFraudSignals(ctx.riskText ?? ctx.requestText, typeof args.memo === 'string' ? args.memo : undefined, typeof args.note === 'string' ? args.note : undefined)
   if (fraudSignals.length) facts.fraudSignals = fraudSignals
+  else if (PAYS_OTHERS_TOOLS.includes(def.name)) {
+    // 第三层：关键词没有命中时，由模型判断本人原话是否像被人指挥转账；只会升级
+    const judged = await judgeScamScript(ctx.userId, ctx.riskText ?? ctx.requestText)
+    if (judged.status !== 'skipped') await audit(ctx, 'fraud_model_judgment', { tool: def.name, status: judged.status, signals: judged.signals, evidence: judged.evidence })
+    if (judged.signals.length) facts.fraudSignals = judged.signals
+  }
   const decision = decide({ tool: def.name, baseRisk: def.baseRisk, args, facts })
   await audit(ctx, 'policy_decision', { tool: def.name, decision, facts })
 

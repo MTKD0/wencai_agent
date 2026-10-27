@@ -25,6 +25,7 @@ export type Section =
   | 'audit'
   | 'security'
   | 'risk-review'
+  | 'callbacks'
   | 'profile'
   | 'logs'
 

@@ -1,5 +1,7 @@
 import type { PolicyInput, RiskLevel } from './types'
 import { fraudReason } from './fraud'
+import { behaviorSignals, BEHAVIOR_SIGNAL_TEXT, BEHAVIOR_THRESHOLDS } from './behavior'
+import { UNUSUAL_REASON_PREFIX } from '#/lib/fraud'
 
 export const LIMITS = {
   /** UTC+8 自然日跨本人所有账户转出给他人的累计（含本笔），严格超过 1000 元需强验证；本人账户互转与信用卡还款不计入。 */
@@ -34,7 +36,16 @@ const isTransfer = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_s
 export const OWN_FUNDS_TOOLS = ['transfer_between_accounts', 'transfer_between_cards', 'repay_credit_card']
 
 /** 资金离开本人的操作：本人账户 / 卡片之间互转、信用卡还款、生日预留不在此列 */
-const paysOthers = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'pay_split_request', 'create_standing_mandate', 'add_payee'].includes(i.tool)
+export const PAYS_OTHERS_TOOLS = ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'pay_split_request', 'create_standing_mandate', 'add_payee']
+const paysOthers = (i: PolicyInput) => PAYS_OTHERS_TOOLS.includes(i.tool)
+
+/** 带金额、转给他人的操作：行为异常信号只对它们有意义 */
+const paysOthersWithAmount = (i: PolicyInput) => ['transfer', 'commit_transfer', 'commit_scheduled_transfer', 'create_standing_mandate'].includes(i.tool)
+
+/** 本笔的行为异常信号（纯函数，基线来自服务端事实） */
+export function transferBehaviorSignals(input: PolicyInput) {
+  return paysOthersWithAmount(input) && input.facts.transferBaseline ? behaviorSignals(amountCents(input), input.facts.transferBaseline) : []
+}
 
 export const RULES: Rule[] = [
   {
@@ -57,6 +68,17 @@ export const RULES: Rule[] = [
     id: 'scam-script-warning',
     applies: paysOthers,
     evaluate: ({ facts }) => facts.fraudSignals?.length ? { kind: 'raise', to: 'red', reason: fraudReason(facts.fraudSignals) } : null,
+  },
+  {
+    // 行为画像：这笔转账和本人平时差别很大（至少两项信号）。升红并显示提醒，不拒绝
+    id: 'unusual-transfer-pattern',
+    applies: paysOthersWithAmount,
+    evaluate: (input) => {
+      const signals = transferBehaviorSignals(input)
+      return signals.length >= BEHAVIOR_THRESHOLDS.minSignals
+        ? { kind: 'raise', to: 'red', reason: `${UNUSUAL_REASON_PREFIX}：${signals.map((s) => BEHAVIOR_SIGNAL_TEXT[s]).join('、')}，已升级为强验证` }
+        : null
+    },
   },
   {
     id: 'sensitive-card-operation',

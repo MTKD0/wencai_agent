@@ -26,6 +26,7 @@ export function interactionReceiptText(receipt: { status: string }) {
     case 'expired': return '本次确认单已过期。请点击原卡片的“重新办理”获取新的确认单。'
     case 'completed': return '该操作已完成，请以已显示的银行回执为准。不会重复执行。'
     case 'processing': return '操作正在执行，请等待银行回执，勿重复提交。'
+    case 'held': return '这笔转账已进入 24 小时冷静期，到期后才会执行，期间可在确认卡上撤销。'
     case 'failed': return '本次操作执行失败，请核对结果后重新办理。'
     default: return '该操作不存在或不属于当前用户，请重新查询。'
   }
