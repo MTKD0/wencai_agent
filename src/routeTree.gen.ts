@@ -20,8 +20,10 @@ import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
 import { Route as ApiAddressesRouteImport } from './routes/api/addresses'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
 import { Route as ApiAdminCallbacksRouteImport } from './routes/api/admin-callbacks'
+import { Route as ApiAdminConsoleRouteImport } from './routes/api/admin-console'
 import { Route as ApiAdminProfileRouteImport } from './routes/api/admin-profile'
 import { Route as ApiAdminRiskRouteImport } from './routes/api/admin-risk'
+import { Route as ApiAdminSessionRouteImport } from './routes/api/admin-session'
 import { Route as ApiBindRouteImport } from './routes/api/bind'
 import { Route as ApiCardNumberRouteImport } from './routes/api/card-number'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -96,6 +98,11 @@ const ApiAdminCallbacksRoute = ApiAdminCallbacksRouteImport.update({
   path: '/api/admin-callbacks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminConsoleRoute = ApiAdminConsoleRouteImport.update({
+  id: '/api/admin-console',
+  path: '/api/admin-console',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminProfileRoute = ApiAdminProfileRouteImport.update({
   id: '/api/admin-profile',
   path: '/api/admin-profile',
@@ -104,6 +111,11 @@ const ApiAdminProfileRoute = ApiAdminProfileRouteImport.update({
 const ApiAdminRiskRoute = ApiAdminRiskRouteImport.update({
   id: '/api/admin-risk',
   path: '/api/admin-risk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminSessionRoute = ApiAdminSessionRouteImport.update({
+  id: '/api/admin-session',
+  path: '/api/admin-session',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBindRoute = ApiBindRouteImport.update({
@@ -213,8 +225,10 @@ export interface FileRoutesByFullPath {
   '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
+  '/api/admin-console': typeof ApiAdminConsoleRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
   '/api/admin-risk': typeof ApiAdminRiskRoute
+  '/api/admin-session': typeof ApiAdminSessionRoute
   '/api/bind': typeof ApiBindRoute
   '/api/card-number': typeof ApiCardNumberRoute
   '/api/chat': typeof ApiChatRoute
@@ -246,8 +260,10 @@ export interface FileRoutesByTo {
   '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
+  '/api/admin-console': typeof ApiAdminConsoleRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
   '/api/admin-risk': typeof ApiAdminRiskRoute
+  '/api/admin-session': typeof ApiAdminSessionRoute
   '/api/bind': typeof ApiBindRoute
   '/api/card-number': typeof ApiCardNumberRoute
   '/api/chat': typeof ApiChatRoute
@@ -281,8 +297,10 @@ export interface FileRoutesById {
   '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
+  '/api/admin-console': typeof ApiAdminConsoleRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
   '/api/admin-risk': typeof ApiAdminRiskRoute
+  '/api/admin-session': typeof ApiAdminSessionRoute
   '/api/bind': typeof ApiBindRoute
   '/api/card-number': typeof ApiCardNumberRoute
   '/api/chat': typeof ApiChatRoute
@@ -316,8 +334,10 @@ export interface FileRouteTypes {
     | '/api/addresses'
     | '/api/admin'
     | '/api/admin-callbacks'
+    | '/api/admin-console'
     | '/api/admin-profile'
     | '/api/admin-risk'
+    | '/api/admin-session'
     | '/api/bind'
     | '/api/card-number'
     | '/api/chat'
@@ -349,8 +369,10 @@ export interface FileRouteTypes {
     | '/api/addresses'
     | '/api/admin'
     | '/api/admin-callbacks'
+    | '/api/admin-console'
     | '/api/admin-profile'
     | '/api/admin-risk'
+    | '/api/admin-session'
     | '/api/bind'
     | '/api/card-number'
     | '/api/chat'
@@ -383,8 +405,10 @@ export interface FileRouteTypes {
     | '/api/addresses'
     | '/api/admin'
     | '/api/admin-callbacks'
+    | '/api/admin-console'
     | '/api/admin-profile'
     | '/api/admin-risk'
+    | '/api/admin-session'
     | '/api/bind'
     | '/api/card-number'
     | '/api/chat'
@@ -416,8 +440,10 @@ export interface RootRouteChildren {
   ApiAddressesRoute: typeof ApiAddressesRoute
   ApiAdminRoute: typeof ApiAdminRoute
   ApiAdminCallbacksRoute: typeof ApiAdminCallbacksRoute
+  ApiAdminConsoleRoute: typeof ApiAdminConsoleRoute
   ApiAdminProfileRoute: typeof ApiAdminProfileRoute
   ApiAdminRiskRoute: typeof ApiAdminRiskRoute
+  ApiAdminSessionRoute: typeof ApiAdminSessionRoute
   ApiBindRoute: typeof ApiBindRoute
   ApiCardNumberRoute: typeof ApiCardNumberRoute
   ApiChatRoute: typeof ApiChatRoute
@@ -518,6 +544,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminCallbacksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin-console': {
+      id: '/api/admin-console'
+      path: '/api/admin-console'
+      fullPath: '/api/admin-console'
+      preLoaderRoute: typeof ApiAdminConsoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin-profile': {
       id: '/api/admin-profile'
       path: '/api/admin-profile'
@@ -530,6 +563,13 @@ declare module '@tanstack/react-router' {
       path: '/api/admin-risk'
       fullPath: '/api/admin-risk'
       preLoaderRoute: typeof ApiAdminRiskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin-session': {
+      id: '/api/admin-session'
+      path: '/api/admin-session'
+      fullPath: '/api/admin-session'
+      preLoaderRoute: typeof ApiAdminSessionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/bind': {
@@ -690,8 +730,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAddressesRoute: ApiAddressesRoute,
   ApiAdminRoute: ApiAdminRoute,
   ApiAdminCallbacksRoute: ApiAdminCallbacksRoute,
+  ApiAdminConsoleRoute: ApiAdminConsoleRoute,
   ApiAdminProfileRoute: ApiAdminProfileRoute,
   ApiAdminRiskRoute: ApiAdminRiskRoute,
+  ApiAdminSessionRoute: ApiAdminSessionRoute,
   ApiBindRoute: ApiBindRoute,
   ApiCardNumberRoute: ApiCardNumberRoute,
   ApiChatRoute: ApiChatRoute,

@@ -8,7 +8,7 @@ export function getRuntimeLogs(request: Request) {
     return Response.json({ error: { code: 'ADMIN_DISABLED', message: '管理后台未启用' } }, { status: 403, headers })
   if (!adminAuthorized(request))
     return Response.json(
-      { error: { code: 'ADMIN_AUTH_REQUIRED', message: '请输入后台访问凭据' } },
+      { error: { code: 'ADMIN_AUTH_REQUIRED', message: '请先登录后台' } },
       { status: 401, headers },
     )
   return Response.json({ data: runtimeLogSnapshot() }, { headers })

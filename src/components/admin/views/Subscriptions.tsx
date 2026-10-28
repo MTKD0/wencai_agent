@@ -24,12 +24,12 @@ export function AdminSubscriptions({ s, actions }: ViewProps) {
                 </div>
                 <Badge status="active" />
                 <div className="sub-actions">
-                  <Button className="button button-ghost button-sm" onClick={() => actions.reminder(sub.id)} type="button">
+                  {actions && <Button className="button button-ghost button-sm" onClick={() => actions.reminder(sub.id)} type="button">
                     <Bell size={14} />提醒
-                  </Button>
-                  <Button className="button button-ghost button-sm" onClick={() => actions.cancelSubscription(sub.id)} type="button">
+                  </Button>}
+                  {actions && <Button className="button button-ghost button-sm" onClick={() => actions.cancelSubscription(sub.id)} type="button">
                     取消
-                  </Button>
+                  </Button>}
                 </div>
               </div>
             ))}

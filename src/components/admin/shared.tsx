@@ -45,7 +45,8 @@ export type ViewProps = {
   period: string
   anomalies: Array<{ id: string; amount: number; merchant: string; category: string; occurredAt: string; reasons: string[]; needsReview: true }>
   audit: Array<{ seq: number; at: string; userId: string; type: string; payloadJson: string }>
-  actions: AdminActions
+  /** 不提供时视图只读（客户详情页）：不渲染任何代客操作按钮 */
+  actions?: AdminActions
   go: (section: Section) => void
 }
 

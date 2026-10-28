@@ -500,6 +500,10 @@ export const bankCallbackTickets = sqliteTable('bank_callback_tickets', {
   /** confirmed_safe | confirmed_scam | unreachable：回访结论 */
   outcome: text('outcome'),
   note: text('note'),
+  /** 最近一次处理的工作人员姓名 */
+  handledBy: text('handled_by'),
+  /** 回访联系次数（每次记录结论算一次） */
+  attempts: integer('attempts').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -516,4 +520,42 @@ export const bankAddresses = sqliteTable('bank_addresses', {
   isDefault: integer('is_default', { mode: 'boolean' }).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+/** 银行工作人员账号（后台登录）；密码为 scrypt 哈希，账号由部署方通过 ADMIN_STAFF_ACCOUNTS 预置 */
+export const bankStaff = sqliteTable('bank_staff', {
+  id: text('id').primaryKey(),
+  username: text('username').notNull().unique(),
+  name: text('name').notNull(),
+  /** agent（回访坐席）| supervisor（风控主管） */
+  role: text('role').notNull(),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  disabledAt: integer('disabled_at', { mode: 'timestamp_ms' }),
+})
+
+/**
+ * 反诈识别事件：一张确认单命中诈骗话术或行为异常时记一条，只存识别当时的依据。
+ * 处理结果（用户放弃、冷静期、撤销、放行）在读取时由确认单与冷静期状态推出，不在多处回写。
+ */
+export const bankFraudEvents = sqliteTable('bank_fraud_events', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  actionId: text('action_id').notNull().unique(),
+  tool: text('tool').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  payeeId: text('payee_id'),
+  payeeName: text('payee_name').notNull(),
+  /** keyword | model | behavior 中命中的层 */
+  layersJson: text('layers_json').notNull(),
+  /** 话术类别（FraudSignal） */
+  signalsJson: text('signals_json').notNull(),
+  /** 第三层模型引用的本人原话片段 */
+  evidence: text('evidence'),
+  /** 行为画像信号（BehaviorSignal） */
+  behaviorJson: text('behavior_json').notNull(),
+  /** 识别时的转账基线：中位数、样本数、可用余额等 */
+  baselineJson: text('baseline_json'),
+  reasonsJson: text('reasons_json').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 })

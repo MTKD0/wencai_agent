@@ -36,6 +36,10 @@ export function ensureHoldSchema() {
     await db.$client.execute(`CREATE TABLE IF NOT EXISTS bank_callback_tickets (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, hold_id TEXT, action_id TEXT NOT NULL,
       reasons_json TEXT NOT NULL, amount_cents INTEGER NOT NULL, payee_name TEXT NOT NULL, status TEXT NOT NULL, outcome TEXT, note TEXT,
       created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`)
+    // 2026-10-29：回访记录处理人与联系次数
+    const columns = new Set((await db.$client.execute('PRAGMA table_info(bank_callback_tickets)')).rows.map((row) => String(row.name)))
+    if (!columns.has('handled_by')) await db.$client.execute('ALTER TABLE bank_callback_tickets ADD COLUMN handled_by TEXT')
+    if (!columns.has('attempts')) await db.$client.execute('ALTER TABLE bank_callback_tickets ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0')
   })().catch((error) => { ready = undefined; throw error }))
 }
 
@@ -75,7 +79,7 @@ export async function holdTransfer(ctx: AgentContext, row: { id: string; tool: s
     amountCents: input.amountCents, payeeName: payee.name, reasonsJson: JSON.stringify(reasons), status: 'held',
     createdAt: now, releaseAt,
   }
-  const ticket = { id: `cb_${randomUUID()}`, userId: ctx.userId, holdId: hold.id, actionId: row.id, reasonsJson: hold.reasonsJson, amountCents: hold.amountCents, payeeName: hold.payeeName, status: 'open', createdAt: now, updatedAt: now }
+  const ticket = { id: `cb_${randomUUID()}`, userId: ctx.userId, holdId: hold.id, actionId: row.id, reasonsJson: hold.reasonsJson, amountCents: hold.amountCents, payeeName: hold.payeeName, status: 'open', attempts: 0, createdAt: now, updatedAt: now }
   await db.transaction(async (tx) => {
     await tx.insert(schema.bankTransferHolds).values(hold)
     await tx.insert(schema.bankCallbackTickets).values(ticket)
@@ -184,6 +188,7 @@ export async function listCallbackTickets() {
       ticketId: t.id, userId: t.userId, userName: names.get(t.userId) ?? t.userId, actionId: t.actionId,
       reasons: JSON.parse(t.reasonsJson) as string[], amountCents: t.amountCents, payeeName: t.payeeName,
       status: t.status as 'open' | 'closed', outcome: t.outcome ?? undefined, note: t.note ?? undefined,
+      handledBy: t.handledBy ?? undefined, attempts: t.attempts,
       createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(),
       hold: hold ? publicHold(hold) : undefined,
     }
@@ -194,7 +199,7 @@ export async function listCallbackTickets() {
  * 记录回访结论。confirmed_scam 撤销冷静期中的转账；confirmed_safe 提前放行；unreachable 只记录，转账按期执行。
  * 结论只作用于这一笔用户已确认过的转账，不产生任何新交易。
  */
-export async function resolveCallbackTicket(params: { ticketId: string; outcome: 'confirmed_safe' | 'confirmed_scam' | 'unreachable'; note?: string }) {
+export async function resolveCallbackTicket(params: { ticketId: string; outcome: 'confirmed_safe' | 'confirmed_scam' | 'unreachable'; note?: string; handledBy?: string }) {
   await ensureHoldSchema()
   const [ticket] = await db.select().from(schema.bankCallbackTickets).where(eq(schema.bankCallbackTickets.id, params.ticketId))
   if (!ticket) throw new Error('工单不存在')
@@ -207,7 +212,8 @@ export async function resolveCallbackTicket(params: { ticketId: string; outcome:
     const released = await releaseHold(ticket.holdId, 'admin')
     if (!released) throw new Error('这笔转账已不在冷静期中')
   }
-  await db.update(schema.bankCallbackTickets).set({ status: params.outcome === 'unreachable' ? 'open' : 'closed', outcome: params.outcome, ...(note ? { note } : {}), updatedAt: now }).where(eq(schema.bankCallbackTickets.id, ticket.id))
-  await audit(ctx, 'callback_ticket', { ticketId: ticket.id, holdId: ticket.holdId, actionId: ticket.actionId, event: 'resolved', outcome: params.outcome })
+  await db.update(schema.bankCallbackTickets).set({ status: params.outcome === 'unreachable' ? 'open' : 'closed', outcome: params.outcome, ...(note ? { note } : {}),
+    ...(params.handledBy ? { handledBy: params.handledBy } : {}), attempts: ticket.attempts + 1, updatedAt: now }).where(eq(schema.bankCallbackTickets.id, ticket.id))
+  await audit(ctx, 'callback_ticket', { ticketId: ticket.id, holdId: ticket.holdId, actionId: ticket.actionId, event: 'resolved', outcome: params.outcome, ...(params.handledBy ? { handledBy: params.handledBy } : {}) })
   return (await listCallbackTickets()).find((t) => t.ticketId === ticket.id)
 }

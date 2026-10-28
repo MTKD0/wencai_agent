@@ -32,7 +32,7 @@ describe('后台实时日志', () => {
     vi.setSystemTime(new Date('2026-10-25T00:00:00Z'))
     vi.stubEnv('NODE_ENV', 'production')
     recordDemoLoginCode('13800000000', '012345')
-    const snapshot = (await getRuntimeLogs(request()).json()).data
+    const snapshot = (await getRuntimeLogs(request(undefined, { authorization: `Bearer ${config.ADMIN_TOKEN}` })).json()).data
     const entry = snapshot.entries.at(-1)
     expect(entry.message).toContain('验证码 012345')
     expect(entry.message).toContain('138****0000')
@@ -67,9 +67,10 @@ describe('后台实时日志', () => {
     const fresh = runtimeLogSnapshot().entries.filter((entry) => entry.id > before)
     expect(fresh.map((entry) => entry.message)).toEqual(['认证失败 · 请输入有效的手机号'])
   })
-  it('演示模式可以查看，后台关闭或非演示模式未验证时不可读取', async () => {
+  it('登录后才能查看（演示模式也不例外），后台关闭时不可读取', async () => {
     runtimeLog('info', 'system', 'access-test-event')
-    const allowed = getRuntimeLogs(request())
+    expect(getRuntimeLogs(request()).status).toBe(401)
+    const allowed = getRuntimeLogs(request(undefined, { authorization: `Bearer ${config.ADMIN_TOKEN}` }))
     expect(allowed.status).toBe(200)
     expect(allowed.headers.get('cache-control')).toContain('no-store')
     expect(

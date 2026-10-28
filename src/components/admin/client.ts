@@ -62,7 +62,7 @@ export type AdminCommand =
   | { type: 'applyCard'; kind: 'debit' | 'credit' }
   | { type: 'cardRemark'; cardId: string; remark: string }
   | { type: 'creditSpend'; cardId: string; amount: number; merchant: string }
-  | { type: 'updateCard'; cardId: string; action: 'freeze' | 'unlock' | 'reportLost' | 'limits'; dailyLimit?: number; onlineEnabled?: boolean }
+  | { type: 'updateCard'; cardId: string; action: 'freeze' | 'unlock' | 'reportLost' | 'limits'; dailyLimit?: number; onlineEnabled?: boolean; reason?: string }
   | { type: 'cancelSubscription'; subscriptionId: string }
   | { type: 'subscriptionReminder'; subscriptionId: string; days: number }
   | { type: 'birthdayPlan'; contactId: string; birthday: string; budget: number }

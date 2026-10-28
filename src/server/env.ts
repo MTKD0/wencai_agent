@@ -36,6 +36,8 @@ const EnvSchema = z.object({
     .default(process.env.NODE_ENV === 'production' ? 'false' : 'true')
     .transform((v) => v === 'true'),
   ADMIN_TOKEN: z.string().min(24).optional(),
+  // 后台工作人员账号：用户名:密码:姓名:agent|supervisor，多个用逗号分隔（见 admin/staff.ts）
+  ADMIN_STAFF_ACCOUNTS: z.string().optional(),
 })
 
 export const env = EnvSchema.parse(process.env)

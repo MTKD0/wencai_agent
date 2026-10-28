@@ -13,9 +13,9 @@ export function AdminCards({ s, actions }: ViewProps) {
           title="我的银行卡"
           subtitle="管理卡片状态与每日限额"
           action={
-            <Button className="button button-sm button-primary" onClick={actions.applyCard} type="button">
+            (actions ? <Button className="button button-sm button-primary" onClick={actions.applyCard} type="button">
               <Plus size={15} />申请新卡
-            </Button>
+            </Button> : null)
           }
         >
           <div className="card-list">
@@ -30,26 +30,26 @@ export function AdminCards({ s, actions }: ViewProps) {
                   <Badge status={c.status} />
                 </div>
                 <div className="card-actions">
-                  <Button className="button button-ghost button-sm" onClick={() => actions.cardRemark(c.id)} type="button">修改备注</Button>
-                  {c.kind === 'credit' && c.status === 'active' && <Button className="button button-ghost button-sm" onClick={() => actions.creditSpend(c.id)} type="button">模拟消费</Button>}
+                  {actions && <Button className="button button-ghost button-sm" onClick={() => actions.cardRemark(c.id)} type="button">修改备注</Button>}
+                  {c.kind === 'credit' && c.status === 'active' && (actions ? <Button className="button button-ghost button-sm" onClick={() => actions.creditSpend(c.id)} type="button">模拟消费</Button> : null)}
                   {c.status === 'active' && (
-                    <Button className="button button-outline button-sm" onClick={() => actions.cardState(c.id, 'freeze')} type="button">
+                    (actions ? <Button className="button button-outline button-sm" onClick={() => actions.cardState(c.id, 'freeze')} type="button">
                       <Snowflake size={14} />冻结
-                    </Button>
+                    </Button> : null)
                   )}
                   {c.status === 'locked' && (
-                    <Button className="button button-outline button-sm" onClick={() => actions.cardState(c.id, 'unlock')} type="button">
+                    (actions ? <Button className="button button-outline button-sm" onClick={() => actions.cardState(c.id, 'unlock')} type="button">
                       <UnlockKeyhole size={14} />解锁
-                    </Button>
+                    </Button> : null)
                   )}
                   {c.status !== 'lost' && (
-                    <Button className="button button-ghost button-sm" onClick={() => actions.cardState(c.id, 'reportLost')} type="button">
+                    (actions ? <Button className="button button-ghost button-sm" onClick={() => actions.cardState(c.id, 'reportLost')} type="button">
                       <TriangleAlert size={14} />挂失
-                    </Button>
+                    </Button> : null)
                   )}
-                  <Button className="button button-ghost button-sm" onClick={() => actions.cardLimits(c.id)} type="button">
+                  {actions && <Button className="button button-ghost button-sm" onClick={() => actions.cardLimits(c.id)} type="button">
                     <SlidersHorizontal size={14} />调整限额
-                  </Button>
+                  </Button>}
                 </div>
               </div>
             ))}

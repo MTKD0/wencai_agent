@@ -162,8 +162,8 @@ export function AdminOverview({ s, ledger, report, anomalies, actions, go }: Vie
               </div>
             )}
             <div className="quick-actions">
-              <Button onClick={() => actions.transfer()} className="ui-button-reset" type="button"><Plus size={15} />新建转账</Button>
-              <Button onClick={actions.birthday} className="ui-button-reset" type="button"><Gift size={15} />生日计划</Button>
+              {actions && <Button onClick={() => actions.transfer()} className="ui-button-reset" type="button"><Plus size={15} />新建转账</Button>}
+              {actions && <Button onClick={actions.birthday} className="ui-button-reset" type="button"><Gift size={15} />生日计划</Button>}
             </div>
           </Panel>
         </div>

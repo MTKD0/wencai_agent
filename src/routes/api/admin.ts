@@ -1,4 +1,5 @@
 import { settleTransfer } from '#/server/payments/service'
+import { validRequestOrigin } from '#/server/security/request-origin'
 import { createUserCard, creditSpend, saveCardRemark, userCards } from '#/server/cards/service'
 import { reserveBirthday, cancelBirthday, reservedFunds } from '#/server/automation/birthdays'
 import { createSplitRequests } from '#/server/payments/splits'
@@ -22,7 +23,7 @@ import { audit } from '#/server/audit/log'
 import { env } from '#/server/env'
 import { runDueJobs, scoreRisk } from '#/server/tools/jobs'
 import { adminUserExists, listAdminUsers } from '#/server/admin/users'
-import { adminAuthorized, authorizeAdminTransfer } from '#/server/admin/access'
+import { adminActor, adminAuthorized, authorizeAdminTransfer } from '#/server/admin/access'
 import { recentTraces, restoreAuditLog, runSandboxProbes, securityOverview, tamperAuditLog } from '#/server/security/kernel'
 import { runCrossUserProbes } from '#/server/security/redteam'
 import { buildTraces } from '#/server/security/trace'
@@ -291,6 +292,8 @@ const CommandSchema = z.discriminatedUnion('type', [
     cardId: z.string(),
     action: z.enum(['freeze', 'unlock', 'reportLost', 'limits']),
     dailyLimit: z.number().int().positive().optional(),
+    /** 工作人员冻结 / 解冻的原因，写入审计 */
+    reason: z.string().trim().max(100).optional(),
     onlineEnabled: z.boolean().optional(),
   }),
   z.object({ type: z.literal('cardRemark'), cardId: z.string(), remark: z.string().trim().max(30) }),
@@ -332,6 +335,15 @@ const CommandSchema = z.discriminatedUnion('type', [
 ])
 
 type Command = z.infer<typeof CommandSchema>
+
+/**
+ * 银行工作人员能做的只有冻结 / 解冻卡片（须填原因）。其余命令会代客户办理业务或改动演示环境，
+ * 只在演示模式下开放（后台「演示控制」），正式配置下服务端直接拒绝：后台不能替客户动钱。
+ */
+function staffCommandAllowed(command: Command, demoMode: boolean) {
+  if (command.type === 'updateCard' && (command.action === 'freeze' || command.action === 'unlock')) return demoMode || (command.reason?.length ?? 0) >= 2
+  return demoMode
+}
 
 /** 执行管理命令 */
 async function executeCommand(userId: string, command: Command, request: Request) {
@@ -615,7 +627,7 @@ export const Route = createFileRoute('/api/admin')({
         // 仅返回展示访问入口所需的模式，不返回凭据或任何银行数据。
         if (action === 'access') return Response.json({ data: { demoMode: env.AUTH_DEMO_MODE } }, { headers: { 'cache-control': 'no-store' } })
         if (action === 'logs') return getRuntimeLogs(request)
-        if (!adminAuthorized(request)) return Response.json({ error: { code: 'ADMIN_AUTH_REQUIRED', message: '请输入后台访问凭据' } }, { status: 401 })
+        if (!adminAuthorized(request)) return Response.json({ error: { code: 'ADMIN_AUTH_REQUIRED', message: '请先登录后台' } }, { status: 401 })
         const userId = url.searchParams.get('userId') ?? DEMO_USER_ID
         const period = url.searchParams.get('period') ?? new Date().toISOString().slice(0, 7)
 
@@ -649,7 +661,8 @@ export const Route = createFileRoute('/api/admin')({
       },
       POST: async ({ request }) => {
         if (!env.ADMIN_ENABLED) return disabled()
-        if (!adminAuthorized(request)) return Response.json({ error: { code: 'ADMIN_AUTH_REQUIRED', message: '请输入后台访问凭据' } }, { status: 401 })
+        if (!adminAuthorized(request)) return Response.json({ error: { code: 'ADMIN_AUTH_REQUIRED', message: '请先登录后台' } }, { status: 401 })
+        if (!validRequestOrigin(request)) return Response.json({ error: { code: 'INVALID_ORIGIN', message: '请求来源无效' } }, { status: 403 })
         try {
           const body = await request.json()
           const parsed = CommandSchema.safeParse(body)
@@ -664,14 +677,20 @@ export const Route = createFileRoute('/api/admin')({
             return Response.json({ error: { code: 'USER_NOT_FOUND', message: '用户不存在，请返回首页选择账户' } }, { status: 404 })
           }
           const ctx = { userId, sessionId: 'admin', channel: 'web' as const }
+          const actor = adminActor(request)
+          if (!staffCommandAllowed(parsed.data, env.AUTH_DEMO_MODE)) {
+            await audit(ctx, 'admin_command', { command: parsed.data, ok: false, actor: actor.name, error: 'not_allowed' })
+            return Response.json({ error: { code: 'COMMAND_NOT_ALLOWED', message: '后台只能冻结或解冻卡片（须填写原因），不能代客户办理业务' } }, { status: 403 })
+          }
           try {
             const result = await executeCommand(userId, parsed.data, request)
-            await audit(ctx, 'admin_command', { command: parsed.data, ok: true })
+            await audit(ctx, 'admin_command', { command: parsed.data, ok: true, actor: actor.name })
             return Response.json({ data: result })
           } catch (e) {
             await audit(ctx, 'admin_command', {
               command: parsed.data,
               ok: false,
+              actor: actor.name,
               error: e instanceof Error ? e.message : String(e),
             })
             throw e

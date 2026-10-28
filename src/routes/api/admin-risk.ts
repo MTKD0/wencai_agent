@@ -3,6 +3,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { env } from '#/server/env'
 import { adminAuthorized } from '#/server/admin/access'
+import { staffFromRequest } from '#/server/admin/staff-session'
+import { validRequestOrigin } from '#/server/security/request-origin'
 import { listAccountRiskFlags, reviewAccountRiskFlag, RiskReviewConflict } from '#/server/risk/accounts'
 
 const reviewSchema = z.object({
@@ -12,7 +14,7 @@ const reviewSchema = z.object({
 const failure = (status: number, code: string, message: string) => Response.json({ error: { code, message } }, { status })
 function deny(request: Request) {
   if (!env.ADMIN_ENABLED) return failure(403, 'ADMIN_DISABLED', '管理后台未启用')
-  if (!adminAuthorized(request)) return failure(401, 'ADMIN_AUTH_REQUIRED', '请输入后台访问凭据')
+  if (!adminAuthorized(request)) return failure(401, 'ADMIN_AUTH_REQUIRED', '请先登录后台')
 }
 
 /** Separate human-only endpoint. Neither the user Agent nor the risk model receives this capability. */
@@ -30,12 +32,15 @@ export const Route = createFileRoute('/api/admin-risk')({ server: { handlers: {
   POST: async ({ request }) => {
     const denied = deny(request)
     if (denied) return denied
+    if (!validRequestOrigin(request)) return failure(403, 'INVALID_ORIGIN', '请求来源无效')
     let body: unknown
     try { body = await request.json() } catch { return failure(400, 'INVALID_COMMAND', '复核请求格式无效') }
     const parsed = reviewSchema.safeParse(body)
     if (!parsed.success) return failure(400, 'INVALID_COMMAND', '请提供账户、当前版本和明确的复核决定')
     // Existing admin credential is a local/demo access identity, not a complete administrator role system.
-    const reviewer = env.ADMIN_TOKEN ? `admin:${createHash('sha256').update(env.ADMIN_TOKEN).digest('hex').slice(0, 12)}` : 'admin:local'
+    // 登录的工作人员记为本人；脚本凭据只记录凭据指纹，不记录明文
+    const staff = staffFromRequest(request)
+    const reviewer = staff ? `${staff.id}:${staff.name}` : env.ADMIN_TOKEN ? `admin:${createHash('sha256').update(env.ADMIN_TOKEN).digest('hex').slice(0, 12)}` : 'admin:local'
     try {
       const result = await reviewAccountRiskFlag({ ...parsed.data, reviewer }, {
         userId: reviewer, sessionId: 'admin-risk-review', channel: 'web',

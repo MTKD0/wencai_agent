@@ -9,10 +9,10 @@ export function AdminPlans({ s, actions }: ViewProps) {
       title="生日计划"
       subtitle="预留预算，生日前两天自动订购礼物"
       action={
-        <Button className="button button-sm button-primary" onClick={actions.birthday} type="button">
+        (actions ? <Button className="button button-sm button-primary" onClick={actions.birthday} type="button">
           <Gift size={15} />
           创建生日计划
-        </Button>
+        </Button> : null)
       }
     >
       {s.plans.length ? (
@@ -29,12 +29,12 @@ export function AdminPlans({ s, actions }: ViewProps) {
                   </div>
                   <Badge status={plan.status} />
                   {plan.status !== 'cancelled' && (
-                    <Button
+                    (actions ? <Button
                       className="button button-ghost button-sm"
                       onClick={() => actions.cancelPlan(plan.id)} type="button"
                     >
                       取消
-                    </Button>
+                    </Button> : null)
                   )}
                 </div>
                 {planOrders.length > 0 && (
@@ -63,9 +63,9 @@ export function AdminPlans({ s, actions }: ViewProps) {
           title="还没有生日计划"
           text="为重要的人提前规划预算与礼物，生日当天不再手忙脚乱。"
           action={
-            <Button className="button button-outline" onClick={actions.birthday} type="button">
+            (actions ? <Button className="button button-outline" onClick={actions.birthday} type="button">
               创建第一个生日计划
-            </Button>
+            </Button> : null)
           }
         />
       )}

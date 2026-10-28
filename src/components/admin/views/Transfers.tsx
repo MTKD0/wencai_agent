@@ -11,10 +11,10 @@ export function AdminTransfers({ s, actions }: ViewProps) {
           title="常用收款人"
           subtitle="可通过姓名、手机号或备注转账"
           action={
-            <Button className="button button-sm button-primary" onClick={() => actions.transfer()} type="button">
+            (actions ? <Button className="button button-sm button-primary" onClick={() => actions.transfer()} type="button">
               <Plus size={15} />
               新建转账
-            </Button>
+            </Button> : null)
           }
         >
           <div className="contacts-list">
@@ -30,10 +30,10 @@ export function AdminTransfers({ s, actions }: ViewProps) {
                     {c.phone} · {c.bank}
                   </small>
                 </div>
-                <Button className="button button-outline button-sm" onClick={() => actions.transfer(c.id)} type="button">
+                {actions && <Button className="button button-outline button-sm" onClick={() => actions.transfer(c.id)} type="button">
                   转账
                   <ArrowUpRight size={13} />
-                </Button>
+                </Button>}
               </div>
             ))}
           </div>
@@ -43,10 +43,10 @@ export function AdminTransfers({ s, actions }: ViewProps) {
           title="定时任务"
           subtitle="资金预留后，按模拟时间执行"
           action={
-            <Button className="button button-outline button-sm" onClick={actions.runJobs} type="button">
+            (actions ? <Button className="button button-outline button-sm" onClick={actions.runJobs} type="button">
               <Clock3 size={14} />
               执行到期任务
-            </Button>
+            </Button> : null)
           }
         >
           {s.tasks.length ? (
@@ -68,9 +68,9 @@ export function AdminTransfers({ s, actions }: ViewProps) {
                   </div>
                   <Badge status={t.status} />
                   {t.kind === 'transfer' && t.status === 'pending' && (
-                    <Button className="button button-ghost button-sm" onClick={() => actions.cancelTask(t.id)} type="button">
+                    (actions ? <Button className="button button-ghost button-sm" onClick={() => actions.cancelTask(t.id)} type="button">
                       取消
-                    </Button>
+                    </Button> : null)
                   )}
                 </div>
               ))}
@@ -85,10 +85,10 @@ export function AdminTransfers({ s, actions }: ViewProps) {
         title="AA 收款"
         subtitle="包含发起人，按人数分摊"
         action={
-          <Button className="button button-sm button-primary" onClick={actions.split} type="button">
+          (actions ? <Button className="button button-sm button-primary" onClick={actions.split} type="button">
             <Plus size={15} />
             发起 AA
-          </Button>
+          </Button> : null)
         }
       >
         {s.splits.length ? (
@@ -128,9 +128,9 @@ export function AdminTransfers({ s, actions }: ViewProps) {
             title="轻松分账，清晰收款"
             text="聚餐、旅行或共同购物，创建第一笔 AA 收款。"
             action={
-              <Button className="button button-outline" onClick={actions.split} type="button">
+              (actions ? <Button className="button button-outline" onClick={actions.split} type="button">
                 创建 AA 收款
-              </Button>
+              </Button> : null)
             }
           />
         )}

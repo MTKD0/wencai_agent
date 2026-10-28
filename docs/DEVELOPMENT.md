@@ -144,9 +144,9 @@ pnpm exec node --env-file=.env.local ./node_modules/vite/bin/vite.js --port 3000
 
 环境变量已由终端或运行平台注入时，可直接使用 `pnpm dev`、`pnpm db:push` 等快捷命令。现有 `db:reset` 包含 POSIX 的 `mkdir -p`/`rm -f`，不适合直接在 Windows 默认命令环境运行；上述建表与播种步骤适合首次初始化，保留已有数据时不要播种。
 
-页面：`http://localhost:3000/`（用户端）、`/admin`（演示后台用户首页）。首页合并银行用户与已注册用户，选择后进入 `/admin?userId=...&section=overview`；业务 GET 携带 `userId`，POST 携带 `x-admin-user`，TanStack Query 缓存键按用户隔离。用户列表服务在 `server/admin/users.ts`；未知用户读写返回 404。此处「登录账户」仅切换管理对象，不更改 Better Auth 用户端会话。
+页面：`http://localhost:3000/`（用户端）、`/admin`（银行工作人员的运营管理后台，`components/admin/console/`）。地址参数 `section`（dashboard / callbacks / fraud / risk / customers / customer / security / logs / demo）加可选的 `userId`、`tab`、`ticket`、`event`。全局汇总走 `/api/admin-console`，单个客户的数据仍走 `/api/admin`（GET 带 `userId`，POST 带 `x-admin-user`）。旧版单客户工作台只在演示控制里以 `section=demo&userId=…` 打开。
 
-后台检查 `ADMIN_ENABLED`；`AUTH_DEMO_MODE=true` 时免后台凭据（团队测试期间的临时安排，提交前需收紧，见 SECURITY §15）；非演示模式下仅本地开发允许免凭据，非本地或生产必须配置至少24位 `ADMIN_TOKEN`，通过后台页面输入后使用 Bearer 请求。生产默认关闭后台。飞书、MCP 启动脚本同样要注入所需环境变量。
+后台检查 `ADMIN_ENABLED`；工作人员用 `ADMIN_STAFF_ACCOUNTS` 预置的工号密码登录（`/api/admin-session`，签名 Cookie），演示模式不再免登录；脚本调用可用 Bearer `ADMIN_TOKEN`；只有未配置 `ADMIN_TOKEN` 的本机开发环境可免登录。生产默认关闭后台。飞书、MCP 启动脚本同样要注入所需环境变量。
 
 验证命令：`pnpm typecheck`、`pnpm build`、`pnpm test`。数据库测试依赖已有表结构，应指向独立库；当前 `vitest.config.ts` 禁用文件并行，以避免 SQLite 写冲突。
 

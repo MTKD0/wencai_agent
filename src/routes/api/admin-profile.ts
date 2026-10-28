@@ -14,7 +14,7 @@ const failure = (status: number, code: string, message: string) => Response.json
 export const Route = createFileRoute('/api/admin-profile')({ server: { handlers: {
   GET: async ({ request }) => {
     if (!env.ADMIN_ENABLED) return failure(403, 'ADMIN_DISABLED', '管理后台未启用')
-    if (!adminAuthorized(request)) return failure(401, 'ADMIN_AUTH_REQUIRED', '请输入后台访问凭据')
+    if (!adminAuthorized(request)) return failure(401, 'ADMIN_AUTH_REQUIRED', '请先登录后台')
     const url = new URL(request.url)
     const userId = url.searchParams.get('userId')
     try {

@@ -72,7 +72,7 @@ function ProfileList({ search, setSearch, onOpen }: { search: string; setSearch:
   )
 }
 
-function ProfileDetail({ userId, onBack }: { userId: string; onBack: () => void }) {
+export function ProfileDetail({ userId, onBack }: { userId: string; onBack?: () => void }) {
   const client = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
   const query = useQuery({ queryKey: ['admin', 'profile', userId], queryFn: () => profileApi.detail(userId) })
@@ -84,12 +84,12 @@ function ProfileDetail({ userId, onBack }: { userId: string; onBack: () => void 
     } finally { setRefreshing(false) }
   }
   if (query.isPending) return <div className="loading-workspace" role="status"><Loader2 className="spin" size={24} /><span>正在生成画像，模型撰写摘要最多需要十几秒</span></div>
-  if (query.isError) return <Panel title="用户画像" subtitle=""><div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法生成画像</strong><p>{query.error.message}</p></div><Button className="button button-outline button-sm" type="button" onClick={onBack}>返回列表</Button></div></Panel>
+  if (query.isError) return <Panel title="用户画像" subtitle=""><div className="load-error" role="alert"><CircleAlert size={18} /><div><strong>无法生成画像</strong><p>{query.error.message}</p></div>{onBack && <Button className="button button-outline button-sm" type="button" onClick={onBack}>返回列表</Button>}</div></Panel>
   const p: UserProfile = query.data
   const m = p.metrics
   const enough = m.monthsObserved >= 3
   return <>
-    <div><Button className="button button-ghost button-sm" type="button" onClick={onBack}><ArrowLeft size={14} />返回用户列表</Button></div>
+    {onBack && <div><Button className="button button-ghost button-sm" type="button" onClick={onBack}><ArrowLeft size={14} />返回用户列表</Button></div>}
     <Panel title={`${p.userName} 的画像`} subtitle={`按近 6 个月数据计算 · 生成于 ${dateTime(p.generatedAt)} · 观察到 ${m.monthsObserved} 个完整月份`} action={
       <Button className="button button-outline button-sm" type="button" onClick={() => void rewrite()} disabled={refreshing}>
         {refreshing ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />}重写摘要
