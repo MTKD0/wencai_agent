@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { subscriptionTotals, sumYuan } from '#/server/tools/totals'
+import { subscriptionTotals, sumYuan, withAnnualCost } from '#/server/tools/totals'
 import { runBankTool } from '#/server/tools/runner'
 import { resolveTool } from '#/server/tools/bank'
 import { DEMO_USER_ID } from '#/server/db/constants'
@@ -28,6 +28,23 @@ describe('服务端合计', () => {
     const rows = outcome.data as { balance: number }[]
     expect(Array.isArray(rows)).toBe(true)
     expect(outcome.totals).toEqual({ totalBalance: sumYuan(rows.map((r) => r.balance)), accountCount: rows.length })
+  })
+})
+
+describe('减少模型心算', () => {
+  it('每项订阅带一年费用：按月的 × 12，按年的原样', () => {
+    expect(withAnnualCost([{ amount: 15, cycle: 'monthly' }, { amount: 298, cycle: 'yearly' }, { amount: 25.9, cycle: 'monthly' }]).map((s) => s.annualCost)).toEqual([180, 298, 310.8])
+  })
+  it('年度账单按月拆分并给出月均支出；月度账期不附加', async () => {
+    const year = await runBankTool(resolveTool('get_spending_report')!, { period: '2026' }, ctx)
+    if (year.status !== 'done') throw new Error(year.status)
+    const data = year.data as { expense: number; byMonth: { expense: number }[]; monthsWithActivity: number; averageMonthlyExpense: number }
+    expect(data.byMonth.length).toBe(data.monthsWithActivity)
+    expect(Math.round(data.byMonth.reduce((s, m) => s + m.expense * 100, 0))).toBe(Math.round(data.expense * 100))
+    expect(data.averageMonthlyExpense).toBeCloseTo(data.expense / data.monthsWithActivity, 1)
+    const month = await runBankTool(resolveTool('get_spending_report')!, { period: '2026-09' }, ctx)
+    if (month.status !== 'done') throw new Error(month.status)
+    expect(month.data).not.toHaveProperty('byMonth')
   })
 })
 

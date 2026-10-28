@@ -1,0 +1,1063 @@
+{
+  "meta": {
+    "startedAt": "2026-10-28T04:17:01.338Z",
+    "finishedAt": "2026-10-28T04:17:55.260Z",
+    "model": "deepseek-flash",
+    "commit": "5f59cf2",
+    "database": "file:./.scratch/eval-2026-10-28T04-16-53.db",
+    "repeats": 2,
+    "guard": "规则启发式"
+  },
+  "records": [
+    {
+      "task": {
+        "id": "sb-01",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "我都订阅了哪些服务？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "list_life_subscriptions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我都订阅了哪些服务？",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "detect_subscriptions",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44810,
+            "outputTokens": 171,
+            "guardVerdict": "allow",
+            "text": "您目前有 **3 项**生效中的订阅：\n\n- **某视频会员**：每月 ¥25，年成本 ¥300\n- **某音乐会员**：每月 ¥15，年成本 ¥180\n- **某网盘**：每年 ¥298\n\n按月扣的两项合计每月 **¥40**（折年 ¥480），加上网盘年费，全年订阅支出合计 **¥778**。\n\n另外，我从您的流水里没有识别到其他周期性扣款候选，所以这 3 项应该就是全部了。\n\n需要我帮您取消某一项，或者调整续费提醒的天数吗？",
+            "reasoningTokens": 0,
+            "ms": 7454
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-02",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "帮我从流水里找找有没有自动扣费的订阅"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "detect_subscriptions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我从流水里找找有没有自动扣费的订阅",
+            "toolCalls": [
+              {
+                "name": "detect_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44824,
+            "outputTokens": 146,
+            "guardVerdict": "allow",
+            "text": "从流水里没有识别到新的周期性扣款候选，但你名下已有 **3 项生效中的自动扣费**：\n\n- 某视频会员：每月 **¥25**，一年 **¥300**\n- 某音乐会员：每月 **¥15**，一年 **¥180**\n- 某网盘：每年 **¥298**\n\n合计每月 **¥40**，全年 **¥778**。\n\n需要我帮你看看某一项的扣费条款，或者取消其中某项吗？",
+            "reasoningTokens": 0,
+            "ms": 1921
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-03",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "取消音乐会员"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_music"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "取消音乐会员",
+            "toolCalls": [
+              {
+                "name": "resolve_subscription",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 89922,
+            "outputTokens": 202,
+            "guardVerdict": "allow",
+            "text": "已找到你的音乐会员订阅：**某音乐会员，¥15.00/月**，下次扣费原定 **2026-11-16**。\n\n取消确认单已生成，请在卡片上核对并确认。取消后只停止后续代扣，已付费的服务保留到有效期结束，当期费用不退。",
+            "reasoningTokens": 0,
+            "ms": 3590
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_music\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某音乐会员\"},{\"label\":\"金额\",\"value\":\"¥15.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-04",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "网盘下一次什么时候扣费？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "get_subscription_terms",
+            "resolve_subscription"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "网盘下一次什么时候扣费？",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67395,
+            "outputTokens": 137,
+            "guardVerdict": "allow",
+            "text": "你的网盘会员是**按年扣费**，每次 **¥298**。\n\n下一次扣费时间：**2027-01-01 12:16（北京时间）**，目前提前 **3 天**提醒。\n\n需要我帮你调整提醒天数，或者取消这项自动续费吗？",
+            "reasoningTokens": 0,
+            "ms": 2407
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-05",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "视频会员改成续费前 7 天提醒我"
+        ],
+        "prefer": [
+          "7 天",
+          "7天"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "set_subscription_reminder",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_video"
+          ]
+        },
+        "note": "种子数据已有提前 3 天的提醒，改为 7 天才需要确认单；commit_subscription_change 的 set_reminder 也是合法路径"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "视频会员改成续费前 7 天提醒我",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "set_subscription_reminder",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90257,
+            "outputTokens": 191,
+            "guardVerdict": "allow",
+            "text": "已为您生成确认单：**某视频会员**的续费提醒从提前 3 天改为**提前 7 天**（月费 ¥25，下次扣费 2026-11-23）。\n\n请在卡片上核对并确认，确认后才会生效。",
+            "reasoningTokens": 0,
+            "ms": 2248
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "set_subscription_reminder",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_video\",\"days\":7}",
+            "summaryJson": "{\"title\":\"修改续费提醒\",\"fields\":[{\"label\":\"商户\",\"value\":\"某视频会员\"},{\"label\":\"提前提醒\",\"value\":\"7 天\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-06",
+        "scenario": "subscription",
+        "variant": "colloquial",
+        "turns": [
+          "那个每月 25 块的会员给我停了"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_video"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "那个每月 25 块的会员给我停了",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90275,
+            "outputTokens": 191,
+            "guardVerdict": "allow",
+            "text": "您说的每月 25 元应该是**某视频会员**（¥25.00/月，年成本 ¥300），下次扣费原定在 11 月 23 日。\n\n取消确认单已生成，请在卡片上核对并确认。取消后只停止后续代扣，已付费的服务可用到有效期结束，当期费用不退。",
+            "reasoningTokens": 0,
+            "ms": 2778
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_video\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某视频会员\"},{\"label\":\"金额\",\"value\":\"¥25.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-07",
+        "scenario": "subscription",
+        "variant": "colloquial",
+        "turns": [
+          "一年下来会员费要交多少"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "detect_subscriptions"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "一年下来会员费要交多少",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44750,
+            "outputTokens": 136,
+            "guardVerdict": "allow",
+            "text": "你目前有 **3 项**在用的会员，按当前价格算，一年合计 **¥778**。\n\n- 某视频会员：每月 ¥25，一年 **¥300**\n- 某音乐会员：每月 ¥15，一年 **¥180**\n- 某网盘：每年 ¥298，一年 **¥298**\n\n其中两项按月扣费，每月共 ¥40，折合一年 ¥480；网盘是年付。需要我帮你看看哪项可以取消，或者设置续费提醒吗？",
+            "reasoningTokens": 0,
+            "ms": 1560
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-08",
+        "scenario": "subscription",
+        "variant": "multi_turn",
+        "turns": [
+          "帮我取消一个会员",
+          "音乐那个"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_music"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我取消一个会员",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "list_life_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "选择要取消的会员\n你当前有 3 项生效中的自动扣费，请选择要取消的一项。\n要取消哪一项会员？：某视频会员：每月 25 元（年成本 300 元） / 某音乐会员：每月 15 元（年成本 180 元） / 某网盘：每年 298 元 / 先不取消，我再想想"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 68012,
+            "outputTokens": 346,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 4677
+          },
+          {
+            "input": "音乐那个",
+            "toolCalls": [
+              {
+                "name": "resolve_subscription",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 89983,
+            "outputTokens": 191,
+            "guardVerdict": "allow",
+            "text": "已找到你的音乐会员订阅：**某音乐会员，¥15.00/月**，下次扣费原定 2026-11-16。\n\n系统已生成取消确认单，请在卡片上核对并确认。取消后只停止后续代扣，已付费的服务保留到有效期结束，当期费用不退。",
+            "reasoningTokens": 0,
+            "ms": 3308
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_music\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某音乐会员\"},{\"label\":\"金额\",\"value\":\"¥15.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-01",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "我都订阅了哪些服务？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "list_life_subscriptions"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "我都订阅了哪些服务？",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "detect_subscriptions",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44811,
+            "outputTokens": 210,
+            "guardVerdict": "allow",
+            "text": "您目前有 **3 项**生效中的订阅：\n\n| 商户 | 金额 | 周期 | 一年费用 |\n|---|---|---|---|\n| 某视频会员 | ¥25.00 | 每月 | ¥300.00 |\n| 某音乐会员 | ¥15.00 | 每月 | ¥180.00 |\n| 某网盘 | ¥298.00 | 每年 | ¥298.00 |\n\n按月扣的两项合计 **¥40.00/月**，折合一年 **¥480.00**；加上网盘年费，全年订阅总支出为 **¥778.00**。\n\n另外，我从您的流水里没有识别到其他周期性扣款候选，所以这 3 项就是全部。\n\n需要我帮您取消某一项，或者调整续费提醒吗？",
+            "reasoningTokens": 0,
+            "ms": 2165
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-02",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "帮我从流水里找找有没有自动扣费的订阅"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "detect_subscriptions"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我从流水里找找有没有自动扣费的订阅",
+            "toolCalls": [
+              {
+                "name": "detect_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44824,
+            "outputTokens": 156,
+            "guardVerdict": "allow",
+            "text": "从流水里没有识别出新的周期性扣款候选，但你名下已有 **3 项生效中的自动扣费**：\n\n- **某视频会员**：每月 25 元，年成本 300 元\n- **某音乐会员**：每月 15 元，年成本 180 元\n- **某网盘**：每年 298 元\n\n合计每月 **40 元**，全年 **778 元**。\n\n需要我帮你看看某一项的扣费条款，或者取消其中某项吗？",
+            "reasoningTokens": 0,
+            "ms": 2023
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-03",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "取消音乐会员"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_music"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "取消音乐会员",
+            "toolCalls": [
+              {
+                "name": "resolve_subscription",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 89910,
+            "outputTokens": 192,
+            "guardVerdict": "allow",
+            "text": "已找到你的音乐会员订阅：**¥15.00/月**，下次扣费在 **2026-11-16**。\n\n取消确认单已生成，请在卡片上核对并确认。取消后只停止后续代扣，已付费的服务保留到有效期结束，当期费用不退。",
+            "reasoningTokens": 0,
+            "ms": 3135
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_music\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某音乐会员\"},{\"label\":\"金额\",\"value\":\"¥15.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-04",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "网盘下一次什么时候扣费？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "get_subscription_terms",
+            "resolve_subscription"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "网盘下一次什么时候扣费？",
+            "toolCalls": [
+              {
+                "name": "resolve_subscription",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67175,
+            "outputTokens": 162,
+            "guardVerdict": "allow",
+            "text": "你的网盘订阅（**某网盘**）下次扣费时间是 **2027-01-01 12:16（北京时间）**，年费 **¥298.00**，目前状态正常。\n\n系统会在扣费前 **3 天**提醒你。需要我帮你调整提醒天数或取消这项自动续费吗？",
+            "reasoningTokens": 0,
+            "ms": 2282
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-05",
+        "scenario": "subscription",
+        "variant": "standard",
+        "turns": [
+          "视频会员改成续费前 7 天提醒我"
+        ],
+        "prefer": [
+          "7 天",
+          "7天"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "set_subscription_reminder",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_video"
+          ]
+        },
+        "note": "种子数据已有提前 3 天的提醒，改为 7 天才需要确认单；commit_subscription_change 的 set_reminder 也是合法路径"
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "视频会员改成续费前 7 天提醒我",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "preview_subscription_change",
+                "status": "done"
+              },
+              {
+                "name": "commit_subscription_change",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 113496,
+            "outputTokens": 326,
+            "guardVerdict": "allow",
+            "text": "已为您生成确认单：把**某视频会员**（¥25.00/月）的续费提醒从提前 3 天改为**提前 7 天**。\n\n请在卡片上核对并确认，确认后即生效。",
+            "reasoningTokens": 0,
+            "ms": 4350
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "commit_subscription_change",
+            "level": "yellow",
+            "argsJson": "{\"confirmationToken\":\"tok_3826b4ea-bda1-498b-b17a-442b3b24f70a\",\"subscriptionId\":\"sub_video\",\"action\":\"set_reminder\",\"remindDays\":7}",
+            "summaryJson": "{\"title\":\"确认设置提醒\",\"fields\":[{\"label\":\"商户\",\"value\":\"某视频会员\"},{\"label\":\"金额\",\"value\":\"¥25.00 / 月\"},{\"label\":\"提前提醒\",\"value\":\"7 天\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-06",
+        "scenario": "subscription",
+        "variant": "colloquial",
+        "turns": [
+          "那个每月 25 块的会员给我停了"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_video"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "那个每月 25 块的会员给我停了",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90274,
+            "outputTokens": 189,
+            "guardVerdict": "allow",
+            "text": "您说的每月 25 元应该是**某视频会员**（¥25.00/月，年成本 ¥300），下次扣费在 11 月 23 日。\n\n取消确认单已经生成，请在卡片上核对并确认。取消后只停止后续代扣，已付费的服务保留到有效期结束，当期费用不退。",
+            "reasoningTokens": 0,
+            "ms": 2532
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_video\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某视频会员\"},{\"label\":\"金额\",\"value\":\"¥25.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-07",
+        "scenario": "subscription",
+        "variant": "colloquial",
+        "turns": [
+          "一年下来会员费要交多少"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_subscriptions",
+            "detect_subscriptions"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "一年下来会员费要交多少",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "detect_subscriptions",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44812,
+            "outputTokens": 182,
+            "guardVerdict": "allow",
+            "text": "你现在有 **3 项**在用的会员，一年合计 **¥778**。\n\n- 某视频会员：每月 25 元，一年 **¥300**\n- 某音乐会员：每月 15 元，一年 **¥180**\n- 某网盘：每年 298 元，一年 **¥298**\n\n按月扣的两项加起来每月 40 元，折合一年 480 元；网盘是年付，一年 298 元。\n\n另外，我从流水里没有识别到其他周期性扣款，所以这 3 项应该就是全部了。需要我帮你看看哪项可以取消，或者调整续费提醒吗？",
+            "reasoningTokens": 0,
+            "ms": 1995
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "sb-08",
+        "scenario": "subscription",
+        "variant": "multi_turn",
+        "turns": [
+          "帮我取消一个会员",
+          "音乐那个"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "cancel_subscription",
+            "commit_subscription_change"
+          ],
+          "ids": [
+            "sub_music"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "帮我取消一个会员",
+            "toolCalls": [
+              {
+                "name": "list_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "detect_subscriptions",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "选择要取消的会员\n取消只停止未来扣费，已付费服务保留至有效期，不退当期费用。\n要取消哪一项自动扣费？：某视频会员：每月 25 元（年成本 300 元） / 某音乐会员：每月 15 元（年成本 180 元） / 某网盘：每年 298 元"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67785,
+            "outputTokens": 320,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 2716
+          },
+          {
+            "input": "音乐那个",
+            "toolCalls": [
+              {
+                "name": "resolve_subscription",
+                "status": "done"
+              },
+              {
+                "name": "get_subscription_terms",
+                "status": "done"
+              },
+              {
+                "name": "cancel_subscription",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 89984,
+            "outputTokens": 187,
+            "guardVerdict": "allow",
+            "text": "已找到你的音乐会员订阅：**¥15.00/月**，下次扣费在 **2026-11-16**。\n\n系统已生成取消确认单，请在卡片上核对并确认。取消后只停止后续代扣，已扣费用不退，服务可用到当前有效期结束。",
+            "reasoningTokens": 0,
+            "ms": 2704
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "cancel_subscription",
+            "level": "yellow",
+            "argsJson": "{\"subscriptionId\":\"sub_music\"}",
+            "summaryJson": "{\"title\":\"确认取消订阅\",\"fields\":[{\"label\":\"商户\",\"value\":\"某音乐会员\"},{\"label\":\"金额\",\"value\":\"¥15.00 / 月\"},{\"label\":\"取消后\",\"value\":\"停止后续扣费，已付费服务保留至有效期结束，不退当期费用\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    }
+  ]
+}

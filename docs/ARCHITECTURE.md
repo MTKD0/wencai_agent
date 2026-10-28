@@ -260,4 +260,4 @@ flowchart LR
 
 六个赛题场景全部覆盖，逐项对应见 [COMPETITION-COMPLIANCE.md §2](COMPETITION-COMPLIANCE.md#2-六个场景赛题要求至少-3-个本作品全部覆盖)。
 
-已知边界（详见 [SECURITY.md §18](SECURITY.md#18-未完成项与已知缺陷)）：基金暂不支持赎回；数字核验暂不识别"万"和中文数字；只审核最后一条用户消息；审计哈希链未加密钥；飞书、Passkey 实机、MCP OAuth 尚未在真实环境验收；指纹 / 人脸为模拟按钮。
+已知边界（详见 [SECURITY.md §18](SECURITY.md#18-未完成项与已知缺陷)）：基金暂不支持赎回；数字核验暂不识别中文数字；只审核最后一条用户消息；审计哈希链未加密钥；飞书、Passkey 实机、MCP OAuth 尚未在真实环境验收；指纹 / 人脸为模拟按钮。

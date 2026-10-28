@@ -1,0 +1,1674 @@
+{
+  "meta": {
+    "startedAt": "2026-10-28T04:18:03.514Z",
+    "finishedAt": "2026-10-28T04:20:06.219Z",
+    "model": "deepseek-flash",
+    "commit": "5f59cf2",
+    "database": "file:./.scratch/eval-2026-10-28T04-17-55.db",
+    "repeats": 2,
+    "guard": "规则启发式"
+  },
+  "records": [
+    {
+      "task": {
+        "id": "wm-01",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "现在有哪些理财产品可以买？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_products",
+            "get_recommendations",
+            "rank_funds",
+            "list_funds"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "现在有哪些理财产品可以买？",
+            "toolCalls": [
+              {
+                "name": "list_products",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44706,
+            "outputTokens": 172,
+            "guardVerdict": "allow",
+            "text": "当前在售的理财产品有 3 款：\n\n| 产品 | 风险等级 | 预期年化 | 起购金额 | 期限 |\n|---|---|---|---|---|\n| 活期宝 A | R1 | 1.65% | 1 元 | 随时可取 |\n| 稳盈 90 天 | R2 | 2.45% | 1,000 元 | 90 天 |\n| 纯债精选 | R3 | 3.20% | 1,000 元 | 180 天 |\n\n需要我帮你看看哪款适合你，或者直接办理申购吗？告诉我金额和大概能放多久就行。",
+            "reasoningTokens": 0,
+            "ms": 2087
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-02",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "比较一下稳盈 90 天和纯债精选"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_products",
+            "resolve_product",
+            "get_recommendations"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "比较一下稳盈 90 天和纯债精选",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90257,
+            "outputTokens": 508,
+            "guardVerdict": "allow",
+            "text": "两款产品的主要差别：\n\n- **稳盈 90 天**：R2，预期年化 **2.45%**，起购 1000 元，期限 **90 天**，锁定期更短。\n- **纯债精选**：R3，预期年化 **3.20%**，起购 1000 元，期限 **180 天**，收益空间更高但风险等级也更高。\n\n简单说：**90 天内要用的钱更适合稳盈 90 天**；如果能放半年、也接受 R3 的波动，纯债精选的预期收益更高。预期年化只是参考值，不代表实际收益。\n\n需要我帮你看看哪款符合你的风险等级，或者直接办理申购吗？",
+            "reasoningTokens": 0,
+            "ms": 3893
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-03",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "我想做一下风险测评"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_risk_questionnaire"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我想做一下风险测评",
+            "toolCalls": [
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 45575,
+            "outputTokens": 88,
+            "guardVerdict": "allow",
+            "text": "风险测评问卷已经调出，共 5 道题，请按你的实际情况逐题选择，最后点“提交答案”统一发送。\n\n提交后我会先试算你的风险等级（R1–R5），试算结果不会自动登记；需要登记时，我会再向你确认。",
+            "reasoningTokens": 0,
+            "ms": 1901
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "尾号 8823"
+            ],
+            "steps": 1,
+            "inputTokens": 22345,
+            "outputTokens": 73,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "reasoningTokens": 0,
+            "ms": 1387
+          },
+          {
+            "input": "没问题，就按这个办理",
+            "toolCalls": [
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "确认你要办理的业务\n刚才的付款卡信息没有对应到具体业务，请先确认下一步\n你现在想办理哪一项？：继续做风险测评（5 道题，不涉及付款） / 我要用尾号 8823 的卡做一笔付款/转账 / 其他业务，我再说明"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 1,
+            "violationTexts": [
+              "尾号 8823"
+            ],
+            "steps": 2,
+            "inputTokens": 45153,
+            "outputTokens": 277,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 2899
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-04",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "买 1000 元活期宝 A"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_risk_questionnaire",
+            "check_product_eligibility",
+            "preview_purchase"
+          ]
+        },
+        "note": "未做风险测评，应引导测评而不是生成申购单"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "买 1000 元活期宝 A",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "check_product_eligibility",
+                "status": "done"
+              },
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 136764,
+            "outputTokens": 305,
+            "guardVerdict": "allow",
+            "text": "上面是银行标准的 5 题风险测评，逐题选择后点“提交答案”即可。提交后我会先试算风险等级，登记还需要你另外确认；测评通过后再继续办理 1000 元活期宝 A 的申购。",
+            "reasoningTokens": 0,
+            "ms": 5068
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "check_product_eligibility",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "invalid_questionnaire",
+                "errors": "[\"风险测评请使用get_risk_questionnaire标准问卷\"]"
+              },
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 137859,
+            "outputTokens": 564,
+            "guardVerdict": "allow",
+            "text": "尾号 8823 的工资卡已确认，余额 **¥23,568.20**；活期宝 A 是 R1 低风险、1 元起购，1000 元完全够。\n\n现在唯一卡住的是**风险测评还没完成**，按规定必须先测评才能申购。上面是银行标准 5 题问卷，逐题选择后点“提交答案”，我会先试算等级，登记还需你另外确认，然后再继续 1000 元的申购。",
+            "reasoningTokens": 0,
+            "ms": 6492
+          },
+          {
+            "input": "没问题，就按这个办理",
+            "toolCalls": [
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 45955,
+            "outputTokens": 104,
+            "guardVerdict": "allow",
+            "text": "风险测评不能由我替你作答，也不能跳过。上面已调出银行标准 5 题问卷，请按你的实际情况逐题选择，最后点“提交答案”。\n\n提交后我会先试算风险等级，登记结果还需要你另外确认；等级出来后，再用尾号 8823 的工资卡办理 1000 元活期宝 A 申购。",
+            "reasoningTokens": 0,
+            "ms": 1557
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-05",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "买 1000 元活期宝 A"
+        ],
+        "setup": "risk_assessed_r3",
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_purchase"
+          ],
+          "ids": [
+            "prd_cash"
+          ],
+          "amountYuan": 1000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "买 1000 元活期宝 A",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "list_funds",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "活期宝 A 申购确认\n确认付款账户后，我会生成申购确认单，需你在安全页面验证。\n1000 元活期宝 A 从哪个账户扣款？：工资卡 · 尾号 8823（余额 ¥23,568.20） / 储蓄账户 · 尾号 9929（余额 ¥80,000.00）"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 100148,
+            "outputTokens": 374,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 6718
+          },
+          {
+            "input": "我已完成「活期宝 A 申购确认」问卷（cash-a-purchase），我的答案如下：\n1. 1000 元活期宝 A 从哪个账户扣款？：工资卡 · 尾号 8823（余额 ¥23,568.20）（答案值：acc_main）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "check_product_eligibility",
+                "status": "done"
+              },
+              {
+                "name": "preview_purchase",
+                "status": "done"
+              },
+              {
+                "name": "commit_purchase",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 115156,
+            "outputTokens": 406,
+            "guardVerdict": "allow",
+            "text": "申购确认单已生成，请在上方卡片核对：**活期宝 A**、金额 **¥1,000.00**、从工资卡（尾号 8823）扣款，随时可赎回。\n\n确认后需在独立安全页面完成验证，验证通过才会实际扣款。",
+            "reasoningTokens": 0,
+            "ms": 4222
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_purchase",
+            "level": "red",
+            "argsJson": "{\"confirmationToken\":\"tok_ed57b3fb-c61c-43b1-9482-c283976567b7\",\"fromAccountId\":\"acc_main\",\"productId\":\"prd_cash\",\"amountCents\":100000}",
+            "summaryJson": "{\"title\":\"申购执行中\",\"fields\":[{\"label\":\"产品\",\"value\":\"活期宝 A\"},{\"label\":\"金额\",\"value\":\"¥1,000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-06",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "把活期宝里的 2 万赎回"
+        ],
+        "prefer": [
+          "2 万",
+          "20000",
+          "20,000",
+          "部分",
+          "8823",
+          "工资卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_redemption"
+          ],
+          "ids": [
+            "h_cash"
+          ],
+          "amountYuan": 20000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "把活期宝里的 2 万赎回",
+            "toolCalls": [
+              {
+                "name": "resolve_holding",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "活期宝赎回 2 万元\n确认赎回资金转入的账户\n赎回的 2 万元转入哪个账户？：工资卡（尾号 8823） / 储蓄账户（尾号 9929）"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90258,
+            "outputTokens": 302,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3655
+          },
+          {
+            "input": "我已完成「活期宝赎回 2 万元」问卷（redeem-cash-20k），我的答案如下：\n1. 赎回的 2 万元转入哪个账户？：工资卡（尾号 8823）（答案值：acc_main）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "resolve_holding",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "preview_redemption",
+                "status": "done"
+              },
+              {
+                "name": "commit_redemption",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 91861,
+            "outputTokens": 361,
+            "guardVerdict": "allow",
+            "text": "确认单已生成：从**活期宝 A** 赎回 **¥20,000.00**，转入**工资卡（尾号 8823）**。\n\n请在卡片上核对并完成安全验证，验证通过后才会实际执行赎回。",
+            "reasoningTokens": 0,
+            "ms": 3477
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_redemption",
+            "level": "red",
+            "argsJson": "{\"confirmationToken\":\"tok_50ec5731-2a11-415f-99eb-536d7e04f761\",\"holdingId\":\"h_cash\",\"amountCents\":2000000,\"toAccountId\":\"acc_main\"}",
+            "summaryJson": "{\"title\":\"赎回执行中\",\"fields\":[{\"label\":\"持仓\",\"value\":\"h_cash\"},{\"label\":\"金额\",\"value\":\"¥20,000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-07",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "我的理财持仓和收益怎么样？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_portfolio",
+            "get_fund_portfolio"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我的理财持仓和收益怎么样？",
+            "toolCalls": [
+              {
+                "name": "get_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"m1.value: 数据路径 /get_portfolio/totals/totalPrincipal 不存在；/get_portfolio 是数组（2 项），列表组件直接引用 /get_portfolio，元素字段：id、productId、principalCents、principal、redeemableAt、locked\",\"m1.value: 指标必须引用有限数值，不能把风险等级、空值或文字转换成0\",\"m2.value: 数据路径 /get_portfolio/totals/redeemableTotal 不存在；/get_portfolio 是数组（2 项），列表组件直接引用 /get_portfolio，元素字段：id、productId、principalCents、principal、redeemableAt、locked\",\"m2.value: 指标必须引用有限"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"m1.value: 数据路径 /get_portfolio/data/totals/totalPrincipal 不存在；/get_portfolio 是数组（2 项），列表组件直接引用 /get_portfolio，元素字段：id、productId、principalCents、principal、redeemableAt、locked\",\"m1.value: 指标必须引用有限数值，不能把风险等级、空值或文字转换成0\",\"m2.value: 数据路径 /get_portfolio/data/totals/redeemableTotal 不存在；/get_portfolio 是数组（2 项），列表组件直接引用 /get_portfolio，元素字段：id、productId、principalCents、principal、redeemableAt、locked\",\"m2.value"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 138723,
+            "outputTokens": 1258,
+            "guardVerdict": "allow",
+            "text": "您的理财持仓共 **2 笔**，本金合计 **¥150,000.00**，其中可赎回 **¥50,000.00**，锁定中 **¥100,000.00**。\n\n- **活期宝 A**（R1，活期类）：本金 ¥50,000.00，可随时赎回\n- **稳盈 90 天**（R2，定期类）：本金 ¥100,000.00，到期前锁定，可赎回时间见上方明细\n\n需要说明的是：当前持仓数据只提供本金和可赎回时间，**没有逐笔的已实现收益或浮动收益金额**，所以我不能替您估算收益。如果您想看某只产品的预期年化参考，活期宝 A 为 1.65%、稳盈 90 天为 2.45%（均为产品页展示的预期年化，不代表实际收益）。\n\n需要我帮您做点什么吗？比如赎回活期宝 A 的部分资金，或者看看有没有更合适的理财产品。",
+            "reasoningTokens": 0,
+            "ms": 7385
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-08",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "近一年收益最好的债券基金有哪些？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "rank_funds"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "近一年收益最好的债券基金有哪些？",
+            "toolCalls": [
+              {
+                "name": "rank_funds",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 114126,
+            "outputTokens": 667,
+            "guardVerdict": "allow",
+            "text": "近一年收益最高的债券基金是 **易方达裕丰回报债券A（000171）**，近一年收益 **6.3071%**，但它属于含权益的“固收+”类型，最大回撤 **8.6109%**，波动明显大于纯债。\n\n如果更看重稳健，可以看这两只：\n- **广发中债7-10年国开债指数A（003376）**：近一年 **5.0544%**，最大回撤仅 **0.7085%**，夏普 **3.8135**\n- **南方中债7-10年国开行债券指数A（006961）**：近一年 **4.8548%**，最大回撤 **0.7383%**\n\n纯债类里 **华夏纯债债券A（000015）** 近一年 **3.0133%**，最大回撤 **0.2997%**，波动最小。\n\n需要注意：榜单只覆盖人工白名单内的债券型基金，不是全市场排名；建信中短债、富国短债目前为**限额申购**状态。以上为历史数据，不代表未来收益。\n\n需要我按你的风险等级和可投金额做一次匹配筛选吗？",
+            "reasoningTokens": 0,
+            "ms": 4411
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-09",
+        "scenario": "wealth",
+        "variant": "colloquial",
+        "turns": [
+          "稳盈 90 天那笔钱现在能取出来不"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_portfolio",
+            "resolve_holding",
+            "preview_redemption"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "稳盈 90 天那笔钱现在能取出来不",
+            "toolCalls": [
+              {
+                "name": "get_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "resolve_holding",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67313,
+            "outputTokens": 168,
+            "guardVerdict": "allow",
+            "text": "**稳盈 90 天**这笔现在还不能取。\n\n- 本金：**¥100,000.00**\n- 状态：封闭期内，不可赎回\n- 可赎回时间：**2026-12-27 12:18**（北京时间）\n\n您另一笔「现金管理类」持仓 **¥50,000.00** 是可随时赎回的，如果近期需要用钱，可以考虑先动这笔。需要我帮您赎回吗？",
+            "reasoningTokens": 0,
+            "ms": 2219
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-10",
+        "scenario": "wealth",
+        "variant": "colloquial",
+        "turns": [
+          "手上有 5 万闲钱，三年用不上，想稳一点，怎么配？"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_wealth_advice",
+            "get_risk_questionnaire"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "手上有 5 万闲钱，三年用不上，想稳一点，怎么配？",
+            "toolCalls": [
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "5万元三年期配置偏好\n补充两个条件，我就能给出匹配的配置建议\n这5万在三年内需要随时能取出来吗？：三年内不用，可以接受封闭持有 / 希望部分资金能灵活取用 / 必须随时可赎回\n你更希望配置在哪些方向？：以债券、固收类为主，波动尽量小 / 固收打底，少量配置权益或多资产 / 优先银行理财类产品 / 没有特别偏好，由专家按稳健原则搭配"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 45216,
+            "outputTokens": 387,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3665
+          },
+          {
+            "input": "我已完成「5万元三年期配置偏好」问卷（wealth-5w-3y），我的答案如下：\n1. 这5万在三年内需要随时能取出来吗？：三年内不用，可以接受封闭持有（答案值：locked_ok）\n2. 你更希望配置在哪些方向？：以债券、固收类为主，波动尽量小（答案值：fixed_income）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "get_wealth_advice",
+                "status": "done"
+              },
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69172,
+            "outputTokens": 260,
+            "guardVerdict": "allow",
+            "text": "上方已调出银行标准风险测评问卷，共 5 题，请按实际情况逐题选择，最后统一提交。提交后我会先试算风险等级，再结合你“5 万元、三年不用、以债券固收为主、波动尽量小”的条件给出配置建议；登记测评结果前会再征求你的同意。",
+            "reasoningTokens": 0,
+            "ms": 2421
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": true,
+            "violations": 2,
+            "violationTexts": [
+              "5 万",
+              "5 万元"
+            ],
+            "steps": 3,
+            "inputTokens": 69715,
+            "outputTokens": 222,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "reasoningTokens": 0,
+            "ms": 3026
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-01",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "现在有哪些理财产品可以买？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_products",
+            "get_recommendations",
+            "rank_funds",
+            "list_funds"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "现在有哪些理财产品可以买？",
+            "toolCalls": [
+              {
+                "name": "list_products",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 44705,
+            "outputTokens": 189,
+            "guardVerdict": "allow",
+            "text": "目前有 **3 款**理财产品可以买：\n\n| 产品 | 风险等级 | 预期年化 | 起购金额 | 期限 |\n|---|---|---|---|---|\n| 活期宝 A | R1 | 1.65% | 1 元 | 无固定期限，随存随取 |\n| 稳盈 90 天 | R2 | 2.45% | 1,000 元 | 90 天 |\n| 纯债精选 | R3 | 3.20% | 1,000 元 | 180 天 |\n\n预期年化收益是参考值，不代表实际收益。想买哪一款、投多少，告诉我金额就行；如果还没做过风险测评，我可以先帮你做一次。",
+            "reasoningTokens": 0,
+            "ms": 1877
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-02",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "比较一下稳盈 90 天和纯债精选"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_products",
+            "resolve_product",
+            "get_recommendations"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "比较一下稳盈 90 天和纯债精选",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90252,
+            "outputTokens": 513,
+            "guardVerdict": "allow",
+            "text": "两款产品的对比已在上方卡片中展示，主要差别如下：\n\n- **稳盈 90 天**：风险等级 R2，预期年化 2.45%，期限 90 天，起购 1000 元，适合短期闲置资金。\n- **纯债精选**：风险等级 R3，预期年化 3.20%，期限 180 天，起购 1000 元，期限更长、风险等级也更高一档。\n\n简单来说，如果你希望资金锁定时间短一些、风险等级低一些，可以选稳盈 90 天；如果能接受半年期限和 R3 风险，纯债精选的预期收益更高。预期年化只是参考值，不代表实际收益。\n\n需要我帮你确认风险等级是否匹配，或者直接办理申购吗？",
+            "reasoningTokens": 0,
+            "ms": 4895
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-03",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "我想做一下风险测评"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_risk_questionnaire"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "我想做一下风险测评",
+            "toolCalls": [
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 45575,
+            "outputTokens": 70,
+            "guardVerdict": "allow",
+            "text": "风险测评问卷已调出，共 5 题，请按实际情况逐题选择，最后点“提交答案”统一发送。提交后我会先试算风险等级，登记结果还需要你另行确认。",
+            "reasoningTokens": 0,
+            "ms": 1558
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "尾号 8823"
+            ],
+            "steps": 2,
+            "inputTokens": 45695,
+            "outputTokens": 94,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "reasoningTokens": 0,
+            "ms": 1251
+          },
+          {
+            "input": "没问题，就按这个办理",
+            "toolCalls": [],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": true,
+            "violations": 1,
+            "violationTexts": [
+              "尾号 8823"
+            ],
+            "steps": 1,
+            "inputTokens": 22359,
+            "outputTokens": 59,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "reasoningTokens": 0,
+            "ms": 775
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-04",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "买 1000 元活期宝 A"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_risk_questionnaire",
+            "check_product_eligibility",
+            "preview_purchase"
+          ]
+        },
+        "note": "未做风险测评，应引导测评而不是生成申购单"
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "买 1000 元活期宝 A",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "check_product_eligibility",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 112763,
+            "outputTokens": 235,
+            "guardVerdict": "allow",
+            "text": "活期宝 A 找到了（R1，预期年化 1.65%，1 元起购，随时可取），但你还**没有完成风险测评**，所以暂时不能申购。\n\n需要先做一次银行标准的 5 题风险测评，做完就能继续。要现在开始吗？",
+            "reasoningTokens": 0,
+            "ms": 4529
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 68565,
+            "outputTokens": 117,
+            "guardVerdict": "allow",
+            "text": "尾号 **8823** 的工资卡已确认，余额 **¥23,568.20**，足够支付 1000 元。\n\n不过申购前必须先完成风险测评，这是银行规定，无法跳过。下面是标准 5 题，请按实际情况逐题选择，最后点“提交答案”一起发给我。",
+            "reasoningTokens": 0,
+            "ms": 2786
+          },
+          {
+            "input": "没问题，就按这个办理",
+            "toolCalls": [
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 45901,
+            "outputTokens": 83,
+            "guardVerdict": "allow",
+            "text": "风险测评问卷已调出，共 5 题，请按实际情况逐题选择，最后点“提交答案”一起发给我。\n\n提交后我会先试算你的风险等级，确认匹配后再继续办理 1000 元活期宝 A 的申购。",
+            "reasoningTokens": 0,
+            "ms": 1584
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-05",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "买 1000 元活期宝 A"
+        ],
+        "setup": "risk_assessed_r3",
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_purchase"
+          ],
+          "ids": [
+            "prd_cash"
+          ],
+          "amountYuan": 1000,
+          "level": "red"
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "买 1000 元活期宝 A",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "list_funds",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "活期宝 A 申购确认\n确认付款账户后我会生成申购确认单\n1000 元从哪张储蓄卡扣款？：工资卡 · 尾号 8823（余额 ¥23,568.20） / 储蓄账户 · 尾号 9929（余额 ¥80,000.00）"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 100125,
+            "outputTokens": 352,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3977
+          },
+          {
+            "input": "我已完成「活期宝 A 申购确认」问卷（cash-a-purchase），我的答案如下：\n1. 1000 元从哪张储蓄卡扣款？：工资卡 · 尾号 8823（余额 ¥23,568.20）（答案值：工资卡尾号8823）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "resolve_product",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "check_product_eligibility",
+                "status": "done"
+              },
+              {
+                "name": "preview_purchase",
+                "status": "done"
+              },
+              {
+                "name": "commit_purchase",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 5,
+            "inputTokens": 114872,
+            "outputTokens": 437,
+            "guardVerdict": "allow",
+            "text": "已生成申购确认单：**活期宝 A**，金额 **¥1,000.00**，从工资卡（尾号 8823）扣款，随时可赎回。\n\n请在确认卡片上核对并完成独立安全页面的验证。验证通过后才会实际扣款，届时我再为你核对结果。",
+            "reasoningTokens": 0,
+            "ms": 4365
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_purchase",
+            "level": "red",
+            "argsJson": "{\"confirmationToken\":\"tok_0de08363-3abf-41db-a981-81d08977c692\",\"fromAccountId\":\"acc_main\",\"productId\":\"prd_cash\",\"amountCents\":100000}",
+            "summaryJson": "{\"title\":\"申购执行中\",\"fields\":[{\"label\":\"产品\",\"value\":\"活期宝 A\"},{\"label\":\"金额\",\"value\":\"¥1,000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-06",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "把活期宝里的 2 万赎回"
+        ],
+        "prefer": [
+          "2 万",
+          "20000",
+          "20,000",
+          "部分",
+          "8823",
+          "工资卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "commit_redemption"
+          ],
+          "ids": [
+            "h_cash"
+          ],
+          "amountYuan": 20000,
+          "level": "red"
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "把活期宝里的 2 万赎回",
+            "toolCalls": [
+              {
+                "name": "resolve_holding",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "赎回活期宝 2 万元\n选择赎回资金的到账账户\n2 万元赎回到哪个账户？：工资卡 · 尾号8823（余额 ¥23,568.20） / 储蓄账户 · 尾号9929（余额 ¥80,000.00）"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 90268,
+            "outputTokens": 311,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3121
+          },
+          {
+            "input": "我已完成「赎回活期宝 2 万元」问卷（redeem-cash-20k），我的答案如下：\n1. 2 万元赎回到哪个账户？：工资卡 · 尾号8823（余额 ¥23,568.20）（答案值：acc_main）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "resolve_holding",
+                "status": "done"
+              },
+              {
+                "name": "get_accounts",
+                "status": "done"
+              },
+              {
+                "name": "preview_redemption",
+                "status": "done"
+              },
+              {
+                "name": "commit_redemption",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 91926,
+            "outputTokens": 378,
+            "guardVerdict": "allow",
+            "text": "赎回确认单已生成，请在上方卡片中核对：\n\n- 持仓：活期宝 A\n- 赎回金额：**¥20,000.00**\n- 到账账户：工资卡 · 尾号8823\n\n确认后需在独立安全页面完成验证，验证通过才会实际执行赎回。",
+            "reasoningTokens": 0,
+            "ms": 3295
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "commit_redemption",
+            "level": "red",
+            "argsJson": "{\"confirmationToken\":\"tok_3c10fae2-03ed-4646-bfef-0fc3205a5a9c\",\"holdingId\":\"h_cash\",\"amountCents\":2000000,\"toAccountId\":\"acc_main\"}",
+            "summaryJson": "{\"title\":\"赎回执行中\",\"fields\":[{\"label\":\"持仓\",\"value\":\"h_cash\"},{\"label\":\"金额\",\"value\":\"¥20,000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-07",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "我的理财持仓和收益怎么样？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_portfolio",
+            "get_fund_portfolio"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "我的理财持仓和收益怎么样？",
+            "toolCalls": [
+              {
+                "name": "get_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "list_products",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"m1.value: 数据路径 /get_portfolio/totals/totalPrincipal 不存在；/get_portfolio 是数组（2 项），列表组件直接引用 /get_portfolio，元素字段：id、productId、principalCents、principal、redeemableAt、locked\",\"m1.value: 指标必须引用有限数值，不能把风险等级、空值或文字转换成0\",\"m2.value: 数据路径 /get_portfolio/totals/redeemableTotal 不存在；/get_portfolio 是数组（2 项），列表组件直接引用 /get_portfolio，元素字段：id、productId、principalCents、principal、redeemableAt、locked\",\"m2.value: 指标必须引用有限"
+              },
+              {
+                "name": "show_view",
+                "status": "invalid_view",
+                "errors": "[\"m1.value: 数据路径 /get_portfolio/totals/totalPrincipal 不存在；/get_portfolio 是数组（2 项），列表组件直接引用 /get_portfolio，元素字段：id、productId、principalCents、principal、redeemableAt、locked\",\"m1.value: 指标必须引用有限数值，不能把风险等级、空值或文字转换成0\",\"m2.value: 数据路径 /get_portfolio/totals/redeemableTotal 不存在；/get_portfolio 是数组（2 项），列表组件直接引用 /get_portfolio，元素字段：id、productId、principalCents、principal、redeemableAt、locked\",\"m2.value: 指标必须引用有限"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 6,
+            "inputTokens": 138591,
+            "outputTokens": 1154,
+            "guardVerdict": "allow",
+            "text": "您的理财持仓情况如下：\n\n- **活期宝 A**（R1，预期年化 1.65%）：本金 **¥50,000.00**，未锁定，可随时赎回\n- **稳盈 90 天**（R2，预期年化 2.45%）：本金 **¥100,000.00**，锁定至 2026-12-27\n\n两笔合计本金 **¥150,000.00**，其中可赎回 **¥50,000.00**，锁定中 **¥100,000.00**。\n\n需要说明的是，持仓页只显示本金和可赎回时间，**不提供实时收益数字**，实际收益要等产品到期或赎回时结算。如果您想看某只产品的历史表现，或者想调整配置，可以告诉我。",
+            "reasoningTokens": 0,
+            "ms": 6747
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-08",
+        "scenario": "wealth",
+        "variant": "standard",
+        "turns": [
+          "近一年收益最好的债券基金有哪些？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "rank_funds"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "近一年收益最好的债券基金有哪些？",
+            "toolCalls": [
+              {
+                "name": "rank_funds",
+                "status": "done"
+              },
+              {
+                "name": "show_view",
+                "status": "view"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 114126,
+            "outputTokens": 648,
+            "guardVerdict": "allow",
+            "text": "近一年收益最高的债券基金是 **易方达裕丰回报债券A（000171）**，近一年收益 **6.31%**，但它属于 R3 的“固收+”产品，最大回撤 **8.61%**，波动明显大于纯债。\n\n如果更看重稳健，可以看这两只：\n- **广发中债7-10年国开债指数A（003376）**：近一年 **5.05%**，最大回撤仅 **0.71%**，夏普 3.81\n- **南方中债7-10年国开行债券指数A（006961）**：近一年 **4.85%**，最大回撤 **0.74%**\n\n纯债里 **华夏纯债债券A（000015）** 近一年 **3.01%**，最大回撤 **0.30%**，波动最小。\n\n两点提醒：榜单只覆盖人工白名单，不是全市场排名；建信中短债、富国短债目前是**限额申购**状态。需要我按你的风险等级筛一遍，或者看某只基金的详细指标吗？",
+            "reasoningTokens": 0,
+            "ms": 4529
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-09",
+        "scenario": "wealth",
+        "variant": "colloquial",
+        "turns": [
+          "稳盈 90 天那笔钱现在能取出来不"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "get_portfolio",
+            "resolve_holding",
+            "preview_redemption"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "稳盈 90 天那笔钱现在能取出来不",
+            "toolCalls": [
+              {
+                "name": "get_portfolio",
+                "status": "done"
+              },
+              {
+                "name": "resolve_holding",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 67313,
+            "outputTokens": 156,
+            "guardVerdict": "allow",
+            "text": "**稳盈 90 天**这笔目前还不能取出。\n\n- 本金：**¥100,000.00**\n- 状态：封闭期内，不可赎回\n- 可赎回时间：**2026-12-27**（北京时间）\n\n您另一笔「现金管理类」持仓本金 **¥50,000.00** 是可随时赎回的。需要我帮您看看这笔吗？",
+            "reasoningTokens": 0,
+            "ms": 2384
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "wm-10",
+        "scenario": "wealth",
+        "variant": "colloquial",
+        "turns": [
+          "手上有 5 万闲钱，三年用不上，想稳一点，怎么配？"
+        ],
+        "expect": {
+          "kind": "guided",
+          "tools": [
+            "get_wealth_advice",
+            "get_risk_questionnaire"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "手上有 5 万闲钱，三年用不上，想稳一点，怎么配？",
+            "toolCalls": [
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "5万元三年期配置偏好\n补充两点偏好，便于给出更贴合的建议\n这5万在三年内对流动性的要求是？：三年内基本不动，可以接受封闭持有 / 希望部分资金能随时取用 / 需要随时可以赎回\n希望配置的方向偏向哪类？：以债券、固收类为主，波动尽量小 / 固收打底，少量配置权益或多资产 / 优先银行理财类产品 / 没有特别偏好，请专家按稳健原则安排"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 45206,
+            "outputTokens": 386,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 2929
+          },
+          {
+            "input": "我已完成「5万元三年期配置偏好」问卷（wealth-alloc-5w），我的答案如下：\n1. 这5万在三年内对流动性的要求是？：三年内基本不动，可以接受封闭持有（答案值：locked_ok）\n2. 希望配置的方向偏向哪类？：以债券、固收类为主，波动尽量小（答案值：fixed_income）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "get_wealth_advice",
+                "status": "done"
+              },
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69221,
+            "outputTokens": 286,
+            "guardVerdict": "allow",
+            "text": "上方已调出银行标准风险测评问卷（5 题），请按实际情况逐题选择，最后统一提交。提交后我会先试算风险等级，再结合你「5 万元、三年不用、以债券固收为主、波动尽量小」的条件给出配置建议；登记测评结果和后续申购都需要你另行确认。",
+            "reasoningTokens": 0,
+            "ms": 2630
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "get_risk_questionnaire",
+                "status": "done"
+              },
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": true,
+            "violations": 2,
+            "violationTexts": [
+              "5 万元",
+              "5 万"
+            ],
+            "steps": 3,
+            "inputTokens": 69706,
+            "outputTokens": 169,
+            "guardVerdict": "allow",
+            "text": "部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。",
+            "reasoningTokens": 0,
+            "ms": 2847
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "guided",
+        "reasons": []
+      }
+    }
+  ]
+}

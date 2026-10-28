@@ -6,7 +6,8 @@ import { derivedAmountAt } from './transactions'
  * 模型回复中出现的金额、卡尾号必须能在「本轮工具结果 + 用户输入」中找到出处。
  */
 
-const AMOUNT_RE = /(?:¥|￥)?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?\s*(?:元|块)?/g
+// “万”按一万倍核对：“5 万元”须有 50000 的出处，“¥5.2万”是 52000 而不是 5.2（SECURITY §18 #4）
+const AMOUNT_RE = /(?:¥|￥)?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,4}))?\s*(万)?\s*(?:元|块)?/g
 const CARD_TAIL_RE = /尾号\s*(\d{4})/g
 
 export interface NumberViolation {
@@ -45,8 +46,8 @@ export function verifyNumbers(text: string, evidence: Set<string>, sourceValues:
   for (const m of text.matchAll(AMOUNT_RE)) {
     const raw = m[0]
     // 只校验明确是金额的数字（带货币符号或单位），避免误伤日期、序号
-    if (!/[¥￥元块]/.test(raw)) continue
-    const value = Number(`${m[1].replace(/,/g, '')}.${m[2] ?? '0'}`)
+    if (!/[¥￥元块万]/.test(raw)) continue
+    const value = Math.round(Number(`${m[1].replace(/,/g, '')}.${m[2] ?? '0'}`) * (m[3] ? 10_000 : 1) * 100) / 100
     if (!evidence.has(normalize(value)) && !derivedAmountAt(text,m.index!+raw.search(/\S/),value,sourceValues)) violations.push({ text: raw.trim(), kind: 'amount' })
   }
   return violations

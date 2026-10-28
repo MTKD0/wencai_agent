@@ -31,7 +31,11 @@ export interface AdviceCandidate {
   expectedYieldPct: number | null; metrics: Metrics; source: string; asOf: string | null;
   investmentProfile?: InvestmentProfile;
 }
-export interface AdviceBudget { monthlyExpenseCents: number; reserveCents: number; investableCents: number; amountCents: number; monthsObserved: number }
+export interface AdviceBudget {
+  monthlyExpenseCents: number; reserveCents: number; investableCents: number; amountCents: number; monthsObserved: number
+  /** 收支记录不足三个月：没有核对生活备用金，本次金额完全按用户说出的数字 */
+  reserveUnchecked?: true
+}
 const REASONS = ['risk_matched', 'lower_drawdown', 'diversification', 'long_horizon', 'liquidity', 'historical_return', 'preference_matched'] as const
 const ModelAdvice = z.object({
   picks: z.array(z.object({ candidate: z.string().regex(/^候选[1-5]$/), role: z.enum(['core', 'satellite', 'alternative']),
@@ -54,7 +58,8 @@ export function expertTextViolations(text: string, budget: AdviceBudget, candida
   if (/(?:百分之\s*[零〇一二两三四五六七八九十百]+|[零〇一二两三四五六七八九十百壹贰叁肆伍陆柒捌玖拾佰仟][零〇一二两三四五六七八九十百千万亿萬億点壹贰叁肆伍陆柒捌玖拾佰仟]*\s*(?:成|个百分点|个点|%|％|元|圆|圓|块|万|亿|萬|億))/.test(text)) errors.push('unparsed_quantity')
   const percentages = candidate ? [...Object.values(candidate.metrics).filter((n): n is number => typeof n === 'number'), ...(candidate.expectedYieldPct === null ? [] : [candidate.expectedYieldPct])] : []
   if (percentageTokens(text).some((n) => !percentages.some((p) => numericEqual(p, n)))) errors.push('percentage')
-  const amounts = [budget.monthlyExpenseCents, budget.reserveCents, budget.investableCents, budget.amountCents, ...(candidate ? [candidate.minCents] : [])]
+  // 备用金未核对时，月均支出、备用金、可投资额度都不可靠，说明里只能出现用户说出的金额
+  const amounts = [...(budget.reserveUnchecked ? [] : [budget.monthlyExpenseCents, budget.reserveCents, budget.investableCents]), budget.amountCents, ...(candidate ? [candidate.minCents] : [])]
   if (moneyTokens(text).some((n) => !amounts.includes(n))) errors.push('money')
   // Metric label and value must match too: a drawdown cannot be presented as a one-year return.
   const metrics: [RegExp, number | null][] = candidate ? [
@@ -103,36 +108,44 @@ export function rankCandidates(candidates: AdviceCandidate[], input: AdviceReque
   for (const c of sorted) if (!selected.includes(c) && selected.length < 5) selected.push(c)
   return selected
 }
+/** 交给说明模型的金额一律换成元：给“分”时模型会把 8000 元写成“800000元” */
+const toYuan = (cents: number) => Math.round(cents) / 100
 export function modelAdviceInput(candidates: AdviceCandidate[], budget: AdviceBudget, input: AdviceRequest, conflicts: string[]) {
-  return { budget, needs: { horizon: input.horizon, liquidity: input.liquidity, preference: input.preference, purpose: input.purpose, targetReturnPct: input.targetReturnPct ?? null,
+  return { budget: budget.reserveUnchecked ? { amountYuan: toYuan(budget.amountCents), reserveUnchecked: true }
+    : { amountYuan: toYuan(budget.amountCents), monthlyExpenseYuan: toYuan(budget.monthlyExpenseCents), reserveYuan: toYuan(budget.reserveCents), investableYuan: toYuan(budget.investableCents), monthsObserved: budget.monthsObserved }, needs: { horizon: input.horizon, liquidity: input.liquidity, preference: input.preference, purpose: input.purpose, targetReturnPct: input.targetReturnPct ?? null,
     assetClasses: input.assetClasses ?? [], styles: input.styles ?? [], avoidStyles: input.avoidStyles ?? [], maxDrawdownPct: input.maxDrawdownPct ?? null }, conflicts,
-    candidates: candidates.map((c, i) => ({ alias: `候选${i + 1}`, kind: c.kind, riskRating: c.riskRating, minCents: c.minCents,
+    candidates: candidates.map((c, i) => ({ alias: `候选${i + 1}`, kind: c.kind, riskRating: c.riskRating, minYuan: toYuan(c.minCents),
       termDays: c.termDays, expectedYieldPct: c.expectedYieldPct, metrics: c.metrics, investmentProfile: c.investmentProfile ? { assetClass: c.investmentProfile.assetClass, style: c.investmentProfile.style, suggestedHorizonDays: c.investmentProfile.suggestedHorizonDays } : null })) }
 }
 type Writer = (input: ReturnType<typeof modelAdviceInput>) => Promise<unknown>
 const defaultWriter: Writer = async (input) => {
   const result = await generateText({ model: agentModel(), abortSignal: AbortSignal.timeout(8000), temperature: .1, maxOutputTokens: 650,
     providerOptions: { deepseek: { thinking: { type: 'disabled' } } },
-    system: '你是只读理财说明器。只能从已筛选候选中挑1至3项，不改变风险、预算或排名计算。输入没有名称，禁止猜名称。只输出JSON：{"picks":[{"candidate":"候选1","role":"core","reasons":["risk_matched"],"note":"理由"}],"summary":"说明","conflictNotes":[]}。reasons只允许risk_matched,lower_drawdown,diversification,long_horizon,liquidity,historical_return,preference_matched。note仅解释该候选，可引用该候选指标和预算内的金额；summary和conflictNotes只写定性文字，不写数字。不承诺未来收益，不声称执行交易。不需要提供配置比例。',
+    system: '你是只读理财说明器。只能从已筛选候选中挑1至3项，不改变风险、预算或排名计算。输入没有名称，禁止猜名称。只输出JSON：{"picks":[{"candidate":"候选1","role":"core","reasons":["risk_matched"],"note":"理由"}],"summary":"说明","conflictNotes":[]}。reasons只允许risk_matched,lower_drawdown,diversification,long_horizon,liquidity,historical_return,preference_matched。note仅解释该候选，可引用该候选指标和预算内的金额；summary和conflictNotes只写定性文字，不写数字。不承诺未来收益，不声称执行交易。不需要提供配置比例。文字规则（违反任一条整份作废，改用固定文案）：1.不得出现“保本”“一定”“肯定”“无风险”“稳赚”等字眼，用户的preserve偏好写作“稳健”；2.note、summary、conflictNotes里都不得出现“候选”二字，note用“该产品”指代；3.note里除了该产品的百分比指标（写作近1年收益、最大回撤、波动率加%）和带“元”的金额外，不写任何数字，风险等级写作低风险、中低风险、中风险，期限写作短期、一年以内、中长期；4.summary和conflictNotes不写任何数字；5.金额只用阿拉伯数字加“元”，如20000元，不写“两万元”；输入里的金额单位已经是元，原样引用，不要换算；6.每条note不超过60个字，reasons最多3项，summary不超过100个字，conflictNotes每条不超过60个字。',
     prompt: JSON.stringify(input),
   })
   return JSON.parse(result.text.trim())
 }
 export async function describeAdvice(candidates: AdviceCandidate[], budget: AdviceBudget, input: AdviceRequest, conflicts: string[], writer: Writer = defaultWriter) {
-  const fallback = () => ({ source: 'rule' as const, summary: '已按风险、预算和资金使用期限筛选。历史业绩不代表未来收益；本建议不会发起交易。',
+  const fallback = (rejected?: string) => ({ source: 'rule' as const, ...(rejected ? { rejected } : {}), summary: '已按风险、预算和资金使用期限筛选。历史业绩不代表未来收益；本建议不会发起交易。',
     picks: candidates.slice(0, 3).map((c, i) => ({ ...c, alias: `候选${i + 1}`, role: i ? 'alternative' : 'core', reasons: ['risk_matched', 'preference_matched'], note: `${c.investmentProfile ? `方向：${STYLE_LABELS[c.investmentProfile.style]}。` : ''}已匹配风险、起购额及已声明的偏好；建议观察期限不是合同锁定期，历史回撤不保证未来损失上限。` })), conflictNotes: [] as string[] })
   if (!candidates.length) return fallback()
   try {
     const data = ModelAdvice.parse(await writer(modelAdviceInput(candidates, budget, input, conflicts))), used = new Set<string>()
-    if (expertTextViolations(data.summary, budget).length || data.conflictNotes.some((n) => expertTextViolations(n, budget).length)) throw new Error('EXPERT_UNSUPPORTED_TEXT')
+    const textIssues = [...expertTextViolations(data.summary, budget), ...data.conflictNotes.flatMap((n) => expertTextViolations(n, budget))]
+    if (textIssues.length) throw new Error(`summary:${[...new Set(textIssues)].join(',')}`)
     const picks = data.picks.map((p) => {
       const candidate = candidates[Number(p.candidate.slice(2)) - 1]
-      if (!candidate || used.has(p.candidate) || expertTextViolations(p.note, budget, candidate).length) throw new Error('EXPERT_UNSUPPORTED_PICK')
+      const noteIssues = candidate ? expertTextViolations(p.note, budget, candidate) : ['unknown_candidate']
+      if (!candidate || used.has(p.candidate) || noteIssues.length) throw new Error(`note:${noteIssues.join(',') || 'duplicate'}`)
       used.add(p.candidate)
       return { ...candidate, alias: p.candidate, role: p.role, reasons: p.reasons, note: p.note }
     })
     return { source: 'ai' as const, summary: data.summary, picks, conflictNotes: data.conflictNotes }
-  } catch { return fallback() }
+  } catch (error) {
+    // 记录模型说明被拒的原因（只含检查项代码，不含模型文字），便于审计与调整提示词
+    return fallback(error instanceof z.ZodError ? `format:${error.issues.map((i) => `${i.path.join('.')}/${i.code}`).slice(0, 3).join(',')}` : error instanceof SyntaxError ? 'json' : error instanceof Error && /^(?:summary|note):/.test(error.message) ? error.message : 'unavailable')
+  }
 }
 export async function getWealthAdvice(ctx: AgentContext, input: AdviceRequest, now: Date, writer?: Writer) {
   if (input.amountYuan !== undefined && !requestedAmounts(ctx.requestText ?? '').some((n) => Math.round(n * 100) === Math.round(input.amountYuan! * 100))) throw new Error('投资金额必须来自当前用户请求，不能由模型猜测')
@@ -148,15 +161,21 @@ export async function getWealthAdvice(ctx: AgentContext, input: AdviceRequest, n
   const debtCents = cards.filter((c) => c.kind === 'credit').reduce((n, c) => n + c.outstandingCents, 0)
   const reserveCents = metrics.monthlyExpenseCents * 6
   const investableCents = Math.max(0, cashCents - reserveCents - debtCents)
-  const budget = { monthlyExpenseCents: metrics.monthlyExpenseCents, reserveCents, investableCents,
-    amountCents: Math.min(investableCents, input.amountYuan === undefined ? investableCents : Math.round(input.amountYuan * 100)), monthsObserved: metrics.monthsObserved }
+  // 不足三个月的收支算不出可靠的月均支出：没有金额就请用户给出金额；用户说了金额就按它筛选，
+  // 同时标明没有核对生活备用金，而不是拿两个月的数据硬算一个“可投资额度”
+  const shortHistory = metrics.monthsObserved < 3
   const conflicts: string[] = []
-  if (input.amountYuan !== undefined && Math.round(input.amountYuan * 100) > investableCents) conflicts.push('amount_exceeds_investable')
+  if (shortHistory && input.amountYuan === undefined) return { status: 'insufficient_history', message: '完整月份收支数据不足三个月，无法自动估算可投资额度。请直接告诉我打算投入多少，我按这个金额筛选。', conflicts, picks: [] }
+  const budget: AdviceBudget = shortHistory
+    ? { monthlyExpenseCents: metrics.monthlyExpenseCents, reserveCents, investableCents, amountCents: Math.round(input.amountYuan! * 100), monthsObserved: metrics.monthsObserved, reserveUnchecked: true }
+    : { monthlyExpenseCents: metrics.monthlyExpenseCents, reserveCents, investableCents,
+      amountCents: Math.min(investableCents, input.amountYuan === undefined ? investableCents : Math.round(input.amountYuan * 100)), monthsObserved: metrics.monthsObserved }
+  if (shortHistory) conflicts.push('reserve_unchecked')
+  else if (input.amountYuan !== undefined && Math.round(input.amountYuan * 100) > investableCents) conflicts.push('amount_exceeds_investable')
   if (input.horizon === 'within_3m' && input.preference === 'growth') conflicts.push('short_horizon_growth')
   if (input.liquidity === 'anytime' && input.preference === 'growth') conflicts.push('liquidity_growth')
   if (input.preference === 'growth' && Number(user!.riskRating.slice(1)) <= 2) conflicts.push('growth_risk_mismatch')
   if (input.styles?.some((s) => input.avoidStyles?.includes(s))) conflicts.push('style_conflict')
-  if (metrics.monthsObserved < 3) return { status: 'insufficient_history', message: '完整月份支出数据不足三个月，暂不自动估算可投资额度。请先完善收支信息。', budget, conflicts, picks: [] }
   const funds = await listFunds(now), bankProducts = await db.select().from(schema.products)
   const candidates: AdviceCandidate[] = bankProducts.map((p) => ({ id: p.id, kind: 'bank', name: p.name, riskRating: p.riskRating,
     minCents: p.minAmountCents, termDays: p.termDays, expectedYieldPct: Math.round(p.expectedYield * 10000) / 100,
@@ -183,6 +202,6 @@ export async function getWealthAdvice(ctx: AgentContext, input: AdviceRequest, n
   const result = { status: selected.length ? 'advice' : 'no_suitable_candidates', ...text, budget, conflicts, asOf: now.toISOString(),
     riskRating: user!.riskRating, unavailableMatches, requestedPreferences: { assetClasses: input.assetClasses ?? [], styles: input.styles ?? [], avoidStyles: input.avoidStyles ?? [], maxDrawdownPct: input.maxDrawdownPct ?? null },
     disclaimer: '模拟银行理财建议；风险等级及观察期限由人工维护，不是正式评级或合同锁定期。基金净值为公开历史数据，历史业绩及历史回撤不代表未来收益或损失上限；申购须另行确认与强验证。' }
-  await audit(ctx, 'wealth_advice', { source: text.source, candidateIds: selected.map((c) => c.id), pickedIds: text.picks.map((p) => p.id), budget, conflicts, preferences: result.requestedPreferences })
+  await audit(ctx, 'wealth_advice', { source: text.source, ...('rejected' in text && text.rejected ? { rejected: text.rejected } : {}), candidateIds: selected.map((c) => c.id), pickedIds: text.picks.map((p) => p.id), budget, conflicts, preferences: result.requestedPreferences })
   return result
 }

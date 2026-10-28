@@ -17,6 +17,7 @@ import { verifiedOutputTransform } from '#/server/verify/response'
 import { getSessionData } from './session'
 import { runtimeLog } from '#/server/logging/runtime'
 import { env } from '#/server/env'
+import { requestedAmounts } from '#/lib/requested-amounts'
 
 function logAgentProgress(message: string) {
   console.info(message)
@@ -51,6 +52,8 @@ export async function runAgent(params: {
     : undefined
   // 确认回报、按钮核对/取消这一轮只读，消息本身不能再次发起写操作或计划。
   const requestText = params.requestText ?? currentUserRequest(params.messages)
+  // 用户本次说出的办理金额（如“5 万”）可以在回复里复述；其他金额仍须来自服务端快照与本轮工具结果
+  const statedAmounts = { userStatedAmounts: requestedAmounts(requestText) }
   const riskText = [conversationUserText(params.messages), params.requestText].filter(Boolean).join('\n')
   const tools = buildAgentTools(ctx, { readOnly: !!params.confirmedActionId, requestText, riskText })
   // 合并后的需求含用户原话和问卷选项文字，属于数据而不是规则：放进带隔离标记的用户消息，不拼进系统指令
@@ -70,7 +73,7 @@ export async function runAgent(params: {
     stopWhen: isStepCount(8),
     temperature: 0.2,
     providerOptions: { deepseek: { thinking: { type: env.DEEPSEEK_THINKING } } },
-    experimental_transform: verifiedOutputTransform(ctx, [...trustedEvidence, ...(confirmation ? [confirmation] : [])], confirmation?.status === 'completed'),
+    experimental_transform: verifiedOutputTransform(ctx, [...trustedEvidence, statedAmounts, ...(confirmation ? [confirmation] : [])], confirmation?.status === 'completed'),
     abortSignal: params.abortSignal,
     onStepEnd: ({ toolCalls, finishReason, usage }) => {
       logAgentProgress(
@@ -83,6 +86,7 @@ export async function runAgent(params: {
     onEnd: async ({ text, steps }) => {
       const rawEvidence = [
         ...trustedEvidence,
+        statedAmounts,
         ...(confirmation ? [confirmation] : []),
         ...steps.flatMap((s) => s.toolResults.map((r) => r.output)),
       ]

@@ -14,7 +14,7 @@ import { cancelLifeSubscription, lifeSubscriptionChangeSummary, listLifeSubscrip
 export { listTransactions } from './transaction-query'
 import { ownProfile, userCards } from '#/server/cards/service'
 import { paymentAccounts } from '#/server/payments/service'
-import { subscriptionTotals, sumYuan } from './totals'
+import { subscriptionTotals, sumYuan, withAnnualCost } from './totals'
 import { and, eq, gte, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
@@ -122,7 +122,7 @@ export const listSubscriptions = defineBankTool({
   kind: 'read',
   inputSchema: z.object({}),
   execute: async (_args, ctx) => {
-    return listLifeSubscriptions(ctx.userId,await simNow())
+    return withAnnualCost(await listLifeSubscriptions(ctx.userId,await simNow()))
   },
   totals: subscriptionTotals,
 })

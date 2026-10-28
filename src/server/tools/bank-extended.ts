@@ -171,9 +171,24 @@ export const getSpendingReport = defineBankTool({
       byCategory: Object.entries(byCategory)
         .sort((a, b) => b[1] - a[1])
         .map(([category, cents]) => ({ category, total: yuan(cents) })),
+      // 年度账期：服务端按月拆分并给出有流水月份的月均支出，年度报告引用这些值，模型不自行相除
+      ...(period.length === 4 ? yearlyBreakdown(filtered) : {}),
     }
   },
 })
+
+function yearlyBreakdown(rows: { amountCents: number; occurredAt: Date }[]) {
+  const months = new Map<string, { income: number; expense: number }>()
+  for (const t of rows) {
+    const m = months.get(businessMonth(t.occurredAt)) ?? { income: 0, expense: 0 }
+    if (t.amountCents > 0) m.income += t.amountCents
+    else m.expense -= t.amountCents
+    months.set(businessMonth(t.occurredAt), m)
+  }
+  const byMonth = [...months].sort(([a], [b]) => a.localeCompare(b)).map(([month, m]) => ({ month, income: yuan(m.income), expense: yuan(m.expense) }))
+  const expense = [...months.values()].reduce((s, m) => s + m.expense, 0)
+  return { byMonth, monthsWithActivity: months.size, averageMonthlyExpense: months.size ? yuan(Math.round(expense / months.size)) : 0 }
+}
 
 export const getAnomalies = defineBankTool({
   name: 'get_anomalies',

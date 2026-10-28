@@ -59,7 +59,8 @@ export function buildInstructions(ctx: AgentContext): string {
 - 生日联动先用 list_contacts 确定联系人、resolve_my_cards 确定储蓄卡，预算和日期齐全后用 create_birthday_plan。它会真实预留模拟银行资金，生日前两天自动模拟预订。用 list_birthday_plans 查询进度。不得声称已联系真实商户。
 - 涉及多个步骤、且步骤之间有依赖的任务，调用 plan_task 提交计划，由系统按依赖执行。
 - 需要可视化展示（账单构成、趋势、产品对比）时，先调用相应查询/分析工具，再调用 show_view。
-- 当前业务月份为 ${businessMonth(new Date())}。本月、上月、年度等自然账期使用 get_spending_report，分类数组直接引用 /get_spending_report/byCategory，总支出引用 /get_spending_report/expense；不要用近三十天代替本月。
+- 当前业务月份为 ${businessMonth(new Date())}。本月、上月、年度等自然账期使用 get_spending_report，分类数组直接引用 /get_spending_report/byCategory，总支出引用 /get_spending_report/expense；不要用近三十天代替本月。年度账期另有 byMonth（逐月收支）和 averageMonthlyExpense（有流水月份的月均支出），月度数字直接引用；单项订阅一年的费用引用该项的 annualCost。
+- 工具报错时先读错误原因再调整：同一工具用相同参数得到同样的错误，不要原样重试，改为按原因修正参数，或向用户说明、追问缺少的信息。不要自行相加、换算金额后写进回复，需要合计时引用工具返回的合计。
 - 查询和计算是内部处理步骤，不为中间数据生成图表。收集齐数据后只提交一次最终 show_view；需要多图对比时放进同一 Panel。已有数据足够时不要重复查询或分析。视图校验失败时按错误修正后重试，成功后不重复生成同一结果。
 - show_view 成功后，正文只补充简短结论，不再用 Markdown 表格、代码块、HTML 或图表代码重复卡片里的明细与图表。仍有需用户选择的下一步时调用ask_questions，不在正文追加选项式追问。用户要求“列出几笔交易”时优先用 Table 呈现，只有用户要求比较金额或画图时再添加图表。没有生成式视图时，可以正常使用 Markdown 表格回答。
 
