@@ -4,19 +4,22 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { SelectControl, SelectOption } from '#/components/ui/select'
 import { formatAmount, type DashboardData } from '#/lib/dashboard'
-import { LIFE_ORDER_STATUS, lifeTime, type LifeOrder, type LifeSubscription } from '#/lib/life-commerce'
+import { LIFE_ORDER_STATUS, lifeTime, type LifeOrder, type LifeSubscription, type SavedAddress } from '#/lib/life-commerce'
 import { LIFE_PRODUCTS, type LifeProduct } from '#/lib/life-market'
 import { LifeProductArt } from './LifeProductArt'
 
-export function LifeCheckout({product,data,busy,onPrepare,onAgent}:{product:LifeProduct;data:DashboardData;busy:boolean;onPrepare:(tool:string,args:unknown)=>void;onAgent:(text:string)=>void}) {
+export function LifeCheckout({product,data,busy,addresses=[],onManageAddresses,onPrepare,onAgent}:{product:LifeProduct;data:DashboardData;busy:boolean;addresses?:SavedAddress[];onManageAddresses?:()=>void;onPrepare:(tool:string,args:unknown)=>void;onAgent:(text:string)=>void}) {
   const cards=data.cards.filter(c=>c.kind==='debit'&&c.status==='active')
-  const [cardId,setCardId]=useState(cards[0]?.id??''),[quantity,setQuantity]=useState('1'),[recipient,setRecipient]=useState(''),[phone,setPhone]=useState(''),[address,setAddress]=useState(''),[mode,setMode]=useState('immediate'),[arriveAt,setArriveAt]=useState(''),[autoRenew,setAutoRenew]=useState(false),[renewals,setRenewals]=useState(product.cycle==='年'?'1':'3')
+  // 默认地址直接预填，其他常用地址点一下就能换
+  const preset=addresses.find(a=>a.isDefault)??addresses[0]
+  const [cardId,setCardId]=useState(cards[0]?.id??''),[quantity,setQuantity]=useState('1'),[recipient,setRecipient]=useState(preset?.recipient??''),[phone,setPhone]=useState(preset?.phone??''),[address,setAddress]=useState(preset?.address??''),[mode,setMode]=useState('immediate'),[arriveAt,setArriveAt]=useState(''),[autoRenew,setAutoRenew]=useState(false),[renewals,setRenewals]=useState(product.cycle==='年'?'1':'3')
   const service=product.kind==='subscription'
   return <form className="bank-life-checkout" onSubmit={e=>{e.preventDefault();onPrepare(service?'subscribe_life_service':'buy_life_product',service?{productId:product.id,cardId,autoRenew,renewals:Number(renewals)}:{productId:product.id,cardId,quantity:Number(quantity),delivery:{recipient,phone,address,mode,...(mode==='scheduled'?{arriveAt:`${arriveAt.length===16?`${arriveAt}:00`:arriveAt}+08:00`}:{})}})}}>
     <label>付款储蓄卡<SelectControl value={cardId} onValueChange={setCardId} disabled={busy} required>{cards.map(c=><SelectOption key={c.id} value={c.id}>{c.remark||c.accountName} · 尾号{c.last4}</SelectOption>)}</SelectControl></label>
     {!cards.length&&<p className="bank-life-notice">请先申请并存入资金到储蓄卡，再办理购买或订阅。</p>}
     {service?<><label className="bank-life-renew"><input type="checkbox" checked={autoRenew} disabled={busy} onChange={e=>setAutoRenew(e.target.checked)}/>授权自动续费</label>{autoRenew&&<label>最多续费次数<Input type="number" min={1} max={product.cycle==='年'?1:11} required value={renewals} disabled={busy} onChange={e=>setRenewals(e.target.value)}/></label>}<p className="bank-life-detail-description">{autoRenew?`每次 ¥${formatAmount(product.price)}，首期及续费累计上限 ¥${formatAmount(product.price*(Number(renewals)+1))}，授权最长366天，可随时取消后续扣费。`:'仅开通一期，到期不自动扣费。'}取消后已付费服务保留至有效期结束，不退当期费用。</p></>:<>
       <label>购买数量<Input type="number" required min={1} max={20} value={quantity} disabled={busy} onChange={e=>setQuantity(e.target.value)}/></label>
+      <div className="bank-life-address-picks" aria-label="常用地址">{addresses.map(a=><Button key={a.id} type="button" disabled={busy} className={a.address===address&&a.phone===phone&&a.recipient===recipient?'is-selected':''} onClick={()=>{setRecipient(a.recipient);setPhone(a.phone);setAddress(a.address)}}>{a.label}</Button>)}{onManageAddresses&&<Button type="button" className="bank-life-link" disabled={busy} onClick={onManageAddresses}>{addresses.length?'管理常用地址':'保存常用地址，下次不用再填'}</Button>}</div>
       <div className="bank-life-checkout-pair"><label>收件人<Input required maxLength={50} value={recipient} disabled={busy} onChange={e=>setRecipient(e.target.value)}/></label><label>手机号<Input required type="tel" pattern="1[0-9]{10}" maxLength={11} value={phone} disabled={busy} onChange={e=>setPhone(e.target.value)}/></label></div>
       <label>收货地址<Input required minLength={5} maxLength={200} value={address} disabled={busy} onChange={e=>setAddress(e.target.value)} placeholder="城市、街道、门牌等完整地址"/></label>
       <label>配送方式<SelectControl value={mode} onValueChange={setMode} disabled={busy}><SelectOption value="immediate">立即送出 · 预计48小时送达</SelectOption><SelectOption value="scheduled">预约送达时间</SelectOption></SelectControl></label>

@@ -22,6 +22,24 @@ export const FUND_POOL = [
   { code: '005939', name: '工银新能源汽车混合A', category: 'mixed', riskRating: 'R4', assetClass: 'domestic_equity', style: 'new_energy', suggestedHorizonDays: 1095 },
   { code: '000216', name: '华安黄金ETF联接A', category: 'commodity', riskRating: 'R4', assetClass: 'gold', style: 'gold', suggestedHorizonDays: 1095 },
   { code: '000001', name: '华夏成长混合', category: 'mixed', riskRating: 'R4', assetClass: 'multi_asset', style: 'active_mixed', suggestedHorizonDays: 1095 },
+  // 2026-10-28 扩充：补足纯债、短债、宽基指数、开放申购的黄金与主动混合，名称取自公开资料原文
+  { code: '217022', name: '招商产业债券A', category: 'bond', riskRating: 'R2', assetClass: 'fixed_income', style: 'pure_bond', suggestedHorizonDays: 180 },
+  { code: '270048', name: '广发纯债债券A', category: 'bond', riskRating: 'R2', assetClass: 'fixed_income', style: 'pure_bond', suggestedHorizonDays: 180 },
+  { code: '485111', name: '工银双利债券A', category: 'bond', riskRating: 'R3', assetClass: 'fixed_income', style: 'bond_plus', suggestedHorizonDays: 365 },
+  { code: '000128', name: '大成景安短融债券A', category: 'bond', riskRating: 'R2', assetClass: 'fixed_income', style: 'short_duration', suggestedHorizonDays: 90 },
+  { code: '100038', name: '富国沪深300指数增强A', category: 'index', riskRating: 'R4', assetClass: 'domestic_equity', style: 'broad_market', suggestedHorizonDays: 1095 },
+  { code: '161017', name: '富国中证500指数增强(LOF)A', category: 'index', riskRating: 'R4', assetClass: 'domestic_equity', style: 'broad_market', suggestedHorizonDays: 1095 },
+  { code: '000961', name: '天弘沪深300ETF联接A', category: 'index', riskRating: 'R4', assetClass: 'domestic_equity', style: 'broad_market', suggestedHorizonDays: 1095 },
+  { code: '001052', name: '华夏中证500ETF联接A', category: 'index', riskRating: 'R4', assetClass: 'domestic_equity', style: 'broad_market', suggestedHorizonDays: 1095 },
+  { code: '000248', name: '汇添富中证主要消费ETF联接A', category: 'index', riskRating: 'R4', assetClass: 'domestic_equity', style: 'consumer', suggestedHorizonDays: 1095 },
+  { code: '004851', name: '广发医疗保健股票A', category: 'equity', riskRating: 'R4', assetClass: 'domestic_equity', style: 'healthcare', suggestedHorizonDays: 1095 },
+  { code: '001410', name: '信澳新能源产业股票A', category: 'equity', riskRating: 'R4', assetClass: 'domestic_equity', style: 'new_energy', suggestedHorizonDays: 1095 },
+  { code: '539001', name: '建信纳斯达克100指数(QDII)A人民币', category: 'qdii', riskRating: 'R4', assetClass: 'global_equity', style: 'us_tech', suggestedHorizonDays: 1095 },
+  { code: '000307', name: '易方达黄金ETF联接A', category: 'commodity', riskRating: 'R4', assetClass: 'gold', style: 'gold', suggestedHorizonDays: 1095 },
+  { code: '002610', name: '博时黄金ETF联接A', category: 'commodity', riskRating: 'R4', assetClass: 'gold', style: 'gold', suggestedHorizonDays: 1095 },
+  { code: '163406', name: '兴全合润混合A', category: 'mixed', riskRating: 'R4', assetClass: 'multi_asset', style: 'active_mixed', suggestedHorizonDays: 1095 },
+  { code: '519736', name: '交银新成长混合', category: 'mixed', riskRating: 'R4', assetClass: 'multi_asset', style: 'active_mixed', suggestedHorizonDays: 1095 },
+  { code: '260108', name: '景顺长城新兴成长混合A', category: 'mixed', riskRating: 'R4', assetClass: 'multi_asset', style: 'active_mixed', suggestedHorizonDays: 1095 },
 ] as const satisfies readonly (InvestmentProfile & { code: string; name: string; category: string; riskRating: string })[]
 export function allowedFund(code: string) {
   const fund = FUND_POOL.find((f) => f.code === code)

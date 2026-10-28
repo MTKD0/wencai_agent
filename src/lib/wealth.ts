@@ -18,7 +18,7 @@ export interface FundMetadata { institution?: string; inceptionDate?: string; sc
 export interface WealthRow {
   code: string; name: string; category: string; riskRating: string; institution: string; inceptionDate: string | null;
   scaleYiYuan: number | null; scaleDate: string | null; source: string; fetchedAt: string; stale: boolean;
-  unitNav: number | null; navDate: string | null; purchaseStatus: string; enabled: boolean; favorite: boolean;
+  unitNav: number | null; navDate: string | null; purchaseStatus: string; purchaseLimitCents?: number | null; enabled: boolean; favorite: boolean;
   metrics: WealthMetrics; rank: number | null;
   investmentProfile: InvestmentProfile;
 }

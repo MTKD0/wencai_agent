@@ -137,6 +137,9 @@ export function toolPresentations(parts: WencaiUIMessage['parts'], processing = 
     } else if (richResult(part)) {
       fixed.push({ index, sources: [source(part.type.slice(5), record(part.output).data)] })
       if (processing) modes[index] = 'status'
+    } else if (processing && part.type === 'tool-list_funds') {
+      // 回复结束前不知道列表是不是查找过程，先只显示进度，避免长列表一闪而过
+      modes[index] = 'status'
     }
   })
   if (processing) return modes
@@ -169,6 +172,9 @@ export function toolPresentations(parts: WencaiUIMessage['parts'], processing = 
   if (finalViews.length || finalFixed.length) {
     for (const index of viewAttempts) if (!finalViews.some((view) => view.index === index)) modes[index] = 'hidden'
   }
+  // 整张基金白名单只在用户想浏览时展示；同一条回复已经查了具体基金（详情、指标、排行、专家建议）时，列表只是查找过程
+  const specificFund = parts.some((part) => /^tool-(?:get_fund_details|get_fund_metrics|rank_funds|get_wealth_advice)$/.test(part.type) && 'output' in part && record(part.output).status === 'done')
+  if (specificFund) parts.forEach((part, index) => { if (part.type === 'tool-list_funds') modes[index] = 'status' })
   const questionnaire = parts.some((part) => part.type === 'tool-ask_questions' && 'output' in part && record(part.output).status === 'questionnaire')
   if (questionnaire || batch >= 0) parts.forEach((part, index) => {
     if (part.type === 'tool-prepare_transfer_batch' && 'output' in part && record(part.output).status === 'needs_information') modes[index] = 'hidden'

@@ -35,7 +35,11 @@ export function parseFundStatus(html: string) {
   const purchase = status.match(/开放申购|限制大额申购|限大额|暂停申购|封闭期/)?.[0]
   const redeem = status.match(/开放赎回|暂停赎回|封闭期/)?.[0]
   if (!purchase || !redeem) throw new Error('FUND_STATUS_UNAVAILABLE')
-  return { purchaseStatus: purchase === '开放申购' ? 'open' as const : /限/.test(purchase) ? 'limited' as const : 'suspended' as const,
+  const purchaseStatus = purchase === '开放申购' ? 'open' as const : /限/.test(purchase) ? 'limited' as const : 'suspended' as const
+  // “限大额（单日累计购买上限10.00万元）”：记下上限，额度以内仍可申购；读不到上限时按不可申购处理
+  const cap = purchaseStatus === 'limited' ? status.replace(/<[^>]+>/g, '').match(/单日累计购买上限\s*([\d.]+)\s*(万)?元/) : null
+  const purchaseLimitCents = cap ? Math.round(Number(cap[1]) * (cap[2] ? 10_000 : 1) * 100) : undefined
+  return { purchaseStatus, ...(purchaseLimitCents && purchaseLimitCents > 0 ? { purchaseLimitCents } : {}),
     redeemStatus: redeem === '开放赎回' ? 'open' as const : 'suspended' as const }
 }
 async function limitedText(url: string, signal: AbortSignal, fetcher: typeof fetch) {

@@ -18,7 +18,7 @@ const number = (n: number | null) => n === null ? '—' : n.toFixed(2)
 const category = (s: string) => FUND_CATEGORY_LABELS[s] ?? s
 const sourceName = (s: string) => s === 'fixture' ? '离线公开快照' : s === 'eastmoney_json' ? '东方财富历史JSON兜底' : s === 'eastmoney' ? '天天基金 / 东方财富' : 'Tushare'
 const colorClass = (n: number | null) => n === null || n === 0 ? '' : n > 0 ? 'wealth-up' : 'wealth-down'
-const purchaseLabel = (fund: { enabled?: boolean; stale?: boolean; purchaseStatus?: string }) => fund.enabled === false ? '待人工复核' : fund.stale ? '净值过期' : fund.purchaseStatus === 'open' ? '开放申购' : fund.purchaseStatus === 'limited' ? '限额，模拟渠道暂不受理' : fund.purchaseStatus === 'suspended' ? '暂停申购' : '交易状态待核对'
+const purchaseLabel = (fund: { enabled?: boolean; stale?: boolean; purchaseStatus?: string; purchaseLimitCents?: number | null }) => fund.enabled === false ? '待人工复核' : fund.stale ? '净值过期' : fund.purchaseStatus === 'open' ? '开放申购' : fund.purchaseStatus === 'limited' ? (fund.purchaseLimitCents ? `限大额，单日上限 ${(fund.purchaseLimitCents / 100).toLocaleString('zh-CN')} 元` : '限额，未公布上限，暂不受理') : fund.purchaseStatus === 'suspended' ? '暂停申购' : '交易状态待核对'
 
 /** Code-backed series only; normalizing a comparison never changes the ranking metrics. */
 export function WealthChart({ rows, small = false, chartKey = '' }: { rows: Pick<WealthRow, 'code' | 'name' | 'metrics'>[]; small?: boolean; chartKey?: string }) {

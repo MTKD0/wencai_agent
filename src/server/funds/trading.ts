@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, isNull, lte, ne, sql } from 'drizzle-orm'
 import { db, schema } from '#/server/db/client'
 import type { AgentContext } from '#/server/agent/context'
 import { assertDebitAccount } from '#/server/cards/service'
@@ -26,7 +26,13 @@ async function eligibility(tx: Tx, userId: string, input: FundOrderInput, now: D
   const { code, fromAccountId, amountCents } = input
   if (!Number.isSafeInteger(amountCents) || amountCents <= 0 || amountCents > 100_000_000) throw new Error('申购金额无效')
   const [fund] = await tx.select().from(schema.bankFunds).where(eq(schema.bankFunds.code, code))
-  if (!fund?.enabled || fund.purchaseStatus !== 'open') throw new Error('基金不可申购（暂停、限额或待人工复核）')
+  if (!fund?.enabled || !(fund.purchaseStatus === 'open' || (fund.purchaseStatus === 'limited' && fund.purchaseLimitCents))) throw new Error('基金不可申购（暂停、限额或待人工复核）')
+  if (fund.purchaseStatus === 'limited' && fund.purchaseLimitCents) {
+    // 限大额：本人当天在本行对该基金的申购（含本笔）不超过公布的单日累计上限
+    const today = await tx.select({ amountCents: schema.bankFundOrders.amountCents }).from(schema.bankFundOrders)
+      .where(and(eq(schema.bankFundOrders.userId, userId), eq(schema.bankFundOrders.code, code), eq(schema.bankFundOrders.side, 'buy'), eq(schema.bankFundOrders.tradeDate, effectiveTradeDate(now)), ne(schema.bankFundOrders.status, 'cancelled')))
+    if (today.reduce((n, o) => n + o.amountCents, 0) + amountCents > fund.purchaseLimitCents) throw new Error(`该基金限大额申购，单日累计上限 ${(fund.purchaseLimitCents / 100).toLocaleString('zh-CN')} 元`)
+  }
   const [nav] = await tx.select().from(schema.bankFundNavs).where(and(eq(schema.bankFundNavs.code, code), lte(schema.bankFundNavs.navDate, cstDate(now)))).orderBy(desc(schema.bankFundNavs.navDate)).limit(1)
   if (!nav || staleNav(nav.navDate, now)) throw new Error('净值数据过期，请先刷新；未扣款')
   const [user] = await tx.select().from(schema.users).where(eq(schema.users.id, userId))

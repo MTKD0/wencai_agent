@@ -44,7 +44,7 @@ export async function getWealthMarket(userId: string, query: MarketRequest, now:
     return { code: fund.code, name: fund.name, category: fund.category, riskRating: fund.riskRating,
       institution: meta.institution ?? '机构待补充', inceptionDate: meta.inceptionDate ?? null, scaleYiYuan: meta.scaleYiYuan ?? null,
       scaleDate: meta.scaleDate ?? null, source: fund.source, fetchedAt: fund.updatedAt, stale: fund.stale, unitNav: fund.unitNav,
-      navDate: fund.navDate, purchaseStatus: fund.purchaseStatus, enabled: fund.enabled, favorite: watchlist.includes(fund.code),
+      navDate: fund.navDate, purchaseStatus: fund.purchaseStatus, purchaseLimitCents: fund.purchaseLimitCents, enabled: fund.enabled, favorite: watchlist.includes(fund.code),
       investmentProfile: fund.investmentProfile, metrics: { ...metrics, points: chartPoints(metrics.points) }, rank: null }
   }))
   const search = query.search.trim().toLowerCase()
@@ -62,5 +62,5 @@ export async function getFundAnalytics(code: string, now: Date) {
     return [period, { ...metric, points: chartPoints(metric.points) }]
   }))
   return { code, name: fund.name, riskRating: fund.riskRating, category: fund.category, ...meta, source: fund.source, fetchedAt: fund.updatedAt,
-    navDate: fund.navDate, unitNav: fund.unitNav, stale: fund.stale, enabled: fund.enabled, purchaseStatus: fund.purchaseStatus, investmentProfile: fund.investmentProfile, periods, methodology: METHODOLOGY }
+    navDate: fund.navDate, unitNav: fund.unitNav, stale: fund.stale, enabled: fund.enabled, purchaseStatus: fund.purchaseStatus, purchaseLimitCents: fund.purchaseLimitCents, investmentProfile: fund.investmentProfile, periods, methodology: METHODOLOGY }
 }

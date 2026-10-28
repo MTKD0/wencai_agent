@@ -4,11 +4,20 @@ import { LIFE_PRODUCTS } from '#/lib/life-market'
 import { cardLabel, ownProfile, resolveCard } from '#/server/cards/service'
 import { buyLifeProduct, deliveryDates, lifeProduct, listLifeOrders, listLifeSubscriptions, returnLifeOrder, subscribeLifeService } from '#/server/life/service'
 import { simNow } from './jobs'
-import { lifeTime } from '#/lib/life-commerce'
+import { lifeTime, type LifeDelivery } from '#/lib/life-commerce'
+import { AddressInput, listAddresses, maskPhone, resolveAddress, saveAddress } from '#/server/life/addresses'
 const funding={cardId:z.string().optional().describe('本人储蓄卡ID，与fromCardQuery任选其一'),fromCardQuery:z.string().optional().describe('银行卡备注或尾号，重名须询问具体尾号')}
-const delivery=z.object({recipient:z.string().trim().min(1).max(50),phone:z.string().regex(/^1\d{10}$/),address:z.string().trim().min(5).max(200),mode:z.enum(['immediate','scheduled']),arriveAt:z.string().datetime({offset:true}).optional().describe('预约送达北京时间，包含+08:00时区，至少48小时后、90天内')})
+const delivery=z.object({addressId:z.string().optional().describe('常用地址ID（来自list_addresses）。填写后收件人、手机号、地址由服务端填入，不必再提供'),recipient:z.string().trim().min(1).max(50).optional(),phone:z.string().regex(/^1\d{10}$/).optional(),address:z.string().trim().min(5).max(200).optional(),mode:z.enum(['immediate','scheduled']),arriveAt:z.string().datetime({offset:true}).optional().describe('预约送达北京时间，包含+08:00时区，至少48小时后、90天内')})
+  .refine(d=>!!d.addressId||!!(d.recipient&&d.phone&&d.address),'请提供常用地址ID，或完整的收件人、手机号与地址')
 const purchase=z.object({productId:z.string(),quantity:z.number().int().min(1).max(20).default(1),...funding,delivery})
-type Purchase=z.infer<typeof purchase>&{fromAccountId:string;amountCents:number;deliveryAt:string;dispatchAt:string;cardName:string}
+type Purchase=Omit<z.infer<typeof purchase>,'delivery'>&{delivery:LifeDelivery;fromAccountId:string;amountCents:number;deliveryAt:string;dispatchAt:string;cardName:string}
+/** 选了常用地址时由服务端填入完整收件信息；确认单与订单都使用填好的结果 */
+async function filledDelivery(userId:string,d:z.infer<typeof delivery>):Promise<LifeDelivery>{
+  const {addressId,...rest}=d
+  if(!addressId)return rest as LifeDelivery
+  const saved=await resolveAddress(userId,addressId)
+  return {recipient:saved.recipient,phone:saved.phone,address:saved.address,mode:rest.mode,...(rest.arriveAt?{arriveAt:rest.arriveAt}:{})}
+}
 const subscription=z.object({productId:z.string(),...funding,autoRenew:z.boolean().default(false),renewals:z.number().int().min(1).max(11).default(3).describe('自动续费次数上限：月费最多11次，年费最多1次，授权最长366天')})
 type Subscription=z.infer<typeof subscription>&{fromAccountId:string;amountCents:number;cardName:string}
 async function source(userId:string,a:{cardId?:string;fromCardQuery?:string}) {
@@ -18,8 +27,8 @@ async function source(userId:string,a:{cardId?:string;fromCardQuery?:string}) {
   return card
 }
 export const listLifeCatalog=defineBankTool({name:'list_life_catalog',kind:'read',catalogFields:['name','title'],baseRisk:'green',description:'查询生活商城可购买商品、可开通订阅服务及价格/周期。购买在文财模拟银行真实记账扣款，物流与会员权益为沙箱模拟，不联系外部商家。生日送礼等任务可选商品并预约送达。',inputSchema:z.object({kind:z.enum(['goods','subscription']).optional()}),execute:async a=>({products:LIFE_PRODUCTS.filter(p=>!a.kind||p.kind===a.kind),rules:{delivery:'立即送出预计48小时送达；预约48小时至90天内',returns:'未发货原路退款；发货后至签收后7天可退货，24小时模拟验收退款',subscriptions:'先付一期，自动续费须明确授权次数与上限，可取消后续扣费'}})})
-export const purchaseLifeProduct=defineBankTool({name:'buy_life_product',kind:'write',baseRisk:'yellow',description:'购买生活商品，确认并验证后从本人储蓄卡即时扣款，生成持久订单。需商品ID、数量、收件人/手机号/地址、立即送出或预约送达。不要推断地址或时间；可用于生日送礼等跨场景DAG。仅模拟物流，不承诺真实发货。',inputSchema:purchase,
-  prepare:async(a,ctx)=>{const p=lifeProduct(a.productId,'goods'),card=await source(ctx.userId,a),dates=deliveryDates(a.delivery,await simNow());return {...a,cardId:card.id,fromAccountId:card.accountId,cardName:cardLabel(card),amountCents:Math.round(p.price*100)*a.quantity,deliveryAt:dates.deliveryAt.toISOString(),dispatchAt:dates.dispatchAt.toISOString()}},
+export const purchaseLifeProduct=defineBankTool({name:'buy_life_product',kind:'write',baseRisk:'yellow',description:'购买生活商品，确认并验证后从本人储蓄卡即时扣款，生成持久订单。需商品ID、数量、收件信息（优先用list_addresses里的常用地址addressId，否则提供收件人/手机号/地址）、立即送出或预约送达。不要推断地址或时间；可用于生日送礼等跨场景DAG。仅模拟物流，不承诺真实发货。',inputSchema:purchase,
+  prepare:async(a,ctx)=>{const p=lifeProduct(a.productId,'goods'),card=await source(ctx.userId,a),filled=await filledDelivery(ctx.userId,a.delivery),dates=deliveryDates(filled,await simNow());return {...a,delivery:filled,cardId:card.id,fromAccountId:card.accountId,cardName:cardLabel(card),amountCents:Math.round(p.price*100)*a.quantity,deliveryAt:dates.deliveryAt.toISOString(),dispatchAt:dates.dispatchAt.toISOString()}},
   summarize:async args=>{const a=args as Purchase;return {title:'确认购买生活商品',fields:[{label:'商品',value:`${lifeProduct(a.productId).name} × ${a.quantity}`},{label:'金额',value:`¥${(a.amountCents/100).toFixed(2)}`},{label:'付款卡',value:a.cardName},{label:'收件人',value:`${a.delivery.recipient} ${a.delivery.phone}`},{label:'收货地址',value:a.delivery.address},{label:'配送',value:`${a.delivery.mode==='immediate'?'立即送出':'预约送达'} · 预计${lifeTime(a.deliveryAt)}`},{label:'退款规则',value:'未发货可原路退款；发货后至签收后7天可退货，模拟验收24小时'}] }},
   execute:async(a,ctx)=>buyLifeProduct(ctx,a as Purchase,await simNow()),
 })
@@ -33,4 +42,11 @@ export const startLifeSubscription=defineBankTool({name:'subscribe_life_service'
   execute:async(a,ctx)=>subscribeLifeService(ctx,a as Subscription,await simNow()),
 })
 export const queryLifeSubscriptions=defineBankTool({name:'list_life_subscriptions',kind:'read',baseRisk:'green',description:'查询本人订阅开通/取消状态、服务有效期、付款卡、下次扣费和剩余续费次数，含生活商城与已有订阅。取消用cancel_subscription。',inputSchema:z.object({}),execute:async(_a,ctx)=>({subscriptions:await listLifeSubscriptions(ctx.userId,await simNow())})})
-export const LIFE_TOOLS=[listLifeCatalog,purchaseLifeProduct,queryLifeOrders,refundLifeOrder,startLifeSubscription,queryLifeSubscriptions]
+export const listSavedAddresses=defineBankTool({name:'list_addresses',kind:'read',baseRisk:'green',description:'查询本人在生活商城保存的常用收货地址，默认地址在最前。下单需要收件信息时先调用：只有一个地址或用户已指明（如“送到家里”）时直接使用对应id，多个时让用户选择，不要让用户重新输入。手机号已脱敏，下单时传addressId，由服务端填入完整信息。',inputSchema:z.object({}),
+  execute:async(_a,ctx)=>({addresses:(await listAddresses(ctx.userId)).map(a=>({id:a.id,alias:a.label,recipient:a.recipient,phoneMasked:maskPhone(a.phone),address:a.address,isDefault:a.isDefault}))})})
+export const saveDeliveryAddress=defineBankTool({name:'save_address',kind:'write',baseRisk:'yellow',description:'把用户在对话中给出的收货信息保存为常用地址，需用户在确认卡上确认。只在用户同意保存时调用；收件人、手机号、地址必须是用户原话，不得补全或推断。最多保存10个。',inputSchema:AddressInput,
+  // 手机号必须出现在本人这次对话说过的话里，防止模型编造或从别处带入
+  prepare:async(a,ctx)=>{if(!(ctx.riskText??ctx.requestText??'').replace(/\s/g,'').includes(a.phone))throw new Error('手机号必须来自用户本人的原话');return a},
+  summarize:async a=>({title:'确认保存常用地址',fields:[{label:'名称',value:a.label},{label:'收件人',value:`${a.recipient} ${a.phone}`},{label:'地址',value:a.address},{label:'设为默认',value:a.isDefault?'是':'否'}]}),
+  execute:async(a,ctx)=>saveAddress(ctx,a)})
+export const LIFE_TOOLS=[listLifeCatalog,purchaseLifeProduct,queryLifeOrders,refundLifeOrder,startLifeSubscription,queryLifeSubscriptions,listSavedAddresses,saveDeliveryAddress]

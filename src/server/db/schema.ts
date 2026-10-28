@@ -503,3 +503,17 @@ export const bankCallbackTickets = sqliteTable('bank_callback_tickets', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
+
+/** 生活商城常用收货地址：本人维护，下单时按 id 引用，避免每次重新输入 */
+export const bankAddresses = sqliteTable('bank_addresses', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  /** 用户起的名字，例如“家”“公司”“爸妈家” */
+  label: text('label').notNull(),
+  recipient: text('recipient').notNull(),
+  phone: text('phone').notNull(),
+  address: text('address').notNull(),
+  isDefault: integer('is_default', { mode: 'boolean' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})

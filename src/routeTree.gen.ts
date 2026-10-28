@@ -17,6 +17,7 @@ import { Route as SecureOperationRouteImport } from './routes/secure-operation'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
+import { Route as ApiAddressesRouteImport } from './routes/api/addresses'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
 import { Route as ApiAdminCallbacksRouteImport } from './routes/api/admin-callbacks'
 import { Route as ApiAdminProfileRouteImport } from './routes/api/admin-profile'
@@ -79,6 +80,11 @@ const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => AuthRoute,
+} as any)
+const ApiAddressesRoute = ApiAddressesRouteImport.update({
+  id: '/api/addresses',
+  path: '/api/addresses',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminRoute = ApiAdminRouteImport.update({
   id: '/api/admin',
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -236,6 +243,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
+  '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/login'
     | '/register'
+    | '/api/addresses'
     | '/api/admin'
     | '/api/admin-callbacks'
     | '/api/admin-profile'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/login'
     | '/register'
+    | '/api/addresses'
     | '/api/admin'
     | '/api/admin-callbacks'
     | '/api/admin-profile'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/_auth/login'
     | '/_auth/register'
+    | '/api/addresses'
     | '/api/admin'
     | '/api/admin-callbacks'
     | '/api/admin-profile'
@@ -401,6 +413,7 @@ export interface RootRouteChildren {
   BindRoute: typeof BindRoute
   SecureOperationRoute: typeof SecureOperationRoute
   SettingsRoute: typeof SettingsRoute
+  ApiAddressesRoute: typeof ApiAddressesRoute
   ApiAdminRoute: typeof ApiAdminRoute
   ApiAdminCallbacksRoute: typeof ApiAdminCallbacksRoute
   ApiAdminProfileRoute: typeof ApiAdminProfileRoute
@@ -483,6 +496,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/register'
       preLoaderRoute: typeof AuthRegisterRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/api/addresses': {
+      id: '/api/addresses'
+      path: '/api/addresses'
+      fullPath: '/api/addresses'
+      preLoaderRoute: typeof ApiAddressesRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/admin': {
       id: '/api/admin'
@@ -667,6 +687,7 @@ const rootRouteChildren: RootRouteChildren = {
   BindRoute: BindRoute,
   SecureOperationRoute: SecureOperationRoute,
   SettingsRoute: SettingsRoute,
+  ApiAddressesRoute: ApiAddressesRoute,
   ApiAdminRoute: ApiAdminRoute,
   ApiAdminCallbacksRoute: ApiAdminCallbacksRoute,
   ApiAdminProfileRoute: ApiAdminProfileRoute,

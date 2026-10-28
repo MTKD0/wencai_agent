@@ -128,3 +128,15 @@ describe('Agent 只展示最终数据视图', () => {
     expect(html([done('get_spending_report', report())], true)).not.toContain('data-arc')
   })
 })
+
+describe('基金白名单只在想浏览时展示', () => {
+  const funds = done('list_funds', [{ code: '003376', name: '广发中债7-10年国开债指数A' }, { code: '000015', name: '华夏纯债债券A' }])
+  it('同一回复查了具体基金的详情或指标时，列表只是查找过程，不展开', () => {
+    expect(toolPresentations(parts([funds, done('get_fund_details', { code: '003376' })]))[0]).toBe('status')
+    expect(toolPresentations(parts([funds, done('get_fund_metrics', { code: '003376' })]))[0]).toBe('status')
+  })
+  it('用户只想看有哪些基金时照常展示；回复进行中先只显示进度', () => {
+    expect(toolPresentations(parts([funds]))).toEqual(['result'])
+    expect(toolPresentations(parts([funds]), true)).toEqual(['status'])
+  })
+})

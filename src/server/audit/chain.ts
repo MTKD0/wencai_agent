@@ -57,6 +57,8 @@ export type AuditType =
   | 'transfer_hold_released'
   | 'transfer_hold_cancelled'
   | 'callback_ticket'
+  // 生活商城常用地址的新增、修改、删除
+  | 'address_changed'
 
 export function hashEntry(prevHash: string, entry: AuditEntry): string {
   return createHash('sha256').update(prevHash).update(stableStringify(entry)).digest('hex')

@@ -18,7 +18,7 @@ export function FundList({ funds, onChoose }: { funds: Fund[]; onChoose?: (code:
   return <div className="fund-list">{funds.map((f) => <article className="fund-item" key={f.code}>
     <h3>{f.name} <small>{f.code} · {f.riskRating}</small></h3>
     <p>公布净值 <strong>{f.unitNav?.toFixed(4) ?? '暂无'}</strong> · {f.navDate ?? '无日期'}</p>
-    <p>{source(f.source)} · {f.stale ? '数据过期，暂停新申购' : f.purchaseStatus === 'open' && f.enabled ? '可申购' : '暂停、限额或待复核'}{f.syncError ? ' · 联网刷新失败，保留缓存' : ''}</p>
+    <p>{source(f.source)} · {f.stale ? '数据过期，暂停新申购' : !f.enabled ? '待复核' : f.purchaseStatus === 'open' ? '可申购' : f.purchaseStatus === 'limited' && f.purchaseLimitCents ? `限大额，单日上限 ${yuan(f.purchaseLimitCents)}` : '暂停申购'}{f.syncError ? ' · 联网刷新失败，保留缓存' : ''}</p>
     {onChoose && <Button className="bank-payment-secondary" onClick={() => onChoose(f.code)}>查看详情</Button>}
   </article>)}</div>
 }
@@ -39,7 +39,7 @@ export function AdviceCard({ data, onAsk }: { data: Awaited<ReturnType<typeof ge
     {data.picks.map((p) => <div className="fund-item" key={p.id}><h4>{p.name} · {p.riskRating}</h4><p>{p.note}</p><p>近一年历史收益 {p.metrics.return1yPct === null ? '数据不足' : `${p.metrics.return1yPct}%`} · 最大回撤 {p.metrics.maxDrawdownPct === null ? '数据不足' : `${p.metrics.maxDrawdownPct}%`}</p><small>{p.kind === 'fund' ? `${source(p.source)} · ${p.asOf}` : '银行理财目录 · 预期年化非收益承诺'}</small>
       {onAsk && <Button className="bank-payment-secondary" onClick={() => onAsk(`请查询${p.kind === 'fund' ? '基金' : '银行理财产品'}「${p.name}」（${p.kind === 'fund' ? '基金代码' : '产品编号'}${p.id}）的详情、风险、起购金额与流动性。仅查询，不执行交易。`)}>查看详情</Button>}</div>)}
     {!data.picks.length && <p>当前条件下没有合适候选，请调整期限、流动性需求或预算。</p>}<small>{data.disclaimer} · 文案来源：{data.source === 'ai' ? '经核验的模型说明' : '代码文案'}</small>
-    {!!data.unavailableMatches?.length && <details><summary>暂不可申购的匹配产品（只读）</summary>{data.unavailableMatches.map((p) => <p key={p.code}>{p.name} · {p.stale ? '净值过期' : !p.enabled ? '待人工复核' : p.purchaseStatus === 'limited' ? '限额，当前模拟渠道暂停新申购' : '暂停申购'}</p>)}</details>}
+    {!!data.unavailableMatches?.length && <details><summary>暂不可申购的匹配产品（只读）</summary>{data.unavailableMatches.map((p) => <p key={p.code}>{p.name} · {p.stale ? '净值过期' : !p.enabled ? '待人工复核' : p.purchaseStatus === 'limited' ? (p.purchaseLimitCents ? `限大额，单日上限 ${yuan(p.purchaseLimitCents)}，不够本次金额` : '限额，未公布上限，暂停新申购') : '暂停申购'}</p>)}</details>}
   </>}</article>
 }
 export function FundPanel({ dashboard, onAgent }: { dashboard: DashboardData; onAgent: (text: string) => void }) {

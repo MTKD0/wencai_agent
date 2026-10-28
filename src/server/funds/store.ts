@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, eq, gte, lte, max, sql } from 'drizzle-orm'
+import { and, asc, eq, gte, isNull, lte, max, sql } from 'drizzle-orm'
 import { db, schema } from '#/server/db/client'
 import { FUND_POOL, allowedFund } from './pool'
 import { cstDate, staleNav, validateSnapshot, type FundDataProvider, type FundSnapshot } from './provider'
@@ -19,7 +19,7 @@ export function ensureFundSchema() {
     ]
     for (const statement of statements) await db.$client.execute(statement)
     for (const [table, column, definition] of [
-      ['bank_funds', 'metadata_json', "TEXT NOT NULL DEFAULT '{}'"], ['bank_fund_navs', 'daily_return_e8', 'INTEGER'],
+      ['bank_funds', 'metadata_json', "TEXT NOT NULL DEFAULT '{}'"], ['bank_fund_navs', 'daily_return_e8', 'INTEGER'], ['bank_funds', 'purchase_limit_cents', 'INTEGER'],
     ]) {
       const info = await db.$client.execute(`PRAGMA table_info(${table})`)
       if (!info.rows.some((r) => r.name === column)) {
@@ -37,8 +37,10 @@ async function saveSnapshot(tx: Tx, data: FundSnapshot) {
   // A name-mismatch quarantine is never silently lifted by a later response.
   await tx.insert(schema.bankFunds).values({ code: fund.code, name: fund.name, category: fund.category, riskRating: fund.riskRating, purchaseStatus: data.purchaseStatus, redeemStatus: data.redeemStatus,
     purchaseFeeBp: Math.round(data.purchaseFeeRate * 10000), minPurchaseCents: data.minPurchaseCents, enabled: true, source: data.source, updatedAt: data.fetchedAt, metadataJson: JSON.stringify(data.metadata ?? {}),
+    purchaseLimitCents: data.purchaseStatus === 'limited' ? data.purchaseLimitCents ?? null : null,
   }).onConflictDoUpdate({ target: schema.bankFunds.code, set: {
     purchaseStatus: data.purchaseStatus, redeemStatus: data.redeemStatus, purchaseFeeBp: Math.round(data.purchaseFeeRate * 10000),
+    purchaseLimitCents: data.purchaseStatus === 'limited' ? data.purchaseLimitCents ?? null : null,
     minPurchaseCents: data.minPurchaseCents, source: data.source, updatedAt: data.fetchedAt, metadataJson: JSON.stringify(data.metadata ?? {}),
   } })
   // Chunk below SQLite variable limits. All records were validated before entering this transaction.
@@ -94,6 +96,9 @@ export function ensureFundData() {
         const current = await db.select({ date: schema.bankFundNavs.navDate, dailyReturn: schema.bankFundNavs.dailyReturnE8 }).from(schema.bankFundNavs).where(eq(schema.bankFundNavs.code, fund.code))
         const dates = new Map(current.map((n) => [n.date, n.dailyReturn]))
         const missing = fixture.navs.filter((n) => !dates.has(n.date) || (dates.get(n.date) === null && n.dailyReturnPct !== undefined))
+        // 旧库里的限大额基金没有记录单日上限：状态仍是限大额时从快照补上，不改动已刷新的其他状态
+        if (existing.purchaseStatus === 'limited' && existing.purchaseLimitCents === null && fixture.purchaseStatus === 'limited' && fixture.purchaseLimitCents)
+          await db.update(schema.bankFunds).set({ purchaseLimitCents: fixture.purchaseLimitCents }).where(and(eq(schema.bankFunds.code, fund.code), isNull(schema.bankFunds.purchaseLimitCents)))
         if (!missing.length && existing.metadataJson !== '{}') continue
         // Add missing historical records without reverting current prices, sales status, source or fees.
         await db.transaction(async (tx) => {

@@ -56,7 +56,7 @@ flowchart TB
   end
 
   subgraph BIZ["业务执行层"]
-    TOOLS["89 个银行工具<br/>read / write 分离，写操作带补偿"]
+    TOOLS["91 个银行工具<br/>read / write 分离，写操作带补偿"]
     SVC["账务服务<br/>转账 · 卡片 · 理财 / 基金 · 订阅 · 商城 · 生日 · 常设授权"]
     SANDBOX["QuickJS 沙箱<br/>账单分析代码"]
   end
@@ -160,7 +160,7 @@ src/
     guard/        输入审核：规则启发式、Qwen3Guard、组合
     verify/       回复核验：金额与尾号出处、流水联合核验、成功陈述
     genui/        生成式界面与选择模板的校验
-    tools/        银行工具定义（89 个）、runner.ts 唯一入口、输出清洗与隔离标记
+    tools/        银行工具定义（91 个）、runner.ts 唯一入口、输出清洗与隔离标记
     policy/       策略引擎（纯函数）、规则、事实采集、北京时间日累计
     confirm/      待确认动作：HMAC 完整性、执行锁、确认与回执
     planner/      DAG schema 与校验（拓扑排序、环检测）

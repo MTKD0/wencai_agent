@@ -33,7 +33,7 @@ async function clear() {
   await db.update(schema.accounts).set({ balanceCents: 2000000 }).where(eq(schema.accounts.id, account))
   await db.update(schema.users).set({ riskRating: 'R5', riskAssessedAt: '2026-10-01T00:00:00Z', lockedUntil: null }).where(eq(schema.users.id, userId))
   await db.update(schema.cards).set({ status: 'active', kind: 'debit', dailyLimitCents: 99999999 }).where(eq(schema.cards.id, card))
-  await db.update(schema.bankFunds).set({ enabled: true, purchaseStatus: 'open', purchaseFeeBp: 15 }).where(eq(schema.bankFunds.code, code))
+  await db.update(schema.bankFunds).set({ enabled: true, purchaseStatus: 'open', purchaseFeeBp: 15, purchaseLimitCents: null }).where(eq(schema.bankFunds.code, code))
   await db.delete(schema.bankFundNavs).where(and(eq(schema.bankFundNavs.code, code), inArray(schema.bankFundNavs.navDate, ['2026-10-20', '2026-10-21', '2026-10-23', '2026-10-26'])))
 }
 async function nav(date: string, value: number, fetched = '2026-10-20T12:00:00Z') {
@@ -84,6 +84,13 @@ describe('unknown NAV fund orders and existing red confirmation chain', () => {
     expect(await balance()).toBe(2000000)
     await expect(submitFundOrder(ctx, { ...input, confirmationToken: preview.confirmationToken }, now)).rejects.toThrow('红色')
     expect(await balance()).toBe(2000000)
+  })
+  it('限大额基金在公布的单日上限内可以申购，超出上限、没有公布上限都拒绝', async () => {
+    await db.update(schema.bankFunds).set({ purchaseStatus: 'limited', purchaseLimitCents: 15000 }).where(eq(schema.bankFunds.code, code))
+    await expect(previewFundOrder(ctx, input, now)).resolves.toMatchObject({ code })
+    await expect(previewFundOrder(ctx, { ...input, amountCents: 20000 }, now)).rejects.toThrow('单日累计上限 150 元')
+    await db.update(schema.bankFunds).set({ purchaseLimitCents: null }).where(eq(schema.bankFunds.code, code))
+    await expect(previewFundOrder(ctx, input, now)).rejects.toThrow('不可申购')
   })
   it('debits immediately, with no known-price shares; repeat calls cannot charge twice', async () => {
     const preview = await previewFundOrder(ctx, input, now), args = { ...input, confirmationToken: preview.confirmationToken }

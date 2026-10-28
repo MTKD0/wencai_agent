@@ -7,6 +7,8 @@ export const bankFunds = sqliteTable('bank_funds', {
   minPurchaseCents: integer('min_purchase_cents').notNull(), enabled: integer('enabled', { mode: 'boolean' }).notNull(),
   source: text('source').notNull(), updatedAt: text('updated_at').notNull(),
   metadataJson: text('metadata_json').notNull().default('{}'),
+  /** 限大额基金的单日累计购买上限（分），其他状态为空 */
+  purchaseLimitCents: integer('purchase_limit_cents'),
 })
 export const bankFundNavs = sqliteTable('bank_fund_navs', {
   code: text('code').notNull(), navDate: text('nav_date').notNull(), unitNavE4: integer('unit_nav_e4').notNull(),

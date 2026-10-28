@@ -70,3 +70,13 @@ describe('收支记录不足三个月的理财建议', () => {
     expect(expertTextViolations('本次按 50000 元筛选', budget)).toEqual([])
   })
 })
+
+describe('限大额的公布上限', () => {
+  it('从交易状态里读出“单日累计购买上限”，万元与元都按分记录；开放申购不带上限', async () => {
+    const { parseFundStatus } = await import('#/server/funds/eastmoney')
+    expect(parseFundStatus('交易状态：</span><span class="staticCell">限大额  (<span>单日累计购买上限10.00万元</span>)</span><span class="staticCell">开放赎回</span>'))
+      .toEqual({ purchaseStatus: 'limited', purchaseLimitCents: 10_000_000, redeemStatus: 'open' })
+    expect(parseFundStatus('交易状态：限大额 (单日累计购买上限10.00元) 开放赎回')).toMatchObject({ purchaseLimitCents: 1000 })
+    expect(parseFundStatus('交易状态：开放申购 开放赎回')).toEqual({ purchaseStatus: 'open', redeemStatus: 'open' })
+  })
+})

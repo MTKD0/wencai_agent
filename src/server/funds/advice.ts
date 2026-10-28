@@ -147,6 +147,10 @@ export async function describeAdvice(candidates: AdviceCandidate[], budget: Advi
     return fallback(error instanceof z.ZodError ? `format:${error.issues.map((i) => `${i.path.join('.')}/${i.code}`).slice(0, 3).join(',')}` : error instanceof SyntaxError ? 'json' : error instanceof Error && /^(?:summary|note):/.test(error.message) ? error.message : 'unavailable')
   }
 }
+/** 开放申购，或限大额且公布的单日上限够买下本次预算 */
+function purchasable(fund: { enabled: boolean; stale: boolean; purchaseStatus: string; purchaseLimitCents: number | null }, amountCents: number) {
+  return fund.enabled && !fund.stale && (fund.purchaseStatus === 'open' || (fund.purchaseStatus === 'limited' && (fund.purchaseLimitCents ?? 0) >= amountCents))
+}
 export async function getWealthAdvice(ctx: AgentContext, input: AdviceRequest, now: Date, writer?: Writer) {
   if (input.amountYuan !== undefined && !requestedAmounts(ctx.requestText ?? '').some((n) => Math.round(n * 100) === Math.round(input.amountYuan! * 100))) throw new Error('投资金额必须来自当前用户请求，不能由模型猜测')
   if (input.targetReturnPct !== undefined && !percentageTokens(ctx.requestText ?? '').includes(input.targetReturnPct)) throw new Error('目标收益必须来自当前用户请求')
@@ -189,12 +193,12 @@ export async function getWealthAdvice(ctx: AgentContext, input: AdviceRequest, n
     if (!matchingCandidates([candidate], { ...input, maxDrawdownPct: undefined }, user!.riskRating, budget.amountCents).length) continue
     candidate.metrics = fundMetrics(await fundNavs(fund.code, now))
     evaluated.push({ candidate, fund })
-    if (fund.enabled && !fund.stale && fund.purchaseStatus === 'open') candidates.push(candidate)
+    if (purchasable(fund, budget.amountCents)) candidates.push(candidate)
   }
   const selected = rankCandidates(candidates, input, user!.riskRating, budget.amountCents)
   const matchedIds = new Set(matchingCandidates(evaluated.map((r) => r.candidate), input, user!.riskRating, budget.amountCents).map((c) => c.id))
-  const unavailableMatches = evaluated.filter(({ fund }) => matchedIds.has(fund.code) && (fund.purchaseStatus !== 'open' || !fund.enabled || fund.stale))
-    .map(({ fund: f }) => ({ code: f.code, name: f.name, purchaseStatus: f.purchaseStatus, stale: f.stale, enabled: f.enabled, investmentProfile: f.investmentProfile }))
+  const unavailableMatches = evaluated.filter(({ fund }) => matchedIds.has(fund.code) && !purchasable(fund, budget.amountCents))
+    .map(({ fund: f }) => ({ code: f.code, name: f.name, purchaseStatus: f.purchaseStatus, purchaseLimitCents: f.purchaseLimitCents, stale: f.stale, enabled: f.enabled, investmentProfile: f.investmentProfile }))
   if (!selected.length) conflicts.push(unavailableMatches.length ? 'matching_products_unavailable' : 'no_preference_match')
   const bestHistorical = Math.max(...selected.map((c) => c.metrics.return1yPct ?? -Infinity))
   if (input.targetReturnPct !== undefined && (bestHistorical === -Infinity || input.targetReturnPct > bestHistorical)) conflicts.push('target_not_supported_by_history')

@@ -18,9 +18,9 @@ const base: AdviceCandidate = { id: 'sample', name: '名称不能送入模型', 
   investmentProfile: { assetClass: 'domestic_equity', style: 'broad_market', suggestedHorizonDays: 1095 } }
 
 describe('expanded curated universe and preference boundaries', () => {
-  it('ships dated validated histories for all 21 products across multiple institutions and directions', async () => {
-    expect(FUND_POOL).toHaveLength(21)
-    expect(FUND_POOL.filter((f) => f.category === 'bond')).toHaveLength(8)
+  it('ships dated validated histories for all 38 products across multiple institutions and directions', async () => {
+    expect(FUND_POOL).toHaveLength(38)
+    expect(FUND_POOL.filter((f) => f.category === 'bond')).toHaveLength(12)
     expect(new Set(FUND_POOL.map((f) => f.assetClass)).size).toBe(5)
     const institutions = new Set<string>()
     for (const fund of FUND_POOL) {
@@ -77,9 +77,11 @@ describe('same customer receives different preference-matched advice', () => {
     const result = await getWealthAdvice(ctx, { ...request, styles: [style] }, now, offline)
     expect(result.status).toBe('advice')
     if (!('source' in result)) throw new Error('No advice returned')
-    expect(result.source).toBe('rule'); expect(result.picks.some((p) => p.id === expected)).toBe(true)
-    expect(result.picks.every((p) => p.investmentProfile?.style === style)).toBe(true)
-    expect(result.picks).toHaveLength(1)
+    // 2026-10-28 扩充后每个方向有多只基金：只要求挑出的都属于该方向，而不是固定的默认几只
+    const sameStyle: string[] = FUND_POOL.filter((f) => f.style === style).map((f) => f.code)
+    expect(sameStyle).toContain(expected)
+    expect(result.source).toBe('rule'); expect(result.picks.length).toBeGreaterThanOrEqual(1); expect(result.picks.length).toBeLessThanOrEqual(3)
+    expect(result.picks.every((p) => p.investmentProfile?.style === style && sameStyle.includes(p.id))).toBe(true)
   })
   it('returns an unavailable observation list instead of suggesting a paused overseas purchase', async () => {
     const writer = vi.fn(offline)
@@ -103,6 +105,6 @@ describe('same customer receives different preference-matched advice', () => {
     expect(bonds.items.map((p) => p.code)).toEqual(expect.arrayContaining(['003376', '006961']))
     expect(bonds.items).toHaveLength(2)
     const health = await getWealthMarket(uid, MarketQuery.parse({ style: 'healthcare' }), now)
-    expect(health.items).toHaveLength(2)
+    expect(health.items).toHaveLength(FUND_POOL.filter((f) => f.style === 'healthcare').length)
   })
 })

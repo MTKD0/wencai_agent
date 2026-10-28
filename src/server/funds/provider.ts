@@ -9,6 +9,8 @@ const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((s) => {
 export const SnapshotSchema = z.object({
   code: z.string().regex(/^\d{6}$/), name: z.string().min(1).max(80),
   purchaseStatus: z.enum(['open', 'limited', 'suspended']), redeemStatus: z.enum(['open', 'suspended']),
+  /** 限大额基金公布的单日累计购买上限（分）；只在 limited 时有意义 */
+  purchaseLimitCents: z.number().int().positive().max(100_000_000_000).optional(),
   purchaseFeeRate: z.number().min(0).max(.05), minPurchaseCents: z.number().int().positive().max(100_000_000),
   metadata: z.object({ institution: z.string().max(80).optional(), inceptionDate: dateSchema.optional(), scaleYiYuan: z.number().nonnegative().max(100000).optional(), scaleDate: dateSchema.optional(), endpoint: z.string().max(80).optional() }).optional(),
   navs: z.array(z.object({ date: dateSchema, unitNav: z.number().positive().lt(1000), accNav: z.number().positive().lt(1000), dailyReturnPct: z.number().gt(-100).max(10000).optional() })).min(1).max(15000),

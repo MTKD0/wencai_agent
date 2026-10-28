@@ -5,6 +5,7 @@ import { listPaymentPayees, paymentAccounts } from '#/server/payments/service'
 import { resolveTool } from '#/server/tools/bank'
 import { runBankTool } from '#/server/tools/runner'
 import { listLifeOrders, listLifeSubscriptions } from '#/server/life/service'
+import { listAddresses } from '#/server/life/addresses'
 import { simNow } from '#/server/tools/jobs'
 import { listFunds, fundDetails } from '#/server/funds/store'
 import { fundPortfolio } from '#/server/funds/trading'
@@ -40,8 +41,8 @@ export const Route = createFileRoute('/api/payments')({
           }
           if(new URL(request.url).searchParams.get('view')==='life') {
             const now=await simNow()
-            const [orders,subscriptions]=await Promise.all([listLifeOrders(session.userId,now),listLifeSubscriptions(session.userId,now)])
-            return Response.json({orders,subscriptions,serverNow:now.toISOString()},{headers:{'cache-control':'no-store'}})
+            const [orders,subscriptions,addresses]=await Promise.all([listLifeOrders(session.userId,now),listLifeSubscriptions(session.userId,now),listAddresses(session.userId)])
+            return Response.json({orders,subscriptions,addresses,serverNow:now.toISOString()},{headers:{'cache-control':'no-store'}})
           }
           const [accounts, payees] = await Promise.all([
             paymentAccounts(session.userId),
