@@ -141,18 +141,19 @@ export async function changeCreditLimit(userId: string, cardId: string, limitCen
 }
 
 type Transaction = Parameters<Parameters<DB['transaction']>[0]>[0]
+/** 借记卡当天（北京时间）已转出金额：转账与信用卡还款都占用卡的每日转出限额，本人互转也算 */
+export async function cardDailySpent(reader: Pick<DB, 'select'>, accountId: string, now: Date) {
+  const start = new Date(Math.floor((now.getTime() + 8 * 3600_000) / 86_400_000) * 86_400_000 - 8 * 3600_000)
+  const rows = await reader.select().from(schema.transactions).where(and(eq(schema.transactions.accountId, accountId), gte(schema.transactions.occurredAt, start), lt(schema.transactions.occurredAt, new Date(start.getTime() + 86400_000))))
+  return rows.filter((r) => r.amountCents < 0 && ['转账', '信用卡还款'].includes(r.category)).reduce((sum, r) => sum - r.amountCents, 0)
+}
 /** 在扣款事务内检查卡片，避免确认后冻结仍能扣款；无卡资金账户沿用原账户规则。 */
 export async function assertDebitAccount(tx: Transaction, accountId: string, amountCents = 0, now = new Date()) {
   const [card] = await tx.select().from(schema.cards).where(eq(schema.cards.accountId, accountId))
   if (!card) return
   if (card.kind !== 'debit') throw new Error('信用卡不支持普通转账，请使用信用卡还款')
   if (card.status !== 'active') throw new Error(`尾号${card.last4}已冻结或挂失`)
-  if (amountCents) {
-    const start = new Date(Math.floor((now.getTime() + 8 * 3600_000) / 86_400_000) * 86_400_000 - 8 * 3600_000)
-    const rows = await tx.select().from(schema.transactions).where(and(eq(schema.transactions.accountId, accountId), gte(schema.transactions.occurredAt, start), lt(schema.transactions.occurredAt, new Date(start.getTime() + 86400_000))))
-    const spent = rows.filter((r) => r.amountCents < 0 && ['转账', '信用卡还款'].includes(r.category)).reduce((sum, r) => sum - r.amountCents, 0)
-    if (spent + amountCents > card.dailyLimitCents) throw new Error(`尾号${card.last4}超过每日转出限额`)
-  }
+  if (amountCents && await cardDailySpent(tx, accountId, now) + amountCents > card.dailyLimitCents) throw new Error(`尾号${card.last4}超过每日转出限额`)
 }
 
 export async function saveCardRemark(userId: string, cardId: string, remark: string) {

@@ -8,8 +8,9 @@
  * - bank.ts 的 BANK_TOOLS 合并基础、扩展与规划工具；仿真控制另行导出
  */
 import { createHash, randomUUID } from 'node:crypto'
+import { isHeldTransfer } from '#/lib/fraud'
 import { settleTransfer, reverseTransfer, transferSummary } from '#/server/payments/service'
-import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
 import { businessMonth } from '#/lib/dashboard'
@@ -17,7 +18,9 @@ import { defineBankTool } from './define'
 import { sumYuan } from './totals'
 import type { AgentContext } from '#/server/agent/context'
 import { runDueJobs, simNow } from './jobs'
-import { assertDebitAccount } from '#/server/cards/service'
+import { assertDebitAccount, cardDailySpent } from '#/server/cards/service'
+import { transferActivity } from '#/server/policy/transfer-activity'
+import { LIMITS } from '#/server/policy/rules'
 import { rollbackInvestment } from '#/server/payments/investment-rollback'
 import { cancelLifeSubscription, lifeSubscriptionChangeSummary } from '#/server/life/service'
 
@@ -430,61 +433,49 @@ export const resolveProduct = defineBankTool({
 
 export const checkTransferLimit = defineBankTool({
   name: 'check_transfer_limit',
-  description: '检查转账额度：单笔上限、今日剩余额度。返回 allowed=false 时附带原因。',
+  description: '检查给他人转账的额度与验证要求，口径与风控规则一致：每张借记卡有每日转出限额（硬上限，超过不能转）；今日给他人累计超过1000元或单笔超过3000元需要强验证（不是禁止）；10分钟内转账过于频繁会被熔断。本人账户互转和信用卡还款不计入1000元日累计。可传fromAccountId只查这张卡。',
   baseRisk: 'green',
   kind: 'read',
   inputSchema: z.object({
     amountCents: z.number().int().positive(),
     payeeId: z.string().optional(),
+    fromAccountId: z.string().optional(),
   }),
-  execute: async ({ amountCents, payeeId }, ctx) => {
-    const SINGLE_LIMIT = 5_000_000 // ¥50,000 单笔（分）
-    const DAILY_LIMIT = 20_000_000 // ¥200,000 日累计（分）
+  // 阈值与日累计直接复用策略引擎（北京时间自然日），避免这里报的额度和实际确认时的要求对不上
+  execute: async ({ amountCents, payeeId, fromAccountId }, ctx) => {
     const now = await simNow()
-    const startOfDay = new Date(now)
-    startOfDay.setHours(0, 0, 0, 0)
-    const accs = await db
-      .select({ id: schema.accounts.id })
-      .from(schema.accounts)
-      .where(eq(schema.accounts.userId, ctx.userId))
-    const todayRows = await db
-      .select()
-      .from(schema.transactions)
-      .where(
-        and(
-          inArray(schema.transactions.accountId, accs.map((a) => a.id)),
-          eq(schema.transactions.category, '转账'),
-          lt(schema.transactions.amountCents, 0),
-          gte(schema.transactions.occurredAt, startOfDay),
-        ),
-      )
-    const dailySpent = todayRows.reduce((s, t) => s + (-t.amountCents), 0)
-    const dailyRemaining = Math.max(0, DAILY_LIMIT - dailySpent)
+    const { dailyOutgoingCents, recentTransferCount } = await transferActivity(ctx.userId, now)
+    const cardRows = await db.select({ accountId: schema.cards.accountId, last4: schema.cards.last4, status: schema.cards.status, dailyLimitCents: schema.cards.dailyLimitCents })
+      .from(schema.cards).where(and(eq(schema.cards.userId, ctx.userId), eq(schema.cards.kind, 'debit'), ...(fromAccountId ? [eq(schema.cards.accountId, fromAccountId)] : [])))
+    if (fromAccountId && !cardRows.length) throw new Error('付款卡不存在或不属于当前用户')
+    const cards = await Promise.all(cardRows.map(async (c) => {
+      const spent = await cardDailySpent(db, c.accountId, now)
+      const remaining = c.status === 'active' ? Math.max(0, c.dailyLimitCents - spent) : 0
+      return { accountId: c.accountId, last4: c.last4, status: c.status, dailyLimit: yuan(c.dailyLimitCents), spentToday: yuan(spent), remainingToday: yuan(remaining), enough: remaining >= amountCents }
+    }))
     const reasons: string[] = []
-    if (amountCents > SINGLE_LIMIT) reasons.push(`超过单笔上限 ${fmt(SINGLE_LIMIT)}`)
-    if (amountCents > dailyRemaining) reasons.push(`超过今日剩余额度 ${fmt(dailyRemaining)}`)
+    if (!cards.some((c) => c.enough)) reasons.push(fromAccountId ? '超过这张卡今日剩余转出限额' : '所有借记卡今日剩余转出限额都不够')
+    if (recentTransferCount >= LIMITS.burstTransfers) reasons.push('10分钟内转账过于频繁，已触发风控熔断，请稍后再试')
+    const verificationReasons: string[] = []
+    if (dailyOutgoingCents + amountCents > LIMITS.dailyOutgoingCents) verificationReasons.push(`今日给他人累计将超过 ${fmt(LIMITS.dailyOutgoingCents)}`)
+    if (amountCents > LIMITS.singleLargeCents) verificationReasons.push(`单笔超过 ${fmt(LIMITS.singleLargeCents)}，需交易密码加指纹或人脸`)
     let isNewPayee = false
     if (payeeId) {
-      const [p] = await db
-        .select()
-        .from(schema.payees)
-        .where(and(eq(schema.payees.id, payeeId), eq(schema.payees.userId, ctx.userId)))
-      if (p) {
-        const ageDays = (now.getTime() - p.createdAt.getTime()) / DAY
-        isNewPayee = ageDays < 1
-        if (isNewPayee) reasons.push('新添加的收款人，需要额外确认')
-      }
+      const [p] = await db.select().from(schema.payees).where(and(eq(schema.payees.id, payeeId), eq(schema.payees.userId, ctx.userId)))
+      if (p) isNewPayee = (now.getTime() - p.createdAt.getTime()) / DAY < 1
     }
     return {
       allowed: reasons.length === 0,
       amountCents,
       amount: yuan(amountCents),
-      dailySpent: yuan(dailySpent),
-      dailyRemaining: yuan(dailyRemaining),
-      singleLimit: yuan(SINGLE_LIMIT),
-      dailyLimit: yuan(DAILY_LIMIT),
-      isNewPayee,
       reasons,
+      needsStrongVerification: verificationReasons.length > 0,
+      verificationReasons,
+      todayToOthers: yuan(dailyOutgoingCents),
+      strongVerificationDailyThreshold: yuan(LIMITS.dailyOutgoingCents),
+      strongVerificationSingleThreshold: yuan(LIMITS.singleLargeCents),
+      cards,
+      isNewPayee,
     }
   },
 })
@@ -733,7 +724,7 @@ export const commitTransfer = defineBankTool({
     await consumeToken(ctx, confirmationToken, 'transfer', { fromAccountId: a.fromAccountId, payeeId: a.payeeId, amountCents: a.amountCents, memo: a.memo ?? '' })
     return settleTransfer(a, ctx)
   },
-  compensate: (_a, out, ctx) => reverseTransfer(out.transactionId, ctx),
+  compensate: async (_a, out, ctx) => isHeldTransfer(out) ? (await import('#/server/payments/holds')).compensateHold(ctx, out.holdId) : reverseTransfer(out.transactionId, ctx),
 })
 
 export const commitPurchase = defineBankTool({

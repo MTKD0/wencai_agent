@@ -1,3 +1,5 @@
+import { chineseAmounts } from './chinese-amount'
+
 const NUMBER = /(?:[¥￥]\s*)?(\d+(?:,\d{3})*)(?:\.(\d+))?(?![\d.])\s*(万)?\s*(?:元|块)?/g
 const moneyVerb = /(?:转账|转|打款|汇款|支付|付款|付|申购|赎回|投资|购买)\s*$/
 export const QUESTIONNAIRE_ANSWERS_MARKER = '\n【已选问卷答案】'
@@ -27,12 +29,15 @@ function sharedTransferClauses(text: string) {
 
 /** Only explicit money expressions, not arbitrary phone numbers, dates or card tails. */
 export function requestedAmounts(text: string): number[] {
-  return [...text.matchAll(NUMBER)].flatMap((match) => {
+  // “给妈妈转五千”“两万五千元”这类中文数字说法同样算用户说出的金额
+  const chinese = chineseAmounts(text, { requireUnit: false, moneyVerb })
+  return [...chinese.map((c) => c.value).filter((amount) => amount <= 1_000_000), ...[...text.matchAll(NUMBER)].flatMap((match) => {
+    if (chinese.some((c) => match.index! >= c.index && match.index! < c.end)) return []
     const before = text.slice(Math.max(0, match.index! - 16), match.index)
     if (!/[¥￥元块万]/.test(match[0]) && !moneyVerb.test(before)) return []
     const amount = yuanOf(match[1], match[2], match[3])
     return amount !== undefined && amount > 0 && amount <= 1_000_000 ? [amount] : []
-  })
+  })]
 }
 
 /** Bind an amount to this named recipient, so two steps cannot silently swap amounts. */

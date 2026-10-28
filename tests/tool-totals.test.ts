@@ -3,7 +3,7 @@ import { subscriptionTotals, sumYuan, withAnnualCost } from '#/server/tools/tota
 import { runBankTool } from '#/server/tools/runner'
 import { resolveTool } from '#/server/tools/bank'
 import { DEMO_USER_ID } from '#/server/db/constants'
-import { checkedResponse } from '#/server/verify/response'
+import { checkedResponse, OMITTED_NOTE } from '#/server/verify/response'
 
 const ctx = { userId: DEMO_USER_ID, sessionId: `totals-${Date.now()}`, channel: 'web' as const }
 
@@ -57,5 +57,19 @@ describe('数字核验接受服务端合计', () => {
   it('没有合计时，模型心算的总余额仍被拦下；编造的数字始终被拦', () => {
     expect(checkedResponse('两个账户合计 ¥103,568.20。', [{ status: 'done', data }], false, false).blocked).toBe(true)
     expect(checkedResponse('两个账户合计 ¥999,999.00。', [{ status: 'done', data, totals: { totalBalance: 103568.2 } }], false, false).blocked).toBe(true)
+  })
+})
+
+describe('核验不通过时只删掉相关句子', () => {
+  const evidence = [{ status: 'done', data: [{ name: '工资卡', balance: 23568.2 }, { name: '储蓄账户', balance: 80000 }] }]
+  it('其余句子有出处时保留，心算的那句删掉并注明', () => {
+    const out = checkedResponse('工资卡余额 ¥23,568.20，储蓄账户余额 ¥80,000.00。两个账户合计约 ¥103,000。如需转账可以告诉我。', evidence, false, false)
+    expect(out).toMatchObject({ blocked: true, partial: true })
+    expect(out.text).toContain('¥23,568.20')
+    expect(out.text).not.toContain('103,000')
+    expect(out.text).toContain(OMITTED_NOTE)
+  })
+  it('删完几乎没内容时仍换成固定提示', () => {
+    expect(checkedResponse('合计 ¥103,000。', evidence, false, false).text).toContain('已停止展示')
   })
 })

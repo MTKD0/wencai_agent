@@ -158,7 +158,7 @@ export default function ConfirmCard(props: ConfirmCardProps) {
       {held && (
         // 冷静期：钱还没有转出。撤销只作用于这一笔，不需要再次验证
         <div className="bank-hold-notice">
-          <p>这笔转账识别到疑似诈骗话术，已为您保留 24 小时冷静期。银行工作人员可能会联系您核实；如有疑虑，请立即撤销。</p>
+          <p>这笔转账识别到疑似诈骗话术，已为您保留至少 24 小时的冷静期。银行工作人员可能会联系您核实；如有疑虑，请立即撤销。</p>
           <Button type="button" onClick={() => void cancelHold()} disabled={cancellingHold} className="bank-hold-cancel bank-lift w-full rounded-full py-2 text-sm font-semibold">
             {cancellingHold ? '正在撤销…' : '撤销这笔转账'}
           </Button>

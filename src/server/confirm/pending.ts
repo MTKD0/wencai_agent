@@ -220,7 +220,14 @@ async function confirmUnderLock(params: {
       const output = await holds.holdTransfer(ctx, row, args, shownReasons,
         facts.payeeRiskFlag === 'suspected' && facts.payeeRiskAccountId && facts.payeeRiskRevision !== undefined ? { accountId: facts.payeeRiskAccountId, revision: facts.payeeRiskRevision } : undefined)
       await audit(ctx, 'confirm_attempt', { actionId, ok: true, held: true })
-      return { ok: true, tool: row.tool, output }
+      // 计划中的转账步骤按“已登记冷静期”继续后续步骤；计划失败回滚时由工具补偿撤销这笔登记
+      let plan: import('#/server/executor/executor').PlanState | undefined
+      if (row.planId && row.nodeId) {
+        const { resumePlan } = await import('#/server/executor/service')
+        try { plan = await resumePlan(ctx, row.planId, row.nodeId, output) }
+        catch (error) { await audit(ctx, 'handoff', { actionId, planId: row.planId, reason: 'resume_failed', message: String(error) }) }
+      }
+      return { ok: true, tool: row.tool, output, planId: row.planId ?? undefined, nodeId: row.nodeId ?? undefined, plan }
     } catch (err) {
       return fail('execution_failed', err instanceof Error ? err.message : String(err))
     }

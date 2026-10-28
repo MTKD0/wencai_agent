@@ -11,7 +11,8 @@ describe('金额里的“万”', () => {
     expect(requestedAmounts('手上 5 万闲钱，三年用不上')).toEqual([50000])
     expect(requestedAmounts('投 1.5 万元，再买 8000 块的')).toEqual([15000, 8000])
     expect(requestedAmounts('2万块')).toEqual([20000])
-    expect(requestedAmounts('万一需要用钱，一万元也行')).toEqual([])
+    // “万一”不是金额；“一万元”是中文数字金额（chinese-amount.ts）
+    expect(requestedAmounts('万一需要用钱，一万元也行')).toEqual([10000])
   })
   it('转账子句同样识别：给妈妈转 1 万是 10000 元，不是 1 元', () => {
     expect(transferClauseAmounts('给妈妈转 1 万')).toMatchObject([{ recipient: '妈妈', amount: 10000 }])

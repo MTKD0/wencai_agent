@@ -43,7 +43,7 @@ export function AdminCallbacks() {
       <Metric label="冷静期中" value={String(query.data.summary.held)} note="到期前资金未转出" icon={Hourglass} />
       <Metric label="已撤销" value={String(query.data.summary.cancelled)} note="用户或回访撤销" icon={ShieldX} />
     </div>}
-    <Panel title="反诈回访" subtitle="识别到诈骗话术、用户看过劝阻仍坚持确认的转账进入 24 小时冷静期。回访结论只能撤销或提前放行这一笔，不能代用户发起交易。" action={
+    <Panel title="反诈回访" subtitle="识别到诈骗话术、用户看过劝阻仍坚持确认的转账（含计划步骤与预约转账）进入至少 24 小时的冷静期。回访结论只能撤销或提前放行这一笔，不能代用户发起交易。" action={
       <Button className="button button-outline button-sm" type="button" onClick={() => void query.refetch()} disabled={query.isFetching}>
         <RefreshCw size={14} className={query.isFetching ? 'spin' : ''} />刷新
       </Button>

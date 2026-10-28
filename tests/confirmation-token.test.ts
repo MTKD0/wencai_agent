@@ -70,10 +70,10 @@ describe('实体解析', () => {
 })
 
 describe('额度预检', () => {
-  it('超过日累计额度时 allowed=false 并说明原因', async () => {
+  it('超过借记卡每日转出限额时 allowed=false 并说明原因', async () => {
     const r = (await checkTransferLimit.execute({ amountCents: 300_000_00 }, ctxA)) as { allowed: boolean; reasons: string[] }
     expect(r.allowed).toBe(false)
-    expect(r.reasons.join()).toContain('今日剩余额度')
+    expect(r.reasons.join()).toContain('转出限额')
   })
 })
 

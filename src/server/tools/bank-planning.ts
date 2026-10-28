@@ -3,6 +3,7 @@
  * 与 bank-extended.ts 共用令牌与校验辅助函数，口径一致。
  */
 import { randomUUID } from 'node:crypto'
+import { isHeldTransfer } from '#/lib/fraud'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '#/server/db/client'
@@ -425,6 +426,7 @@ export const commitScheduledTransfer = defineBankTool({
     return { taskId, status: 'pending', dueAt: iso, amount: yuan(amountCents) }
   },
   compensate: async (_args, out, ctx) => {
+    if (isHeldTransfer(out)) return (await import('#/server/payments/holds')).compensateHold(ctx, out.holdId)
     await (await import('#/server/automation/service')).cancelScheduled(ctx.userId, (out as { taskId: string }).taskId)
   },
 })

@@ -1,4 +1,5 @@
 import { settleTransfer, reverseTransfer, transferSummary } from '#/server/payments/service'
+import { isHeldTransfer } from '#/lib/fraud'
 import { PAYMENT_TOOLS } from './payments'
 import { CARD_TOOLS } from './cards'
 import { SUBSCRIPTION_TOOLS } from './subscriptions'
@@ -204,7 +205,8 @@ export const transfer = defineBankTool({
   factsHint: (a) => ({ payeeId: a.payeeId }),
   summarize: (a, ctx) => transferSummary({ ...a, amountCents: Math.round(a.amount * 100) }, ctx),
   execute: (a, ctx) => settleTransfer({ ...a, amountCents: Math.round(a.amount * 100) }, ctx),
-  compensate: (_a, out, ctx) => reverseTransfer(out.transactionId, ctx),
+  // 进了冷静期的转账没有流水，回滚时撤销登记
+  compensate: async (_a, out, ctx) => isHeldTransfer(out) ? (await import('#/server/payments/holds')).compensateHold(ctx, out.holdId) : reverseTransfer(out.transactionId, ctx),
 })
 
 const setCardStatus = async (ctx: AgentContext, cardId: string, status: 'active' | 'locked' | 'lost') => {

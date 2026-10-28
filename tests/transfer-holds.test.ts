@@ -105,3 +105,32 @@ describe('劝阻后的冷静期', () => {
     expect(await balance()).toBe(400_000)
   })
 })
+
+describe('冷静期覆盖预约转账与多步计划', () => {
+  it('预约转账命中话术：不建定时任务，登记在预约时间与 24 小时两者较晚时执行', async () => {
+    const { simNow } = await import('#/server/tools/jobs')
+    const executeAt = new Date((await simNow()).getTime() + 3 * 86_400_000).toISOString()
+    const preview = await runBankTool(resolveTool('preview_scheduled_transfer')!, { fromAccountId: source, payeeId, amountCents: 40_000, executeAt }, ctx(scamText))
+    if (preview.status !== 'done') throw new Error(JSON.stringify(preview))
+    const token = (preview.data as { confirmationToken: string }).confirmationToken
+    const outcome = await runBankTool(resolveTool('commit_scheduled_transfer')!, { fromAccountId: source, payeeId, amountCents: 40_000, executeAt, confirmationToken: token }, ctx(scamText))
+    if (outcome.status !== 'needs_confirmation') throw new Error(JSON.stringify(outcome))
+    expect(outcome.reasons.some((r) => r.startsWith(FRAUD_REASON_PREFIX))).toBe(true)
+    const result = await confirmPending({ ctx: ctx(), actionId: outcome.actionId, resolveTool, stepUp: await face(`action:${outcome.actionId}`) })
+    if (!result.ok) throw new Error(JSON.stringify(result))
+    expect(result.output).toMatchObject({ status: 'held', releaseAt: executeAt, amountCents: 40_000 })
+    expect(await db.select().from(schema.scheduledTasks).where(eq(schema.scheduledTasks.userId, uid))).toEqual([])
+    expect((await listCallbackTickets()).find((t) => t.actionId === outcome.actionId)).toMatchObject({ status: 'open' })
+  })
+  it('计划回滚时撤销冷静期登记；已执行的按流水冲正', async () => {
+    const pending = await confirmScamTransfer()
+    await transfer.compensate!({ fromAccountId: source, payeeId, amount: 500 }, pending.output as never, ctx())
+    expect(await holdForAction(uid, pending.actionId)).toMatchObject({ status: 'cancelled' })
+
+    const released = await confirmScamTransfer()
+    await releaseDueHolds(uid, new Date(Date.parse(released.output.releaseAt) + 1000))
+    expect(await balance()).toBe(950_000)
+    await transfer.compensate!({ fromAccountId: source, payeeId, amount: 500 }, released.output as never, ctx())
+    expect(await balance()).toBe(1_000_000)
+  })
+})

@@ -1,5 +1,6 @@
 import { normalizeAmount as normalize } from './amount'
 import { derivedAmountAt } from './transactions'
+import { chineseAmounts } from '#/lib/chinese-amount'
 
 /**
  * 回复文本数字校验（防幻觉）：
@@ -43,8 +44,15 @@ export function verifyNumbers(text: string, evidence: Set<string>, sourceValues:
   for (const m of text.matchAll(CARD_TAIL_RE)) {
     if (!evidence.has(m[1])) violations.push({ text: m[0], kind: 'card_tail' })
   }
+  // 中文数字金额（“五万二千元”“3千元”）同样要有出处；它们覆盖的位置不再按阿拉伯数字规则重复检查
+  const chinese = chineseAmounts(text, { requireUnit: true })
+  for (const c of chinese) {
+    if (!evidence.has(normalize(c.value)) && !derivedAmountAt(text, c.index, c.value, sourceValues)) violations.push({ text: c.raw, kind: 'amount' })
+  }
   for (const m of text.matchAll(AMOUNT_RE)) {
     const raw = m[0]
+    const start = m.index! + raw.search(/\S/)
+    if (chinese.some((c) => start >= c.index && start < c.end)) continue
     // 只校验明确是金额的数字（带货币符号或单位），避免误伤日期、序号
     if (!/[¥￥元块万]/.test(raw)) continue
     const value = Math.round(Number(`${m[1].replace(/,/g, '')}.${m[2] ?? '0'}`) * (m[3] ? 10_000 : 1) * 100) / 100
