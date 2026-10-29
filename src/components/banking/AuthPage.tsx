@@ -79,7 +79,8 @@ function AuthForm({ register, onInteract }: { register: boolean; onInteract: () 
     [sent, setSent] = useState(false),
     [busy, setBusy] = useState(false)
   const [error, setError] = useState(''),
-    [cooldown, setCooldown] = useState(0)
+    [cooldown, setCooldown] = useState(0),
+    [demoCode, setDemoCode] = useState('')
   useEffect(() => {
     if (!cooldown) return
     const timer = setTimeout(() => setCooldown((value) => value - 1), 1000)
@@ -97,6 +98,14 @@ function AuthForm({ register, onInteract }: { register: boolean; onInteract: () 
       if (result.error) throw new Error(result.error.message ?? '发送失败')
       setSent(true)
       setCooldown(60)
+      // 演示环境没有短信通道：演示账号和未注册号码的验证码由服务端直接给出并自动填入
+      const demo = await fetch('/api/demo-login-code', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: meta.submissionNumber }),
+      }).then((res) => (res.ok ? (res.json() as Promise<{ code: string }>) : undefined)).catch(() => undefined)
+      setDemoCode(demo?.code ?? '')
+      if (demo?.code) setCode(demo.code)
     } catch (error) {
       setError(error instanceof Error ? error.message : '连接失败，请重试')
     } finally {
@@ -212,6 +221,7 @@ function AuthForm({ register, onInteract }: { register: boolean; onInteract: () 
                 onClick={() => {
                   setSent(false)
                   setCode('')
+                  setDemoCode('')
                   setError('')
                 }}
               >
@@ -226,6 +236,11 @@ function AuthForm({ register, onInteract }: { register: boolean; onInteract: () 
                 {cooldown ? `${cooldown}s 后重发` : '重新发送'}
               </Button>
             </div>
+          )}
+          {sent && demoCode && (
+            <p className="bank-auth-demo-code" role="status">
+              演示环境未接入短信，验证码 <b>{demoCode}</b> 已自动填入
+            </p>
           )}
         </div>
         {error && (

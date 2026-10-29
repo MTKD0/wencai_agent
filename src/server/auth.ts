@@ -11,6 +11,7 @@ import { resolvePhoneNumber } from '#/lib/phone-number'
 import { schema } from '#/server/db/client'
 import { recordPhoneLogin } from '#/server/auth/onboarding'
 import { recordDemoLoginCode, runtimeLog } from '#/server/logging/runtime'
+import { rememberDemoLoginCode } from '#/server/auth/demo-login'
 
 /**
  * 认证实例。仅负责「你是谁」，不涉及任何银行业务授权。
@@ -81,7 +82,7 @@ export const auth = betterAuth({
     phoneNumber({
       otpLength: 6,
       expiresIn: 300,
-      // 非演示模式必须配置短信；演示登录码可在后台实时日志中查看。
+      // 非演示模式必须配置短信；演示登录码可在后台实时日志中查看，演示账号与未注册号码的还会显示在登录页。
       sendOTP: async ({ phoneNumber: phone, code }) => {
         try {
           if (env.SMS_DELIVERY_URL) {
@@ -91,6 +92,7 @@ export const auth = betterAuth({
             if (process.env.NODE_ENV !== 'production') console.log(`[auth] 演示登录验证码 ${phone.slice(0, 3)}****${phone.slice(-4)}: ${code}`)
           } else throw new Error('登录短信通道尚未配置')
           recordDemoLoginCode(phone, code)
+          if (env.AUTH_DEMO_MODE) await rememberDemoLoginCode(phone, code)
         } catch (error) {
           runtimeLog('error', 'auth', error instanceof Error ? error.message : '登录验证码发送失败')
           throw error

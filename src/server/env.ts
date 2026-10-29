@@ -38,6 +38,11 @@ const EnvSchema = z.object({
   ADMIN_TOKEN: z.string().min(24).optional(),
   // 后台工作人员账号：用户名:密码:姓名:agent|supervisor，多个用逗号分隔（见 admin/staff.ts）
   ADMIN_STAFF_ACCOUNTS: z.string().optional(),
+
+  // 对话接口限流（见 security/chat-rate.ts）：单用户每分钟、每天，全站每天
+  CHAT_RATE_PER_MINUTE: z.coerce.number().int().positive().default(12),
+  CHAT_RATE_PER_DAY: z.coerce.number().int().positive().default(300),
+  CHAT_GLOBAL_PER_DAY: z.coerce.number().int().positive().default(5000),
 })
 
 export const env = EnvSchema.parse(process.env)

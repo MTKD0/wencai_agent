@@ -17,6 +17,23 @@
 .auth-code-control {
   min-width: 0;
 }
+.bank-auth-demo-code {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #eef0ff;
+  color: #3d40b8;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.bank-auth-demo-code b {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+html.dark .bank-auth-demo-code {
+  background: #23254a;
+  color: #c9caff;
+}
 
 /* Same breakpoint as DESKTOP_QUERY, including narrow windows on a desktop pointer. */
 @media (min-width: 1024px), (min-width: 768px) and (hover: hover) and (pointer: fine) {
@@ -325,6 +342,10 @@
   }
   .bank-auth-layout .bank-auth-code-actions {
     min-height: 24px;
+  }
+  .bank-auth-stage .bank-auth-layout .bank-auth-demo-code {
+    background: #1f2040;
+    color: var(--auth-highlight);
   }
   .bank-auth-stage .bank-auth-layout .bank-text-button {
     color: var(--auth-highlight);

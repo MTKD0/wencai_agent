@@ -28,6 +28,7 @@ export type AuditType =
   | 'injection_redacted'
   | 'output_verification'
   | 'circuit_breaker'
+  | 'chat_rate_limited'
   | 'handoff'
   // 银行管理后台的人工操作
   | 'admin_command'

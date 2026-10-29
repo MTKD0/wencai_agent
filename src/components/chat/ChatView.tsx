@@ -20,6 +20,7 @@ import { AgentProgress } from './AgentProgress'
 import { agentStage, progressOnlyTool } from './progress'
 import { AgentInteractionContext, AgentInteractionGroup } from './AgentInteraction'
 import { interactionSnapshot, InteractionMemory, operationMessage, type AgentMessageOptions } from './interaction-message'
+import { CHAT_RATE_PREFIX } from '#/lib/chat-rate'
 
 const SUGGESTIONS = [
   { id: 'spending', label: '查一下本月支出', desktopLabel: '分析本月支出', prompt: '帮我分析本月支出并用图表展示分类', icon: ReceiptText, desktopOnly: false },
@@ -281,7 +282,7 @@ export default function ChatView({
         {stoppedNotice && !busy && <p className="bank-agent-disclaimer" role="status">{stoppedNotice}</p>}
         {(error || sendError) && (
           <div className="bank-chat-error" role="alert">
-            {sendError || '暂时无法连接文财，请稍后重新发送。'}
+            {sendError || (error?.message.startsWith(CHAT_RATE_PREFIX) ? error.message : '暂时无法连接文财，请稍后重新发送。')}
             <small>智能助手不可用时，关闭此面板仍可在首页办理转账、卡片管理，并在任务中心处理进行中的计划。</small>
             {failedConfirmation && <Button type="button" disabled={busy} className="bank-text-button" onClick={() => {
               setConfirmations((queue) => [...queue, failedConfirmation])

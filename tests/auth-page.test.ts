@@ -81,7 +81,7 @@ it('settles the illustration on first input without automatically focusing the f
 
 it('requires sending and entering an OTP, preserves verification payload and lets the user correct the phone', async () => {
   sendOtp.mockResolvedValue({})
-  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+  const fetchMock = vi.fn(async (url: string) => url === '/api/demo-login-code' ? { ok: false, json: async () => ({}) } : { ok: true, json: async () => ({}) })
   vi.stubGlobal('fetch', fetchMock)
   const { container, desktopSubmit } = mount()
   const send = container.querySelector<HTMLButtonElement>('.auth-send-code')!
@@ -98,12 +98,13 @@ it('requires sending and entering an OTP, preserves verification payload and let
   expect((screen.getByLabelText('短信验证码') as HTMLInputElement).value).toBe('')
   // The cooldown remains in force when correcting the phone, as in the existing flow.
   expect(send.disabled).toBe(true)
-  expect(fetchMock).not.toHaveBeenCalled()
+  // 只查询过演示验证码，没有提交登录
+  expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/api/demo-login-code'])
 })
 
 it('submits the six-digit code through the existing login endpoint and redirects after success', async () => {
   sendOtp.mockResolvedValue({})
-  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+  const fetchMock = vi.fn(async (url: string) => url === '/api/demo-login-code' ? { ok: false, json: async () => ({}) } : { ok: true, json: async () => ({}) })
   vi.stubGlobal('fetch', fetchMock)
   const { container, desktopSubmit } = mount()
   fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13800138000' } })
@@ -113,7 +114,20 @@ it('submits the six-digit code through the existing login endpoint and redirects
   expect((screen.getByLabelText('短信验证码') as HTMLInputElement).value).toBe('123456')
   fireEvent.click(desktopSubmit())
   await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: '/' }))
-  expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ phoneNumber: '13800138000', code: '123456' })
+  const login = fetchMock.mock.calls.find((call) => call[0] === '/api/auth/phone-number/verify') as unknown as [string, RequestInit]
+  expect(JSON.parse(String(login[1].body))).toEqual({ phoneNumber: '13800138000', code: '123456' })
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
+it('演示环境：服务端给出验证码时自动填入并提示', async () => {
+  sendOtp.mockResolvedValue({})
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ code: '654321' }) })))
+  const { container, desktopSubmit } = mount()
+  fireEvent.change(screen.getByLabelText('手机号'), { target: { value: '13800000000' } })
+  fireEvent.click(container.querySelector('.auth-send-code')!)
+  await waitFor(() => expect((screen.getByLabelText('短信验证码') as HTMLInputElement).value).toBe('654321'))
+  expect(screen.getByRole('status').textContent).toContain('654321')
+  expect(desktopSubmit().disabled).toBe(false)
 })
 
 it('keeps registration fields and surfaces OTP errors without losing the input', async () => {

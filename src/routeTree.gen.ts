@@ -29,6 +29,7 @@ import { Route as ApiCardNumberRouteImport } from './routes/api/card-number'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiConfirmRouteImport } from './routes/api/confirm'
 import { Route as ApiDashboardRouteImport } from './routes/api/dashboard'
+import { Route as ApiDemoLoginCodeRouteImport } from './routes/api/demo-login-code'
 import { Route as ApiHoldsRouteImport } from './routes/api/holds'
 import { Route as ApiMandatesRouteImport } from './routes/api/mandates'
 import { Route as ApiOnboardingRouteImport } from './routes/api/onboarding'
@@ -143,6 +144,11 @@ const ApiDashboardRoute = ApiDashboardRouteImport.update({
   path: '/api/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDemoLoginCodeRoute = ApiDemoLoginCodeRouteImport.update({
+  id: '/api/demo-login-code',
+  path: '/api/demo-login-code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHoldsRoute = ApiHoldsRouteImport.update({
   id: '/api/holds',
   path: '/api/holds',
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/demo-login-code': typeof ApiDemoLoginCodeRoute
   '/api/holds': typeof ApiHoldsRoute
   '/api/mandates': typeof ApiMandatesRoute
   '/api/onboarding': typeof ApiOnboardingRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/demo-login-code': typeof ApiDemoLoginCodeRoute
   '/api/holds': typeof ApiHoldsRoute
   '/api/mandates': typeof ApiMandatesRoute
   '/api/onboarding': typeof ApiOnboardingRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/api/confirm': typeof ApiConfirmRoute
   '/api/dashboard': typeof ApiDashboardRoute
+  '/api/demo-login-code': typeof ApiDemoLoginCodeRoute
   '/api/holds': typeof ApiHoldsRoute
   '/api/mandates': typeof ApiMandatesRoute
   '/api/onboarding': typeof ApiOnboardingRoute
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/demo-login-code'
     | '/api/holds'
     | '/api/mandates'
     | '/api/onboarding'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/demo-login-code'
     | '/api/holds'
     | '/api/mandates'
     | '/api/onboarding'
@@ -414,6 +425,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/api/confirm'
     | '/api/dashboard'
+    | '/api/demo-login-code'
     | '/api/holds'
     | '/api/mandates'
     | '/api/onboarding'
@@ -449,6 +461,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   ApiConfirmRoute: typeof ApiConfirmRoute
   ApiDashboardRoute: typeof ApiDashboardRoute
+  ApiDemoLoginCodeRoute: typeof ApiDemoLoginCodeRoute
   ApiHoldsRoute: typeof ApiHoldsRoute
   ApiMandatesRoute: typeof ApiMandatesRoute
   ApiOnboardingRoute: typeof ApiOnboardingRoute
@@ -607,6 +620,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/demo-login-code': {
+      id: '/api/demo-login-code'
+      path: '/api/demo-login-code'
+      fullPath: '/api/demo-login-code'
+      preLoaderRoute: typeof ApiDemoLoginCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/holds': {
       id: '/api/holds'
       path: '/api/holds'
@@ -739,6 +759,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   ApiConfirmRoute: ApiConfirmRoute,
   ApiDashboardRoute: ApiDashboardRoute,
+  ApiDemoLoginCodeRoute: ApiDemoLoginCodeRoute,
   ApiHoldsRoute: ApiHoldsRoute,
   ApiMandatesRoute: ApiMandatesRoute,
   ApiOnboardingRoute: ApiOnboardingRoute,

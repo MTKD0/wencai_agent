@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { validRequestOrigin } from '#/server/security/request-origin'
+import { originRejection, validRequestOrigin } from '#/server/security/request-origin'
 import { Route as SecureRoute } from '#/routes/api/secure-operation'
 import { Route as CardRoute } from '#/routes/api/card-number'
 import { Route as OnboardingRoute } from '#/routes/api/onboarding'
@@ -61,5 +61,21 @@ describe.each(endpoints)('%s 路由的代理回归', (_name, handler) => {
     const response = await handler({ request: request('https://evil.example') })
     expect(response.status).toBe(403)
     expect(await response.json()).toMatchObject({ message: '请求来源无效' })
+  })
+})
+
+describe('全局写接口来源校验', () => {
+  const at = (path: string, method: string, origin?: string) => new Request(`http://wencai-web:3000${path}`, {
+    method, headers: origin !== undefined ? { origin } : {}, ...(method === 'GET' ? {} : { body: '{}' }),
+  })
+  it.each(['/api/chat', '/api/confirm', '/api/payments', '/api/holds', '/api/settings', '/api/passkey/register'])('%s 跨站 POST 返回 403', async (path) => {
+    const res = originRejection(at(path, 'POST', 'https://evil.example'), publicURL)
+    expect(res?.status).toBe(403)
+  })
+  it('同源写请求、读请求、认证接口与页面不拦截', () => {
+    expect(originRejection(at('/api/chat', 'POST', publicURL), publicURL)).toBeUndefined()
+    expect(originRejection(at('/api/dashboard', 'GET', 'https://evil.example'), publicURL)).toBeUndefined()
+    expect(originRejection(at('/api/auth/phone-number/send-otp', 'POST', 'https://evil.example'), publicURL)).toBeUndefined()
+    expect(originRejection(at('/login', 'POST', 'https://evil.example'), publicURL)).toBeUndefined()
   })
 })

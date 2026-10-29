@@ -16,6 +16,10 @@ import { BatchTransferSelectionSchema } from '#/lib/batch-transfer'
 import { startSelectedTransferBatch } from '#/server/agent/batch-plan'
 import { QuestionnaireSubmissionSchema } from '#/lib/questionnaire'
 import { resolveQuestionnaireRequest } from '#/server/agent/questionnaire-context'
+import { chatRateLimiter } from '#/server/security/chat-rate'
+
+// 被限流时每个用户每分钟最多写一条审计，避免刷请求顺带刷审计表
+const rateAudited = new Map<string, number>()
 
 // 会话标识由认证会话决定，客户端传来的 id 仅用于兼容 ChatSDK 的传输协议
 const BodySchema = z.looseObject({ messages: z.array(z.any()), confirmedActionId: z.string().min(1).max(100).optional(), verificationActionId: z.string().min(1).max(100).optional(), cancelActionId: z.string().min(1).max(100).optional(), transferBatch: BatchTransferSelectionSchema.optional(), questionnaireSubmission: QuestionnaireSubmissionSchema.optional() })
@@ -30,6 +34,17 @@ export const Route = createFileRoute('/api/chat')({
           session = await requireSession(request)
         } catch {
           return Response.json({ error: 'unauthorized' }, { status: 401 })
+        }
+        const rate = chatRateLimiter.check(session.userId)
+        if (!rate.allowed) {
+          const now = Date.now()
+          if ((rateAudited.get(session.userId) ?? 0) < now - 60_000) {
+            rateAudited.set(session.userId, now)
+            runtimeLog('warn', 'agent', `对话限流：${rate.scope}`)
+            await audit({ userId: session.userId, sessionId: session.sessionId, channel: 'web' }, 'chat_rate_limited', { scope: rate.scope, retryAfterSeconds: rate.retryAfterSeconds })
+          }
+          // 纯文本正文：前端对话组件把它作为错误信息显示
+          return new Response(rate.message, { status: 429, headers: { 'retry-after': String(rate.retryAfterSeconds), 'content-type': 'text/plain; charset=utf-8' } })
         }
         const body = BodySchema.safeParse(await request.json())
         if (!body.success) return new Response('bad request', { status: 400 })
