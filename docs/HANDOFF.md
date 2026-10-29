@@ -856,7 +856,7 @@ S3–S5（对话工具、一键急停、飞书与后台）未做，按 §11.6 �
 
 ### 2026-10-29 · 提交前加固：评委登录、对话限流、来源校验 ✅
 
-- **评委登录**：后台锁定后评委看不到验证码日志。演示模式下登录页对公开演示账号和未注册号码直接显示并自动填入验证码（`server/auth/demo-login.ts`、`/api/demo-login-code`），其他已注册号码不显示。
+- **评委登录**：后台锁定后评委看不到验证码日志。演示模式下登录页对公开演示账号和未注册号码直接显示并自动填入验证码（`server/auth/demo-login.ts`、`/api/demo-login-code`），在演示模式下注册的号码记标记（`demo_registered_phone:`），退出后再登录仍显示；其他已注册号码不显示。
 - **对话限流**（SECURITY §18 #8）：`server/security/chat-rate.ts`，单用户每分钟 12、每天 300，全站每天 5000，可用环境变量调整；超限 429 + `Retry-After`，前端显示原文，写 `chat_rate_limited` 审计。
 - **来源校验**（SECURITY §18 #7）：`start.ts` 增加全局中间件 `originRejection`，`/api/` 下写请求统一校验，`/api/auth/` 交给 Better Auth。
 - **验证**：新增 `demo-login-code`、`chat-rate`、`chat-rate-route` 测试，扩充 `request-origin`、`auth-page`；浏览器在独立库上走通演示账号自动填码登录、第 4 条对话被限流并显示提示、跨站写请求 403。

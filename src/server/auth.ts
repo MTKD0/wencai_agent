@@ -11,7 +11,7 @@ import { resolvePhoneNumber } from '#/lib/phone-number'
 import { schema } from '#/server/db/client'
 import { recordPhoneLogin } from '#/server/auth/onboarding'
 import { recordDemoLoginCode, runtimeLog } from '#/server/logging/runtime'
-import { rememberDemoLoginCode } from '#/server/auth/demo-login'
+import { markDemoRegistration, rememberDemoLoginCode } from '#/server/auth/demo-login'
 
 /**
  * 认证实例。仅负责「你是谁」，不涉及任何银行业务授权。
@@ -60,8 +60,9 @@ export const auth = betterAuth({
         before: async (user, ctx) => {
           if (ctx?.path === '/phone-number/verify') return { data: { ...user, name: String(ctx.body?.registrationName ?? '').trim() } }
         },
-        after: async (user) => {
+        after: async (user, ctx) => {
           await db.insert(schema.users).values({ id: user.id, name: user.name }).onConflictDoNothing()
+          if (ctx?.path === '/phone-number/verify' && typeof ctx.body?.phoneNumber === 'string') await markDemoRegistration(ctx.body.phoneNumber)
         },
       },
     },
