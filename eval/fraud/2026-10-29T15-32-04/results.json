@@ -1,0 +1,1082 @@
+{
+  "commit": "0725bc9",
+  "database": "file:./.scratch/fraud-2026-10-29T15-32-04.db",
+  "repeats": 1,
+  "hasModel": true,
+  "stats": [
+    [
+      {
+        "layer": "keyword",
+        "recall": {
+          "count": 0,
+          "total": 35,
+          "rate": 0,
+          "ci": [
+            0,
+            0.09890426758938868
+          ]
+        },
+        "falsePositive": {
+          "count": 1,
+          "total": 20,
+          "rate": 0.05,
+          "ci": [
+            0.008881219432873136,
+            0.23613589351256675
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "layer": "behavior",
+        "recall": {
+          "count": 26,
+          "total": 35,
+          "rate": 0.7428571428571429,
+          "ci": [
+            0.5793037572935127,
+            0.8583713127344985
+          ]
+        },
+        "falsePositive": {
+          "count": 8,
+          "total": 20,
+          "rate": 0.4,
+          "ci": [
+            0.21880396741419272,
+            0.613422057684794
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "layer": "model",
+        "recall": {
+          "count": 30,
+          "total": 35,
+          "rate": 0.8571428571428571,
+          "ci": [
+            0.7062411969132573,
+            0.9373986119514649
+          ]
+        },
+        "falsePositive": {
+          "count": 0,
+          "total": 20,
+          "rate": 0,
+          "ci": [
+            0,
+            0.16113012549493322
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "layer": "keyword+behavior",
+        "recall": {
+          "count": 26,
+          "total": 35,
+          "rate": 0.7428571428571429,
+          "ci": [
+            0.5793037572935127,
+            0.8583713127344985
+          ]
+        },
+        "falsePositive": {
+          "count": 8,
+          "total": 20,
+          "rate": 0.4,
+          "ci": [
+            0.21880396741419272,
+            0.613422057684794
+          ]
+        }
+      }
+    ],
+    [
+      {
+        "layer": "all",
+        "recall": {
+          "count": 34,
+          "total": 35,
+          "rate": 0.9714285714285714,
+          "ci": [
+            0.8546659090672868,
+            0.9949386386341466
+          ]
+        },
+        "falsePositive": {
+          "count": 8,
+          "total": 20,
+          "rate": 0.4,
+          "ci": [
+            0.21880396741419272,
+            0.613422057684794
+          ]
+        }
+      }
+    ]
+  ],
+  "runs": [
+    [
+      {
+        "id": "fs-01",
+        "kind": "scam",
+        "label": "杀猪盘",
+        "text": "网上认识的男朋友带我在一个平台投资，现在要再充 5 万才能提现，帮我转给这个账户",
+        "amountYuan": 50000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-02",
+        "kind": "scam",
+        "label": "冒充客服关闭百万保障",
+        "text": "客服说我开通了百万保障，不关闭每月扣 800，让我把钱转到指定账户关闭",
+        "amountYuan": 8000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-03",
+        "kind": "scam",
+        "label": "虚假征信修复",
+        "text": "对方说我征信有问题，要转一笔钱到他们账户刷流水修复征信",
+        "amountYuan": 10000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-04",
+        "kind": "scam",
+        "label": "注销校园贷",
+        "text": "有人说我以前办过校园贷没注销，会影响征信，让我转钱过去注销",
+        "amountYuan": 6000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-05",
+        "kind": "scam",
+        "label": "冒充亲属出事",
+        "text": "我儿子打电话说出车祸了，让我赶紧打 2 万到医院的账户",
+        "amountYuan": 20000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-06",
+        "kind": "scam",
+        "label": "刷单首笔试水",
+        "text": "抖音上说点赞关注就能赚佣金，现在要充值才能接大单，先转 200",
+        "amountYuan": 200,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": true
+      },
+      {
+        "id": "fs-07",
+        "kind": "scam",
+        "label": "游戏交易保证金",
+        "text": "游戏里卖装备，买家说要我先交 2000 保证金才能解冻货款",
+        "amountYuan": 2000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-08",
+        "kind": "scam",
+        "label": "中奖交税",
+        "text": "中奖了，对方说要先交个人所得税才能领奖金，帮我转 3000",
+        "amountYuan": 3000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-09",
+        "kind": "scam",
+        "label": "快递理赔",
+        "text": "快递弄丢了，理赔的人让我先转 500 激活理赔通道再退款",
+        "amountYuan": 500,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-10",
+        "kind": "scam",
+        "label": "冒充医保监管",
+        "text": "医保卡被盗刷，对方让我配合调查，把钱转到国家监管账户",
+        "amountYuan": 30000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "redeemedTodayCents": 3000000
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee",
+          "liquidated_today"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-11",
+        "kind": "scam",
+        "label": "冒充熟人新微信",
+        "text": "老同学微信说手机掉了，用新微信找我借 5000 应急",
+        "amountYuan": 5000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-12",
+        "kind": "scam",
+        "label": "荐股入金",
+        "text": "投资群老师推荐了一只股票，让我在他们的 app 里入金，先转 2 万",
+        "amountYuan": 20000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-13",
+        "kind": "scam",
+        "label": "网贷解冻",
+        "text": "网贷说我的银行卡号填错了被冻结，要转 3000 才能放款",
+        "amountYuan": 3000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-14",
+        "kind": "scam",
+        "label": "冒充领导",
+        "text": "对方自称是我领导，让我先帮他给一个客户转 1 万",
+        "amountYuan": 10000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-15",
+        "kind": "scam",
+        "label": "虚拟币",
+        "text": "朋友介绍了个虚拟币项目，日收益 3%，让我转钱进去",
+        "amountYuan": 15000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-16",
+        "kind": "scam",
+        "label": "冒充公检法自证清白",
+        "text": "说我涉嫌一起案件，让我把存款转到他们给的账户自证清白",
+        "amountYuan": 80000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "redeemedTodayCents": 6000000,
+          "liquidBalanceCents": 8500000
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee",
+          "liquidated_today"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-17",
+        "kind": "scam",
+        "label": "海外包裹罚款",
+        "text": "网恋对象说他在国外，海关扣了包裹要交罚款，让我帮忙转 8000",
+        "amountYuan": 8000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-18",
+        "kind": "scam",
+        "label": "直播返现垫付",
+        "text": "直播间说下单返现，要先垫付 3 单，帮我转 600",
+        "amountYuan": 600,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-19",
+        "kind": "scam",
+        "label": "办卡手续费",
+        "text": "对方说可以帮我办理高额信用卡，要先交 1500 手续费",
+        "amountYuan": 1500,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-20",
+        "kind": "scam",
+        "label": "会员扣费视频指导",
+        "text": "客服开了视频会议指导我取消会员自动扣费，让我转 4000 到他给的账户",
+        "amountYuan": 4000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-21",
+        "kind": "scam",
+        "label": "冒充老师收费",
+        "text": "孩子班主任在群里说要交资料费，扫码不行让我转到这个卡号",
+        "amountYuan": 380,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": true
+      },
+      {
+        "id": "fs-22",
+        "kind": "scam",
+        "label": "养老投资",
+        "text": "社区讲座说投养老项目年息 20%，我想把这 10 万转过去",
+        "amountYuan": 100000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "liquidBalanceCents": 12000000,
+          "medianOutCents": 50000
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-23",
+        "kind": "scam",
+        "label": "机票改签",
+        "text": "航空公司打电话说航班取消，改签要先转 1200 理赔押金",
+        "amountYuan": 1200,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-24",
+        "kind": "scam",
+        "label": "深夜被催",
+        "text": "他一直在电话里催我，说今晚必须把 5 万转到这个账户，不然要被冻结",
+        "amountYuan": 50000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "beijingHour": 23,
+          "sessionAgeMinutes": 8
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee",
+          "fresh_login"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-25",
+        "kind": "scam",
+        "label": "冒充亲属换号",
+        "text": "我女儿说她换了新卡，让我把下个月生活费 3000 转到新卡上",
+        "amountYuan": 3000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-26",
+        "kind": "scam",
+        "label": "兼职押金",
+        "text": "找了个打字兼职，对方说要先交 300 押金才能派单",
+        "amountYuan": 300,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": true
+      },
+      {
+        "id": "fs-27",
+        "kind": "scam",
+        "label": "假冒电商退款",
+        "text": "网店说我买的东西有质量问题要退款，让我先转 1000 到备用金账户",
+        "amountYuan": 1000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-28",
+        "kind": "scam",
+        "label": "多笔分散转出",
+        "text": "对方让我分几笔转，先给这个账户转 9000",
+        "amountYuan": 9000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "newPayeesToday": 2
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee",
+          "many_new_payees"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-29",
+        "kind": "scam",
+        "label": "赎回后转出",
+        "text": "对方说我的理财也不安全，让我赎回后全部转到新账户保管",
+        "amountYuan": 60000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "redeemedTodayCents": 6000000,
+          "liquidBalanceCents": 6500000
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee",
+          "liquidated_today"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-30",
+        "kind": "scam",
+        "label": "熟人账户被盗用",
+        "text": "表哥 QQ 上说在外地出事了，让我转 1 万到他平时用的卡",
+        "amountYuan": 10000,
+        "context": {
+          "payeePaidBefore": true
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance"
+        ],
+        "model": true
+      },
+      {
+        "id": "fs-31",
+        "kind": "scam",
+        "label": "沉默型·大额",
+        "text": "帮我给这个账户转 5 万",
+        "amountYuan": 50000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fs-32",
+        "kind": "scam",
+        "label": "沉默型·中额",
+        "text": "转 3000 给王磊",
+        "amountYuan": 3000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fs-33",
+        "kind": "scam",
+        "label": "沉默型·赎回转出",
+        "text": "把理财赎回的钱全部转到这张卡",
+        "amountYuan": 60000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "redeemedTodayCents": 6000000,
+          "liquidBalanceCents": 6500000
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee",
+          "liquidated_today"
+        ],
+        "model": false
+      },
+      {
+        "id": "fs-34",
+        "kind": "scam",
+        "label": "沉默型·小额",
+        "text": "给这个账户转 800",
+        "amountYuan": 800,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fs-35",
+        "kind": "scam",
+        "label": "沉默型·深夜",
+        "text": "转 2 万给张经理",
+        "amountYuan": 20000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "beijingHour": 0,
+          "sessionAgeMinutes": 12
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "new_payee",
+          "fresh_login",
+          "late_night"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-01",
+        "kind": "benign",
+        "label": "日常生活费",
+        "text": "给妈妈转 500 生活费",
+        "amountYuan": 500,
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": false
+      },
+      {
+        "id": "fb-02",
+        "kind": "benign",
+        "label": "房租",
+        "text": "房东让我把这个月房租转给他",
+        "amountYuan": 3000,
+        "context": {
+          "medianOutCents": 300000
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": false
+      },
+      {
+        "id": "fb-03",
+        "kind": "benign",
+        "label": "垫付报销",
+        "text": "老板让我先垫付一下团建费用，回来报销，给酒店转 2000",
+        "amountYuan": 2000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": true,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-04",
+        "kind": "benign",
+        "label": "首次交押金",
+        "text": "刚租的房子，第一次给新房东转押金加首月房租",
+        "amountYuan": 6000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-05",
+        "kind": "benign",
+        "label": "买车首付",
+        "text": "买车交首付，转给 4S 店",
+        "amountYuan": 50000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "liquidBalanceCents": 15000000
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-06",
+        "kind": "benign",
+        "label": "份子钱",
+        "text": "同事结婚，给他转 600 份子钱",
+        "amountYuan": 600,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-07",
+        "kind": "benign",
+        "label": "还朋友钱",
+        "text": "上次聚餐朋友垫的钱，给他转 230",
+        "amountYuan": 230,
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": false
+      },
+      {
+        "id": "fb-08",
+        "kind": "benign",
+        "label": "学费",
+        "text": "给学校转下学期学费 5800",
+        "amountYuan": 5800,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "medianOutCents": 200000
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-09",
+        "kind": "benign",
+        "label": "孝敬父母",
+        "text": "过年给爸妈转 1 万",
+        "amountYuan": 10000,
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-10",
+        "kind": "benign",
+        "label": "退款查询后转账",
+        "text": "淘宝退款到账了，顺便给妹妹转 200",
+        "amountYuan": 200,
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": false
+      },
+      {
+        "id": "fb-11",
+        "kind": "benign",
+        "label": "装修尾款",
+        "text": "装修公司验收完了，转尾款 2 万",
+        "amountYuan": 20000,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5,
+          "liquidBalanceCents": 10000000
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-12",
+        "kind": "benign",
+        "label": "借给同事",
+        "text": "同事找我借 200 吃饭",
+        "amountYuan": 200,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": false
+      },
+      {
+        "id": "fb-13",
+        "kind": "benign",
+        "label": "理财到期后转给家人",
+        "text": "理财到期了，赎回的钱转 3 万给我爸买房用",
+        "amountYuan": 30000,
+        "context": {
+          "redeemedTodayCents": 3000000,
+          "liquidBalanceCents": 5000000
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance",
+          "liquidated_today"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-14",
+        "kind": "benign",
+        "label": "深夜小额",
+        "text": "晚上给室友转 45 块奶茶钱",
+        "amountYuan": 45,
+        "context": {
+          "beijingHour": 1
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": false
+      },
+      {
+        "id": "fb-15",
+        "kind": "benign",
+        "label": "首次给家教",
+        "text": "给孩子的新家教老师转这个月课时费 1600",
+        "amountYuan": 1600,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-16",
+        "kind": "benign",
+        "label": "提到客服但正常",
+        "text": "客服说退款三到五个工作日到账，我先给我妈转 500",
+        "amountYuan": 500,
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": false
+      },
+      {
+        "id": "fb-17",
+        "kind": "benign",
+        "label": "大额给配偶",
+        "text": "给老婆转 2 万存定期",
+        "amountYuan": 20000,
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "drains_balance"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-18",
+        "kind": "benign",
+        "label": "首次买二手",
+        "text": "闲鱼买二手相机，卖家是同城面交过的，转 3500",
+        "amountYuan": 3500,
+        "context": {
+          "payeePaidBefore": false,
+          "payeeAddedHoursAgo": 0.5
+        },
+        "keyword": false,
+        "behavior": true,
+        "behaviorSignals": [
+          "amount_spike",
+          "new_payee"
+        ],
+        "model": false
+      },
+      {
+        "id": "fb-19",
+        "kind": "benign",
+        "label": "刚登录转小额",
+        "text": "刚登录，给我哥转 100",
+        "amountYuan": 100,
+        "context": {
+          "sessionAgeMinutes": 2
+        },
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [],
+        "model": false
+      },
+      {
+        "id": "fb-20",
+        "kind": "benign",
+        "label": "月底还款给朋友",
+        "text": "给朋友转 5000，之前借的钱还他",
+        "amountYuan": 5000,
+        "keyword": false,
+        "behavior": false,
+        "behaviorSignals": [
+          "amount_spike"
+        ],
+        "model": false
+      }
+    ]
+  ]
+}

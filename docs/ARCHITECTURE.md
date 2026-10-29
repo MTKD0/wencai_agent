@@ -146,7 +146,7 @@ sequenceDiagram
 | 强验证 | 每卡 scrypt 交易密码 + 短信 + 模拟指纹 / 人脸；保留 WebAuthn | — | 独立安全页面完成，模型不接触任何凭据 |
 | 代码沙箱 | quickjs-emscripten | 0.32 | WASM 隔离：无文件系统、网络，限时、限内存 |
 | 基金数据 | 天天基金公开接口 + 离线快照 | — | 远程 JS 只当文本解析，绝不执行 |
-| 测试 | Vitest | 5 | 81 个测试文件、1077 项 |
+| 测试 | Vitest | 5 | 94 个测试文件、1219 项 |
 
 ---
 
@@ -183,7 +183,7 @@ src/
   components/     银行首页、聊天、确认卡、理财、商城、后台
   routes/         页面与 API（/api/chat、/api/confirm、/api/plans、/api/secure-operation 等）
 scripts/          worker、飞书机器人、MCP Server、启动脚本
-tests/            81 个测试文件（策略、确认、注入、幻觉、越权、并发、沙箱、DAG 等）
+tests/            94 个测试文件（策略、确认、注入、幻觉、越权、并发、沙箱、DAG 等）
 ```
 
 依赖方向：渠道 → agent → tools/runner → policy / confirm → 业务服务 → db。前端不引用服务端代码。已知的循环依赖与拆分计划见 [HANDOFF.md §6](HANDOFF.md)。

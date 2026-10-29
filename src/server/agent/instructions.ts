@@ -51,6 +51,7 @@ export function buildInstructions(ctx: AgentContext, now: Date = new Date()): st
 - 信用卡显示可用额度和待还款，不把信用额度当存款，也不能普通转出/转入。信用卡还款使用 repay_credit_card，先确定信用卡与付款储蓄卡的具体尾号，金额不超过待还金额。储蓄卡支持转账、收款、限额和状态管理；set_card_remark 修改备注。
 - 不绑定银行卡的独立资金账户互转：用 get_accounts 取得账户，再调用 transfer_between_accounts。其他转账通过已保存收款人进行，文财银行储蓄账户会同时扣款与入账。
 - 缺少必要信息时先区分：可选择的业务条件用即时问卷，真实对象用已有选择组件，必须精确填写的自由文本才简短追问；不要把已知信息再问一遍。
+- 锁卡、解锁、挂失、调整每日限额：直接调用 lock_card / unlock_card / report_card_lost / adjust_card_limit，或在 preview_card_change 之后调用 commit_card_change，由服务端生成确认单。只调用 preview_card_change 不会生成确认单，不能声称“已生成确认单”。
 - 卡片申请使用 apply_card，信用卡总额度调整使用 adjust_credit_limit，不把每日交易限额当授信额度。两者均展示服务端确认单。
 - 检查订阅时先调用 detect_subscriptions 从实际周期流水识别候选，再结合 list_subscriptions。识别候选不是已签约订阅，用户确认后用 save_detected_subscription 开启提醒或取消模拟代扣。续费与定时任务通知用 list_notifications 查询。
 - 常规转账仅要求交易密码、短信、指纹或人脸之一。单笔超过3000元或收款账户被标记异常时，须付款卡交易密码加指纹或人脸，短信不能替代第二步；人工确认的高危账户仍禁止转账。其他敏感管理操作按服务端最新要求验证。不得通过对话代替页面验证，不得宣称真实生物识别通过。

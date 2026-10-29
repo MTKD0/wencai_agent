@@ -5,6 +5,10 @@ import { audit } from '#/server/audit/log'
 import type { AgentContext } from '#/server/agent/context'
 
 const successClaim = /(?:已(?:经)?(?:成功)?(?:完成)?(?:转账|转出|扣款|付款|还款|申购|赎回|挂失|解锁|冻结|开卡|取消订阅)|(?:转账|还款|申购|赎回|挂失|解锁|冻结|开卡|取消订阅)(?:已)?(?:成功|完成)|(?:操作|业务|交易)已经?(?:完成|成功))/
+// 声称“已生成确认单 / 请在确认卡上核对”。本轮没有任何写工具返回确认单时，这句话就是假的（只调了预览工具最常见）
+const confirmationClaim = /(?:生成|准备|调出|发起|创建)(?:了|好)?[^。！？\n]{0,12}确认(?:单|卡片?)|确认(?:单|卡片?)已(?:经)?(?:生成|调出|准备好|发起)|请(?:您)?在[^。！？\n]{0,6}确认(?:单|卡片?)上/
+const claimsConfirmation = (text: string) => text.split(/(?<=[。！？!?\n])/).some((s) => confirmationClaim.test(s) && !/没有|没|未|无法|不能|不会|还不/.test(s))
+export const NO_CONFIRMATION_NOTE = '本轮没有生成新的确认单。如果上方已有确认卡片，请在卡片上核对；如需办理，请再说一次要办的业务。'
 const violationsOf = (text: string, evidence: unknown[]) => [...verifyNumbers(text, collectEvidence(evidence), evidence), ...verifyTransactionReferences(text, evidence)]
 export const OMITTED_NOTE = '（个别无法与银行数据核对的数字已省略，请以页面显示的数据为准。）'
 
@@ -22,6 +26,7 @@ function withoutUnverifiedSentences(text: string, evidence: unknown[]) {
 export function checkedResponse(text: string, evidence: unknown[], completed: boolean, pending: boolean) {
   const violations = violationsOf(text, evidence)
   if (successClaim.test(text) && !completed) return { text: pending ? '操作尚未执行，请在确认卡上核对并确认。' : '目前没有可核对的执行成功回执，请先查询或发起对应操作。', violations, blocked: true }
+  if (!pending && claimsConfirmation(text)) return { text: NO_CONFIRMATION_NOTE, violations, blocked: true, falseConfirmation: true }
   if (violations.length) {
     const partial = withoutUnverifiedSentences(text, evidence)
     return partial ? { text: partial, violations, blocked: true, partial: true } : { text: '部分内容未通过银行数据核对，已停止展示。请以已显示的账户数据和操作卡片为准。', violations, blocked: true }
@@ -48,7 +53,7 @@ export function verifiedOutputTransform(ctx: AgentContext, initialEvidence: unkn
           const text = buffers.get(part.id) ?? ''
           const visibleText = questionnaire && !pending ? '请在上方问卷中选择并提交答案，我会根据你的选择继续办理。' : text.slice(0, 40_000)
           const result = checkedResponse(visibleText, evidence, completed, pending)
-          if (result.blocked) await audit(ctx, 'output_verification', { blocked: true, ...('partial' in result ? { partial: true } : {}), violations: result.violations, reason: successClaim.test(text) && !completed ? 'unverified_execution_claim' : 'unsupported_numbers' })
+          if (result.blocked) await audit(ctx, 'output_verification', { blocked: true, ...('partial' in result ? { partial: true } : {}), violations: result.violations, reason: successClaim.test(text) && !completed ? 'unverified_execution_claim' : 'falseConfirmation' in result ? 'unverified_confirmation_claim' : 'unsupported_numbers' })
           controller.enqueue({ type: 'text-delta', id: part.id, text: result.text })
           buffers.delete(part.id)
         }

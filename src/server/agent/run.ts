@@ -19,6 +19,8 @@ import { runtimeLog } from '#/server/logging/runtime'
 import { env } from '#/server/env'
 import { requestedAmounts } from '#/lib/requested-amounts'
 import { simNow } from '#/server/tools/jobs'
+import { eq } from 'drizzle-orm'
+import { db, schema } from '#/server/db/client'
 
 function logAgentProgress(message: string) {
   console.info(message)
@@ -47,7 +49,9 @@ export async function runAgent(params: {
 }) {
   const { ctx } = params
   // 浏览器提交的历史工具结果不是银行凭证。数字核验只信任服务端快照与本轮结果。
-  const trustedEvidence = Object.values(getSessionData(ctx.sessionId))
+  // 本人名下银行卡的尾号是服务端事实：模型复述“尾号 8823”不应因本轮没调卡片工具而被当成编造
+  const ownCards = await db.select({ last4: schema.cards.last4 }).from(schema.cards).where(eq(schema.cards.userId, ctx.userId))
+  const trustedEvidence = [...Object.values(getSessionData(ctx.sessionId)), { ownCardTails: ownCards.map((c) => c.last4) }]
   const confirmation = params.confirmedActionId
     ? await getConfirmationResult(ctx.userId, params.confirmedActionId)
     : undefined

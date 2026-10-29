@@ -1,0 +1,2086 @@
+{
+  "meta": {
+    "startedAt": "2026-10-29T15:45:33.610Z",
+    "finishedAt": "2026-10-29T15:47:27.487Z",
+    "model": "deepseek-flash",
+    "commit": "0725bc9",
+    "database": "file:./.scratch/eval-2026-10-29T15-45-14.db",
+    "repeats": 3,
+    "guard": "规则启发式"
+  },
+  "records": [
+    {
+      "task": {
+        "id": "cd-01",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "我名下有几张银行卡？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我名下有几张银行卡？",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70007,
+            "outputTokens": 118,
+            "guardVerdict": "allow",
+            "text": "你名下共有 **3 张银行卡**：2 张储蓄卡和 1 张信用卡，目前都处于正常状态。卡片详情已在下方展示，可以左右滑动查看。",
+            "reasoningTokens": 0,
+            "ms": 3473
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-02",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把尾号 8823 的卡临时锁一下"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "lock_card",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "把尾号 8823 的卡临时锁一下",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "lock_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69736,
+            "outputTokens": 141,
+            "guardVerdict": "allow",
+            "text": "已生成临时锁卡确认单：**工资卡 · 储蓄卡 尾号 8823**，锁定期间该卡所有交易会被拒绝。\n\n请在确认卡片上核对并完成验证，确认后才会真正锁定。临时锁卡可随时解锁。",
+            "reasoningTokens": 0,
+            "ms": 2648
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "lock_card",
+            "level": "yellow",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认临时锁卡\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"影响\",\"value\":\"锁定期间该卡所有交易将被拒绝\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-03",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "尾号 1047 的信用卡挂失"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "report_card_lost",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_credit",
+              "1047"
+            ]
+          ],
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "尾号 1047 的信用卡挂失",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "report_card_lost",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69754,
+            "outputTokens": 161,
+            "guardVerdict": "allow",
+            "text": "已为**尾号 1047 的信用卡**生成挂失确认单，请在卡片上核对并确认。\n\n提醒一下：**挂失不可撤销**，这张卡之后需要重新申请新卡；当前待还金额为 **¥0.00**。",
+            "reasoningTokens": 0,
+            "ms": 2517
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "report_card_lost",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_credit\"}",
+            "summaryJson": "{\"title\":\"确认挂失\",\"fields\":[{\"label\":\"卡片\",\"value\":\"信用卡 尾号 1047\"},{\"label\":\"注意\",\"value\":\"挂失后不可撤销，需要重新办卡\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-04",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把 8823 这张卡的每日交易限额调到 2 万"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "adjust_card_limit",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ],
+          "amountYuan": 20000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "把 8823 这张卡的每日交易限额调到 2 万",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "adjust_card_limit",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69778,
+            "outputTokens": 159,
+            "guardVerdict": "allow",
+            "text": "已生成确认单：尾号 **8823**（工资卡）的每日交易限额将从 **¥50,000.00** 调整为 **¥20,000.00**。\n\n请在卡片上核对并完成安全验证，确认后才会生效。",
+            "reasoningTokens": 0,
+            "ms": 3426
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "adjust_card_limit",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_debit\",\"dailyLimit\":20000}",
+            "summaryJson": "{\"title\":\"确认调整限额\",\"fields\":[{\"label\":\"卡片\",\"value\":\"尾号 8823\"},{\"label\":\"当前限额\",\"value\":\"¥50000.00\"},{\"label\":\"调整为\",\"value\":\"¥20000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-05",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "我想再申请一张信用卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "apply_card"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我想再申请一张信用卡",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 46422,
+            "outputTokens": 128,
+            "guardVerdict": "allow",
+            "text": "您目前有一张信用卡（尾号 **1047**，额度 20000 元，暂无待还）。新申请的信用卡是独立账户，初始额度 20000 元，需要您在独立安全页面为新卡设置专属交易密码后才会发卡。\n\n需要给新卡加个备注方便区分吗？比如“备用卡”“网购卡”。您直接回复备注名即可；如果不需要备注，我就直接按无备注提交申请。",
+            "reasoningTokens": 0,
+            "ms": 2169
+          },
+          {
+            "input": "用尾号 8823 的工资卡付款",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 46625,
+            "outputTokens": 95,
+            "guardVerdict": "allow",
+            "text": "申请信用卡不需要付款卡，也不会从工资卡扣款，所以这里不用选付款卡。新卡发卡后是独立账户，初始额度 20000 元。\n\n需要给新卡加个备注方便区分吗？比如“备用卡”“网购卡”。直接回复备注名即可；不需要备注的话，我就按无备注提交申请。",
+            "reasoningTokens": 0,
+            "ms": 1864
+          },
+          {
+            "input": "没问题，就按这个办理",
+            "toolCalls": [
+              {
+                "name": "apply_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 46803,
+            "outputTokens": 97,
+            "guardVerdict": "allow",
+            "text": "申请确认单已经生成：**信用卡**，无备注，初始模拟额度 **¥20,000.00**，独立零余额账户。\n\n请在卡片上核对并确认。确认后还需要在独立安全页面为这张新卡设置专属交易密码，设置完成才会真正发卡。",
+            "reasoningTokens": 0,
+            "ms": 1852
+          }
+        ],
+        "pending": [
+          {
+            "turn": 2,
+            "tool": "apply_card",
+            "level": "yellow",
+            "argsJson": "{\"kind\":\"credit\",\"remark\":\"\"}",
+            "summaryJson": "{\"title\":\"确认申请模拟银行卡\",\"fields\":[{\"label\":\"类型\",\"value\":\"信用卡\"},{\"label\":\"备注\",\"value\":\"无备注\"},{\"label\":\"初始模拟额度\",\"value\":\"¥20,000.00\"},{\"label\":\"说明\",\"value\":\"文财模拟卡，创建独立零余额账户\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-06",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把信用卡总额度调到 5 万"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "adjust_credit_limit"
+          ],
+          "ids": [
+            [
+              "card_credit",
+              "1047"
+            ]
+          ],
+          "amountYuan": 50000,
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "把信用卡总额度调到 5 万",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "adjust_credit_limit",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70035,
+            "outputTokens": 180,
+            "guardVerdict": "allow",
+            "text": "确认单已生成：信用卡尾号 **1047** 的总额度从 **¥20,000** 调整为 **¥50,000**。\n\n请在确认卡片上核对并完成安全验证，验证通过后额度才会正式生效。",
+            "reasoningTokens": 0,
+            "ms": 2396
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "adjust_credit_limit",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_credit\",\"creditLimit\":50000}",
+            "summaryJson": "{\"title\":\"确认调整信用额度\",\"fields\":[{\"label\":\"信用卡\",\"value\":\"信用卡尾号1047\"},{\"label\":\"原额度\",\"value\":\"¥20000.00\"},{\"label\":\"新额度\",\"value\":\"¥50000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-07",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "信用卡现在还欠多少？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "信用卡现在还欠多少？",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69875,
+            "outputTokens": 122,
+            "guardVerdict": "allow",
+            "text": "你的信用卡（尾号 **1047**）当前**待还款为 ¥0.00**，可用额度 **¥20,000.00**，账单日每月 10 日、还款日每月 28 日，暂时没有欠款需要还。",
+            "reasoningTokens": 0,
+            "ms": 3494
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-08",
+        "scenario": "card",
+        "variant": "colloquial",
+        "turns": [
+          "卡丢了，快帮我挂失"
+        ],
+        "expect": {
+          "kind": "clarify"
+        },
+        "note": "名下有储蓄卡和信用卡，必须追问哪一张"
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "卡丢了，快帮我挂失",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "确认挂失哪张卡\n挂失不可撤销，挂失后需重新办卡。请选择丢失的卡片。\n哪张卡丢失了？：储蓄卡 尾号8823（备注：工资卡） / 信用卡 尾号1047 / 储蓄卡 尾号7807（备注：储蓄账户）"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70204,
+            "outputTokens": 323,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3712
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "clarified",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-09",
+        "scenario": "card",
+        "variant": "colloquial",
+        "turns": [
+          "8823 那张卡先冻一下，我怕被盗刷"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "lock_card",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ]
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "8823 那张卡先冻一下，我怕被盗刷",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "lock_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69736,
+            "outputTokens": 134,
+            "guardVerdict": "allow",
+            "text": "已为你调出**尾号 8823（工资卡）**的临时锁卡确认单，锁定期间这张卡的交易都会被拒绝。\n\n请在卡片上核对并确认，确认后立即生效；之后随时可以解锁。",
+            "reasoningTokens": 0,
+            "ms": 3049
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "lock_card",
+            "level": "yellow",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认临时锁卡\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"影响\",\"value\":\"锁定期间该卡所有交易将被拒绝\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-10",
+        "scenario": "card",
+        "variant": "multi_turn",
+        "turns": [
+          "我要挂失一张卡",
+          "尾号 8823 的"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "report_card_lost",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ],
+          "level": "red"
+        }
+      },
+      "repeat": 0,
+      "observation": {
+        "turns": [
+          {
+            "input": "我要挂失一张卡",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "确认要挂失的卡\n挂失不可撤销，之后需重新办卡。请选择具体卡片。\n要挂失哪一张卡？：储蓄卡 尾号8823（备注：工资卡） / 储蓄卡 尾号7807（备注：储蓄账户） / 信用卡 尾号1047"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70178,
+            "outputTokens": 302,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 4162
+          },
+          {
+            "input": "尾号 8823 的",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "report_card_lost",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69786,
+            "outputTokens": 140,
+            "guardVerdict": "allow",
+            "text": "已找到尾号 **8823** 的储蓄卡（备注：工资卡），挂失确认单已生成。\n\n请注意：**挂失不可撤销**，之后需要重新办卡。请在确认单上核对并完成安全验证；确认前不会执行挂失。",
+            "reasoningTokens": 0,
+            "ms": 2941
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "report_card_lost",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认挂失\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"注意\",\"value\":\"挂失后不可撤销，需要重新办卡\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-01",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "我名下有几张银行卡？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "我名下有几张银行卡？",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70007,
+            "outputTokens": 199,
+            "guardVerdict": "allow",
+            "text": "你名下共有 **3 张银行卡**，已在上方卡片中展示：\n\n- **工资卡**（储蓄卡，尾号 8823）：余额 **¥23,568.20**\n- **储蓄账户**（储蓄卡，尾号 7807）：余额 **¥80,000.00**\n- **信用卡**（尾号 1047）：额度 **¥20,000.00**，可用 **¥20,000.00**，当前无待还\n\n需要查看某张卡的完整卡号、调整限额或做其他操作，告诉我即可。",
+            "reasoningTokens": 0,
+            "ms": 3092
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-02",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把尾号 8823 的卡临时锁一下"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "lock_card",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "把尾号 8823 的卡临时锁一下",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "lock_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69734,
+            "outputTokens": 141,
+            "guardVerdict": "allow",
+            "text": "已为尾号 **8823** 的储蓄卡（备注：工资卡）生成临时锁卡确认单，锁定期间该卡所有交易会被拒绝。\n\n请在确认卡片上核对并确认，确认后即生效；之后随时可以让我帮你解锁。",
+            "reasoningTokens": 0,
+            "ms": 2663
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "lock_card",
+            "level": "yellow",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认临时锁卡\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"影响\",\"value\":\"锁定期间该卡所有交易将被拒绝\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-03",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "尾号 1047 的信用卡挂失"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "report_card_lost",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_credit",
+              "1047"
+            ]
+          ],
+          "level": "red"
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "尾号 1047 的信用卡挂失",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "report_card_lost",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69754,
+            "outputTokens": 161,
+            "guardVerdict": "allow",
+            "text": "已为你生成**信用卡尾号 1047** 的挂失确认单，请在卡片上核对并完成安全验证。\n\n提醒一下：挂失**不可撤销**，这张卡之后需要重新申请新卡；目前该卡待还金额为 0。",
+            "reasoningTokens": 0,
+            "ms": 3393
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "report_card_lost",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_credit\"}",
+            "summaryJson": "{\"title\":\"确认挂失\",\"fields\":[{\"label\":\"卡片\",\"value\":\"信用卡 尾号 1047\"},{\"label\":\"注意\",\"value\":\"挂失后不可撤销，需要重新办卡\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-04",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把 8823 这张卡的每日交易限额调到 2 万"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "adjust_card_limit",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ],
+          "amountYuan": 20000,
+          "level": "red"
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "把 8823 这张卡的每日交易限额调到 2 万",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "adjust_card_limit",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69785,
+            "outputTokens": 163,
+            "guardVerdict": "allow",
+            "text": "已生成限额调整确认单：尾号 **8823**（工资卡）的每日交易限额从 **¥50,000.00** 调整为 **¥20,000.00**。\n\n请在确认卡片上核对并完成安全验证，验证通过后才会生效。",
+            "reasoningTokens": 0,
+            "ms": 2947
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "adjust_card_limit",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_debit\",\"dailyLimit\":20000}",
+            "summaryJson": "{\"title\":\"确认调整限额\",\"fields\":[{\"label\":\"卡片\",\"value\":\"尾号 8823\"},{\"label\":\"当前限额\",\"value\":\"¥50000.00\"},{\"label\":\"调整为\",\"value\":\"¥20000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-05",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "我想再申请一张信用卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "apply_card"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "我想再申请一张信用卡",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "申请信用卡\n确认新卡备注，提交后生成申请确认单\n给这张新信用卡设置一个备注，方便和尾号1047的卡区分：网购卡 / 备用卡 / 旅行卡 / 不用备注"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 4,
+            "inputTokens": 94489,
+            "outputTokens": 512,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 5250
+          },
+          {
+            "input": "我已完成「申请信用卡」问卷（apply-credit-card），我的答案如下：\n1. 给这张新信用卡设置一个备注，方便和尾号1047的卡区分：网购卡（答案值：网购卡）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "apply_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 46866,
+            "outputTokens": 120,
+            "guardVerdict": "allow",
+            "text": "已为你生成**信用卡申请确认单**：备注「网购卡」，初始模拟额度 ¥20,000.00，新卡会开立独立的零余额账户。\n\n请在确认卡上核对并确认；确认后还需在独立安全页面为这张新卡设置专属交易密码，设置完成才会真正发卡。",
+            "reasoningTokens": 0,
+            "ms": 2515
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "apply_card",
+            "level": "yellow",
+            "argsJson": "{\"kind\":\"credit\",\"remark\":\"网购卡\"}",
+            "summaryJson": "{\"title\":\"确认申请模拟银行卡\",\"fields\":[{\"label\":\"类型\",\"value\":\"信用卡\"},{\"label\":\"备注\",\"value\":\"网购卡\"},{\"label\":\"初始模拟额度\",\"value\":\"¥20,000.00\"},{\"label\":\"说明\",\"value\":\"文财模拟卡，创建独立零余额账户\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-06",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把信用卡总额度调到 5 万"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "adjust_credit_limit"
+          ],
+          "ids": [
+            [
+              "card_credit",
+              "1047"
+            ]
+          ],
+          "amountYuan": 50000,
+          "level": "red"
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "把信用卡总额度调到 5 万",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "adjust_credit_limit",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70035,
+            "outputTokens": 181,
+            "guardVerdict": "allow",
+            "text": "确认单已生成：信用卡尾号 **1047** 的总额度由 **¥20,000** 调整为 **¥50,000**。\n\n请在卡片上核对并完成安全验证，验证通过后额度才会生效。",
+            "reasoningTokens": 0,
+            "ms": 3742
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "adjust_credit_limit",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_credit\",\"creditLimit\":50000}",
+            "summaryJson": "{\"title\":\"确认调整信用额度\",\"fields\":[{\"label\":\"信用卡\",\"value\":\"信用卡尾号1047\"},{\"label\":\"原额度\",\"value\":\"¥20000.00\"},{\"label\":\"新额度\",\"value\":\"¥50000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-07",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "信用卡现在还欠多少？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "信用卡现在还欠多少？",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69875,
+            "outputTokens": 127,
+            "guardVerdict": "allow",
+            "text": "你的信用卡（尾号 **1047**）目前**待还款为 ¥0.00**，可用额度 **¥20,000.00**，账单日每月 10 日、还款日每月 28 日。\n\n卡片详情已展示在下方，可左右滑动查看。",
+            "reasoningTokens": 0,
+            "ms": 2496
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-08",
+        "scenario": "card",
+        "variant": "colloquial",
+        "turns": [
+          "卡丢了，快帮我挂失"
+        ],
+        "expect": {
+          "kind": "clarify"
+        },
+        "note": "名下有储蓄卡和信用卡，必须追问哪一张"
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "卡丢了，快帮我挂失",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "确认挂失哪张卡\n挂失不可撤销，之后需重新办卡。请选择丢失的那张卡。\n丢失的是哪一张卡？：储蓄卡 尾号 8823（备注：工资卡） / 信用卡 尾号 1047 / 储蓄卡 尾号 7807（备注：储蓄账户）"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70205,
+            "outputTokens": 331,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3059
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "clarified",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-09",
+        "scenario": "card",
+        "variant": "colloquial",
+        "turns": [
+          "8823 那张卡先冻一下，我怕被盗刷"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "lock_card",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ]
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "8823 那张卡先冻一下，我怕被盗刷",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "lock_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69744,
+            "outputTokens": 148,
+            "guardVerdict": "allow",
+            "text": "已找到尾号 **8823** 的储蓄卡（备注：工资卡），系统已生成**临时锁卡**确认单。\n\n请在确认卡片上核对并确认。锁定期间这张卡的所有交易都会被拒绝；之后随时可以解锁，不会影响卡本身。",
+            "reasoningTokens": 0,
+            "ms": 3315
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "lock_card",
+            "level": "yellow",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认临时锁卡\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"影响\",\"value\":\"锁定期间该卡所有交易将被拒绝\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-10",
+        "scenario": "card",
+        "variant": "multi_turn",
+        "turns": [
+          "我要挂失一张卡",
+          "尾号 8823 的"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "report_card_lost",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ],
+          "level": "red"
+        }
+      },
+      "repeat": 1,
+      "observation": {
+        "turns": [
+          {
+            "input": "我要挂失一张卡",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "确认挂失哪张卡\n挂失不可撤销，挂失后需重新办卡。请选择要挂失的卡片。\n要挂失哪一张卡？：储蓄卡 尾号8823（备注：工资卡） / 储蓄卡 尾号7807（备注：储蓄账户） / 信用卡 尾号1047"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70175,
+            "outputTokens": 314,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3479
+          },
+          {
+            "input": "尾号 8823 的",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "report_card_lost",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69784,
+            "outputTokens": 133,
+            "guardVerdict": "allow",
+            "text": "已找到尾号 **8823** 的储蓄卡（备注：工资卡），挂失确认单已生成。\n\n请注意：**挂失不可撤销**，之后需要重新办卡。请在确认卡片上核对并完成安全验证。",
+            "reasoningTokens": 0,
+            "ms": 3033
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "report_card_lost",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认挂失\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"注意\",\"value\":\"挂失后不可撤销，需要重新办卡\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-01",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "我名下有几张银行卡？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ]
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "我名下有几张银行卡？",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70007,
+            "outputTokens": 208,
+            "guardVerdict": "allow",
+            "text": "你名下共有 **3 张银行卡**，已在上方卡片中展示：\n\n- **工资卡**（储蓄卡，尾号 8823）：余额 **¥23,568.20**\n- **信用卡**（尾号 1047）：额度 **¥20,000.00**，待还 **¥0.00**，可用额度 **¥20,000.00**\n- **储蓄账户**（储蓄卡，尾号 7807）：余额 **¥80,000.00**\n\n三张卡状态均为正常。需要看某张卡的完整卡号或调整限额，告诉我尾号就行。",
+            "reasoningTokens": 0,
+            "ms": 2961
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-02",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把尾号 8823 的卡临时锁一下"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "lock_card",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ]
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "把尾号 8823 的卡临时锁一下",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "lock_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69738,
+            "outputTokens": 139,
+            "guardVerdict": "allow",
+            "text": "已为你调出**尾号 8823（工资卡，储蓄卡）**的临时锁卡确认单，锁定期间这张卡的交易都会被拒绝。\n\n请在确认卡片上核对并完成验证，确认后即生效；之后随时可以解锁。",
+            "reasoningTokens": 0,
+            "ms": 2444
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "lock_card",
+            "level": "yellow",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认临时锁卡\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"影响\",\"value\":\"锁定期间该卡所有交易将被拒绝\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-03",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "尾号 1047 的信用卡挂失"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "report_card_lost",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_credit",
+              "1047"
+            ]
+          ],
+          "level": "red"
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "尾号 1047 的信用卡挂失",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "report_card_lost",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69756,
+            "outputTokens": 151,
+            "guardVerdict": "allow",
+            "text": "已为你生成**尾号 1047 信用卡**的挂失确认单，请在卡片上核对并完成安全验证。\n\n提醒一下：挂失**不可撤销**，这张卡之后需要重新申请补办。",
+            "reasoningTokens": 0,
+            "ms": 2814
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "report_card_lost",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_credit\"}",
+            "summaryJson": "{\"title\":\"确认挂失\",\"fields\":[{\"label\":\"卡片\",\"value\":\"信用卡 尾号 1047\"},{\"label\":\"注意\",\"value\":\"挂失后不可撤销，需要重新办卡\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-04",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把 8823 这张卡的每日交易限额调到 2 万"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "adjust_card_limit",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ],
+          "amountYuan": 20000,
+          "level": "red"
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "把 8823 这张卡的每日交易限额调到 2 万",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "adjust_card_limit",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69782,
+            "outputTokens": 164,
+            "guardVerdict": "allow",
+            "text": "已为你生成限额调整确认单：尾号 **8823**（工资卡）的每日交易限额从 **¥50,000.00** 调整为 **¥20,000.00**。\n\n请在确认卡片上核对并完成安全验证，验证通过后才会生效。",
+            "reasoningTokens": 0,
+            "ms": 3224
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "adjust_card_limit",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_debit\",\"dailyLimit\":20000}",
+            "summaryJson": "{\"title\":\"确认调整限额\",\"fields\":[{\"label\":\"卡片\",\"value\":\"尾号 8823\"},{\"label\":\"当前限额\",\"value\":\"¥50000.00\"},{\"label\":\"调整为\",\"value\":\"¥20000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-05",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "我想再申请一张信用卡"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "apply_card"
+          ]
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "我想再申请一张信用卡",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "申请新信用卡\n确认新卡备注名，便于日后区分卡片\n新信用卡想用什么备注名？：旅行卡 / 日常消费卡 / 第二张信用卡 / 不用备注，留空即可"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70163,
+            "outputTokens": 312,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3450
+          },
+          {
+            "input": "我已完成「申请新信用卡」问卷（apply-credit-card），我的答案如下：\n1. 新信用卡想用什么备注名？：旅行卡（答案值：旅行卡）\n请根据以上完整答案继续本次业务；需要交易或修改账户时仍须生成确认单并由我完成所需验证。",
+            "toolCalls": [
+              {
+                "name": "apply_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 2,
+            "inputTokens": 46844,
+            "outputTokens": 118,
+            "guardVerdict": "allow",
+            "text": "已为你生成**信用卡申请确认单**：备注「旅行卡」，初始模拟额度 ¥20,000.00，新卡为独立零余额账户。\n\n请在确认卡上核对并确认；确认后还需在独立安全页面为这张新卡设置专属交易密码，设置完成才会真正发卡。",
+            "reasoningTokens": 0,
+            "ms": 1894
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "apply_card",
+            "level": "yellow",
+            "argsJson": "{\"kind\":\"credit\",\"remark\":\"旅行卡\"}",
+            "summaryJson": "{\"title\":\"确认申请模拟银行卡\",\"fields\":[{\"label\":\"类型\",\"value\":\"信用卡\"},{\"label\":\"备注\",\"value\":\"旅行卡\"},{\"label\":\"初始模拟额度\",\"value\":\"¥20,000.00\"},{\"label\":\"说明\",\"value\":\"文财模拟卡，创建独立零余额账户\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-06",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "把信用卡总额度调到 5 万"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "adjust_credit_limit"
+          ],
+          "ids": [
+            [
+              "card_credit",
+              "1047"
+            ]
+          ],
+          "amountYuan": 50000,
+          "level": "red"
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "把信用卡总额度调到 5 万",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "adjust_credit_limit",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70034,
+            "outputTokens": 191,
+            "guardVerdict": "allow",
+            "text": "已生成确认单：信用卡尾号 **1047** 的授信总额度由 **¥20,000** 调整为 **¥50,000**。\n\n请在确认卡片上核对并完成强验证（交易密码 + 指纹或人脸），验证通过后额度才会生效。",
+            "reasoningTokens": 0,
+            "ms": 3168
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "adjust_credit_limit",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_credit\",\"creditLimit\":50000}",
+            "summaryJson": "{\"title\":\"确认调整信用额度\",\"fields\":[{\"label\":\"信用卡\",\"value\":\"信用卡尾号1047\"},{\"label\":\"原额度\",\"value\":\"¥20000.00\"},{\"label\":\"新额度\",\"value\":\"¥50000.00\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-07",
+        "scenario": "card",
+        "variant": "standard",
+        "turns": [
+          "信用卡现在还欠多少？"
+        ],
+        "expect": {
+          "kind": "read",
+          "tools": [
+            "list_cards",
+            "display_bank_cards",
+            "resolve_my_cards"
+          ]
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "信用卡现在还欠多少？",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "display_bank_cards",
+                "status": "done"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69875,
+            "outputTokens": 138,
+            "guardVerdict": "allow",
+            "text": "你的信用卡（尾号 **1047**）目前**待还金额为 ¥0.00**，可用额度 **¥20,000.00**，账单日每月 10 日、还款日每月 28 日。\n\n卡片详情已在上方展示，可左右滑动查看。需要我帮你查这张卡的消费明细吗？",
+            "reasoningTokens": 0,
+            "ms": 2811
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "answered",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-08",
+        "scenario": "card",
+        "variant": "colloquial",
+        "turns": [
+          "卡丢了，快帮我挂失"
+        ],
+        "expect": {
+          "kind": "clarify"
+        },
+        "note": "名下有储蓄卡和信用卡，必须追问哪一张"
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "卡丢了，快帮我挂失",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "确认要挂失的银行卡\n挂失不可撤销，之后需要重新办卡。请选择丢失的那张卡。\n哪张卡丢了？：工资卡（储蓄卡，尾号 8823） / 信用卡（尾号 1047） / 储蓄账户卡（储蓄卡，尾号 7807）"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70215,
+            "outputTokens": 336,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3600
+          }
+        ],
+        "pending": []
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "clarified",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-09",
+        "scenario": "card",
+        "variant": "colloquial",
+        "turns": [
+          "8823 那张卡先冻一下，我怕被盗刷"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "lock_card",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ]
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "8823 那张卡先冻一下，我怕被盗刷",
+            "toolCalls": [
+              {
+                "name": "resolve_my_cards",
+                "status": "done"
+              },
+              {
+                "name": "lock_card",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69747,
+            "outputTokens": 142,
+            "guardVerdict": "allow",
+            "text": "已找到尾号 **8823** 的储蓄卡（备注：工资卡），临时锁卡的确认单已经生成。\n\n请在确认卡片上核对并确认。锁定期间这张卡的所有交易都会被拒绝，之后你随时可以让我解锁。",
+            "reasoningTokens": 0,
+            "ms": 3649
+          }
+        ],
+        "pending": [
+          {
+            "turn": 0,
+            "tool": "lock_card",
+            "level": "yellow",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认临时锁卡\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"影响\",\"value\":\"锁定期间该卡所有交易将被拒绝\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    },
+    {
+      "task": {
+        "id": "cd-10",
+        "scenario": "card",
+        "variant": "multi_turn",
+        "turns": [
+          "我要挂失一张卡",
+          "尾号 8823 的"
+        ],
+        "expect": {
+          "kind": "write",
+          "tools": [
+            "report_card_lost",
+            "commit_card_change"
+          ],
+          "ids": [
+            [
+              "card_debit",
+              "8823"
+            ]
+          ],
+          "level": "red"
+        }
+      },
+      "repeat": 2,
+      "observation": {
+        "turns": [
+          {
+            "input": "我要挂失一张卡",
+            "toolCalls": [
+              {
+                "name": "list_cards",
+                "status": "done"
+              },
+              {
+                "name": "ask_questions",
+                "status": "questionnaire"
+              }
+            ],
+            "questionnaires": [
+              "选择要挂失的卡\n挂失不可撤销，之后需要重新办卡。请确认具体是哪一张。\n要挂失哪张卡？：储蓄卡 尾号8823（备注：工资卡） / 储蓄卡 尾号7807（备注：储蓄账户） / 信用卡 尾号1047"
+            ],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 70176,
+            "outputTokens": 316,
+            "guardVerdict": "allow",
+            "text": "请在上方问卷中选择并提交答案，我会根据你的选择继续办理。",
+            "reasoningTokens": 0,
+            "ms": 3773
+          },
+          {
+            "input": "尾号 8823 的",
+            "toolCalls": [
+              {
+                "name": "resolve_card",
+                "status": "done"
+              },
+              {
+                "name": "report_card_lost",
+                "status": "needs_confirmation"
+              }
+            ],
+            "questionnaires": [],
+            "notices": [],
+            "outputBlocked": false,
+            "violations": 0,
+            "violationTexts": [],
+            "steps": 3,
+            "inputTokens": 69701,
+            "outputTokens": 138,
+            "guardVerdict": "allow",
+            "text": "已为你调出**尾号 8823 储蓄卡（工资卡）**的挂失确认单。\n\n请注意：**挂失不可撤销**，之后需要重新办卡。请在确认卡上核对并完成安全验证；验证通过后卡片才会正式挂失。",
+            "reasoningTokens": 0,
+            "ms": 3270
+          }
+        ],
+        "pending": [
+          {
+            "turn": 1,
+            "tool": "report_card_lost",
+            "level": "red",
+            "argsJson": "{\"cardId\":\"card_debit\"}",
+            "summaryJson": "{\"title\":\"确认挂失\",\"fields\":[{\"label\":\"卡片\",\"value\":\"工资卡 · 储蓄卡 尾号 8823\"},{\"label\":\"注意\",\"value\":\"挂失后不可撤销，需要重新办卡\"}]}",
+            "reasonsJson": "[]"
+          }
+        ]
+      },
+      "grade": {
+        "passed": true,
+        "outcome": "pending_created",
+        "reasons": []
+      }
+    }
+  ]
+}
