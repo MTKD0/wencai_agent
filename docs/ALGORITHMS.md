@@ -35,7 +35,7 @@
 | `recentTransferCount` | 最近 10 分钟转账笔数 |
 | `payeeRiskFlag` | 收款账户风险标记：`suspected` / `confirmed` |
 | `accountLocked` | 账户是否处于熔断锁定期 |
-| `channel` | 请求渠道：web / lark / mcp |
+| `channel` | 请求渠道：web / mcp |
 
 **算法**（`policy/engine.ts`，纯函数，无 I/O）：
 
@@ -46,7 +46,7 @@ for rule in RULES:                      # 固定顺序
     r ← rule.evaluate(input)
     if r = deny:  return {allowed: false, level: red, reasons: [r.reason]}
     if r = raise: level ← max(level, r.to);  reasons.push(r.reason)
-handoff ← order(level) > order(CHANNEL_CEILING[channel])     # web=红, lark=黄, mcp=绿
+handoff ← order(level) > order(CHANNEL_CEILING[channel])     # web=红, mcp=绿
 return {allowed: true, level, reasons, requiresChannelHandoff: handoff}
 ```
 

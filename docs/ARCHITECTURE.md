@@ -26,7 +26,6 @@
 flowchart TB
   subgraph CH["渠道层"]
     WEB["手机 Web / H5 · 桌面布局<br/>可就地完成 🔴"]
-    LARK["飞书机器人（Chat SDK）<br/>🟡 就地确认，🔴 跳转 H5"]
     MCP["MCP Server<br/>仅 🟢 只读工具"]
   end
 
@@ -69,7 +68,7 @@ flowchart TB
   WORKER["后台 worker（每 10 秒）<br/>定时转账 · 常设授权 · 生日订单 · 订阅提醒<br/>基金净值刷新与份额确认 · 收款账户风险分析"]
   ADMIN["运营管理后台 /admin<br/>工作人员登录 · 客户数据只读<br/>反诈回访 · 冻结卡片 · 风险复核"]
 
-  WEB & LARK & MCP --> AUTH --> GUARD --> LLM
+  WEB & MCP --> AUTH --> GUARD --> LLM
   LLM --> PLAN --> EXEC --> RUNNER
   LLM --> RUNNER
   LLM --> UI
@@ -139,7 +138,6 @@ sequenceDiagram
 | 备用模型 | OpenAI 兼容接口（`FALLBACK_*`） | — | 主模型在开始响应前失败（连接错误、限流、15 秒无响应）时自动切换，失败模型冷却 60 秒 |
 | 注入审核 | 规则启发式 + Qwen3Guard（可选，vLLM 自部署） | — | 两者并行、取更严结果；审核模型不可用时退回规则，不阻断业务 |
 | 生成式界面 | json-render | 0.21 | 组件目录用 zod 约束，输出是可严格校验的 JSON |
-| IM 渠道 | Vercel Chat SDK + 飞书官方适配器 | chat 4 | 长连接免公网回调；交互卡片 |
 | 开放协议 | MCP（`@modelcontextprotocol/sdk`） | 1.32 | 只读银行能力可被 OpenClaw 等通用智能体调用 |
 | 数据库 | SQLite（libsql）+ Drizzle ORM | — | 单文件零运维；用户执行锁与有界重试处理多进程写入 |
 | 认证 | better-auth（手机号验证码、会话存库） | 1.7 | 会话、设备踢出、认证接口限流与 CSRF 开箱可用 |
@@ -176,13 +174,13 @@ src/
     risk/         收款账户风险分析（SQL 特征 + 模型判断）
     profile/      后台用户画像（只读）
     sandbox/      QuickJS 沙箱
-    channels/     飞书、MCP
+    channels/     MCP 渠道
     admin/        后台访问控制、运行日志
     logging/      脱敏的运行时日志
     db/           Drizzle schema、种子数据
   components/     银行首页、聊天、确认卡、理财、商城、后台
   routes/         页面与 API（/api/chat、/api/confirm、/api/plans、/api/secure-operation 等）
-scripts/          worker、飞书机器人、MCP Server、启动脚本
+scripts/          worker、MCP Server、启动脚本
 tests/            94 个测试文件（策略、确认、注入、幻觉、越权、并发、沙箱、DAG 等）
 ```
 
@@ -202,7 +200,7 @@ tests/            94 个测试文件（策略、确认、注入、幻觉、越�
 - 收款账户被标记可疑时直接升为红色；它与单笔超过 3000 元一样，还会把红色的第二步验证限定为指纹或人脸。两者都不增加新的等级。
 - 每个工具声明基础等级；策略引擎根据服务端采集的事实逐条应用规则，**只升不降**，命中原因写入审计并展示给用户。
 - 确认时在用户执行锁内重新采集事实、重新判级；扣款事务内再核一次日累计（本人互转除外）和收款账户风险。
-- 渠道能力上限：Web/H5 到红色；飞书到黄色，超出时回复原确认单的 H5 链接；MCP 只读。
+- 渠道能力上限：Web/H5 到红色；MCP 只读。
 
 规则全表、验证方式矩阵、确认链路的校验顺序见 [SECURITY.md §3–§4](SECURITY.md#3-权限分级)。
 
@@ -250,7 +248,7 @@ flowchart LR
 
 | 部署约束 | 说明 |
 |---|---|
-| 单实例 | 生成式界面快照、Passkey 挑战、飞书对话历史、后台转账授权在进程内存中，多实例需改为共享存储（SECURITY §18 #11） |
+| 单实例 | 生成式界面快照、Passkey 挑战、后台转账授权在进程内存中，多实例需改为共享存储（SECURITY §18 #11） |
 | 演示开关 | 模拟指纹 / 人脸需要显式设置 `AUTH_DEMO_MODE=true`；生产构建默认关闭 |
 | 密钥 | 生产强制要求 ≥ 32 位独立随机的 `CONFIRM_SECRET` |
 
@@ -260,4 +258,4 @@ flowchart LR
 
 六个赛题场景全部覆盖，逐项对应见 [COMPETITION-COMPLIANCE.md §2](COMPETITION-COMPLIANCE.md#2-六个场景赛题要求至少-3-个本作品全部覆盖)。
 
-已知边界（详见 [SECURITY.md §18](SECURITY.md#18-未完成项与已知缺陷)）：基金暂不支持赎回；只审核最后一条用户消息；审计哈希链未加密钥；飞书、Passkey 实机、MCP OAuth 尚未在真实环境验收；指纹 / 人脸为模拟按钮。
+已知边界（详见 [SECURITY.md §18](SECURITY.md#18-未完成项与已知缺陷)）：基金暂不支持赎回；只审核最后一条用户消息；审计哈希链未加密钥；Passkey 实机、MCP OAuth 尚未在真实环境验收；指纹 / 人脸为模拟按钮。
