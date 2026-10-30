@@ -51,7 +51,11 @@ export const consoleApi = {
   dashboard: () => call<Dashboard>('/api/admin-console?view=dashboard'),
   fraud: (userId?: string) => call<{ events: FraudEvent[]; stats: FraudStats; generatedAt: string }>(`/api/admin-console?view=fraud${userId ? `&userId=${encodeURIComponent(userId)}` : ''}`),
   customers: () => call<{ customers: Customer[]; generatedAt: string }>('/api/admin-console?view=customers'),
+  agent: () => call<AgentPause>('/api/admin-agent'),
+  setAgent: (paused: boolean, reason: string) => call<AgentPause>('/api/admin-agent', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ paused, reason }) }),
 }
+
+export type AgentPause = { paused: boolean; reason?: string; by?: string; at?: string }
 
 export const LAYER_TEXT: Record<FraudLayer, string> = { keyword: '关键词话术', model: '模型判断', behavior: '行为画像' }
 export const yuan = (cents: number) => `¥${(cents / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

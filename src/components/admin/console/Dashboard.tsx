@@ -4,6 +4,7 @@ import { consoleApi, compactYuan, countdown, LAYER_TEXT, yuan } from './api'
 import { Kpi, LayerChips, LoadState, OutcomeBadge, Section, eventSummary } from './parts'
 import { dateTime } from '../utils'
 import type { Go } from './ConsoleApp'
+import { AgentSwitch } from './AgentSwitch'
 
 /** “疑似诈骗：识别到“X”、“Y”等典型话术，已升级为强验证” → “X、Y” */
 export const reasonBrief = (reasons: string[]) => reasons[0]?.match(/识别到(.+?)等典型话术/)?.[1].replace(/[“”]/g, '') ?? reasons[0]?.slice(0, 24) ?? ''
@@ -15,6 +16,7 @@ export function ConsoleDashboard({ go }: { go: Go }) {
   const peak = Math.max(1, ...f.trend.map((t) => t.detected))
   const layerPeak = Math.max(1, ...f.byLayer.map((l) => l.count))
   return <>
+    <AgentSwitch />
     <div className="kpi-row">
       <Kpi label="待回访" value={d.callbacks.open} note={d.callbacks.open ? '冷静期结束前须联系客户' : '暂无待回访工单'} icon={PhoneCall} tone={d.callbacks.open ? 'danger' : 'good'} onClick={() => go({ section: 'callbacks' })} />
       <Kpi label="冷静期中金额" value={compactYuan(f.total.heldCents)} note="到期前资金未转出" icon={Hourglass} tone={f.total.heldCents ? 'warn' : 'default'} />

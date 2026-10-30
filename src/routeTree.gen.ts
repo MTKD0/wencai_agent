@@ -19,6 +19,7 @@ import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
 import { Route as ApiAddressesRouteImport } from './routes/api/addresses'
 import { Route as ApiAdminRouteImport } from './routes/api/admin'
+import { Route as ApiAdminAgentRouteImport } from './routes/api/admin-agent'
 import { Route as ApiAdminCallbacksRouteImport } from './routes/api/admin-callbacks'
 import { Route as ApiAdminConsoleRouteImport } from './routes/api/admin-console'
 import { Route as ApiAdminProfileRouteImport } from './routes/api/admin-profile'
@@ -92,6 +93,11 @@ const ApiAddressesRoute = ApiAddressesRouteImport.update({
 const ApiAdminRoute = ApiAdminRouteImport.update({
   id: '/api/admin',
   path: '/api/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminAgentRoute = ApiAdminAgentRouteImport.update({
+  id: '/api/admin-agent',
+  path: '/api/admin-agent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminCallbacksRoute = ApiAdminCallbacksRouteImport.update({
@@ -230,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof AuthRegisterRoute
   '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-agent': typeof ApiAdminAgentRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-console': typeof ApiAdminConsoleRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/register': typeof AuthRegisterRoute
   '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-agent': typeof ApiAdminAgentRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-console': typeof ApiAdminConsoleRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/_auth/register': typeof AuthRegisterRoute
   '/api/addresses': typeof ApiAddressesRoute
   '/api/admin': typeof ApiAdminRoute
+  '/api/admin-agent': typeof ApiAdminAgentRoute
   '/api/admin-callbacks': typeof ApiAdminCallbacksRoute
   '/api/admin-console': typeof ApiAdminConsoleRoute
   '/api/admin-profile': typeof ApiAdminProfileRoute
@@ -342,6 +351,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/api/addresses'
     | '/api/admin'
+    | '/api/admin-agent'
     | '/api/admin-callbacks'
     | '/api/admin-console'
     | '/api/admin-profile'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/api/addresses'
     | '/api/admin'
+    | '/api/admin-agent'
     | '/api/admin-callbacks'
     | '/api/admin-console'
     | '/api/admin-profile'
@@ -415,6 +426,7 @@ export interface FileRouteTypes {
     | '/_auth/register'
     | '/api/addresses'
     | '/api/admin'
+    | '/api/admin-agent'
     | '/api/admin-callbacks'
     | '/api/admin-console'
     | '/api/admin-profile'
@@ -451,6 +463,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   ApiAddressesRoute: typeof ApiAddressesRoute
   ApiAdminRoute: typeof ApiAdminRoute
+  ApiAdminAgentRoute: typeof ApiAdminAgentRoute
   ApiAdminCallbacksRoute: typeof ApiAdminCallbacksRoute
   ApiAdminConsoleRoute: typeof ApiAdminConsoleRoute
   ApiAdminProfileRoute: typeof ApiAdminProfileRoute
@@ -548,6 +561,13 @@ declare module '@tanstack/react-router' {
       path: '/api/admin'
       fullPath: '/api/admin'
       preLoaderRoute: typeof ApiAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin-agent': {
+      id: '/api/admin-agent'
+      path: '/api/admin-agent'
+      fullPath: '/api/admin-agent'
+      preLoaderRoute: typeof ApiAdminAgentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin-callbacks': {
@@ -749,6 +769,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   ApiAddressesRoute: ApiAddressesRoute,
   ApiAdminRoute: ApiAdminRoute,
+  ApiAdminAgentRoute: ApiAdminAgentRoute,
   ApiAdminCallbacksRoute: ApiAdminCallbacksRoute,
   ApiAdminConsoleRoute: ApiAdminConsoleRoute,
   ApiAdminProfileRoute: ApiAdminProfileRoute,

@@ -281,3 +281,17 @@ html.dark body:has(.app-shell) .ui-select-item { color: #18243c; }
   .console-search { flex: 1; }
   .console-search input { width: 100%; }
 }
+
+/* 智能助手紧急停用 */
+.agent-switch { margin-bottom: 16px; }
+.agent-switch.is-paused { border-color: var(--danger); box-shadow: 0 0 0 3px #d4483b1a; }
+.agent-switch-body { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.agent-switch-body small { color: #6b778c; font-size: 12px; }
+.agent-switch-state { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--good-soft); color: var(--good); }
+.agent-switch-state.is-paused { background: var(--danger-soft); color: #b3362a; }
+.agent-switch-form { display: flex; gap: 10px; margin-top: 12px; }
+.agent-switch-form .ui-input { flex: 1; min-width: 0; }
+.agent-switch-form .button { flex: none; }
+.env-badge.is-danger { color: #b3362a; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-size: 11px; font-weight: 600; letter-spacing: 1px; }
+.env-badge.is-danger i { background: var(--danger); }
+@media (max-width: 640px) { .agent-switch-form { flex-direction: column; } }

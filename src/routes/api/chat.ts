@@ -17,6 +17,7 @@ import { startSelectedTransferBatch } from '#/server/agent/batch-plan'
 import { QuestionnaireSubmissionSchema } from '#/lib/questionnaire'
 import { resolveQuestionnaireRequest } from '#/server/agent/questionnaire-context'
 import { chatRateLimiter } from '#/server/security/chat-rate'
+import { AGENT_PAUSED_MESSAGE, agentPauseState } from '#/server/agent/pause'
 
 // 被限流时每个用户每分钟最多写一条审计，避免刷请求顺带刷审计表
 const rateAudited = new Map<string, number>()
@@ -48,6 +49,9 @@ export const Route = createFileRoute('/api/chat')({
         }
         const body = BodySchema.safeParse(await request.json())
         if (!body.success) return new Response('bad request', { status: 400 })
+        // 紧急停用时不再调用模型；核对或取消已有确认单不经过模型，照常处理
+        if (!body.data.verificationActionId && !body.data.cancelActionId && (await agentPauseState()).paused)
+          return new Response(AGENT_PAUSED_MESSAGE, { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } })
         const messages = body.data.messages as WencaiUIMessage[]
         const ctx: AgentContext = { userId: session.userId, sessionId: session.sessionId, channel: 'web' }
         let requestText: string | undefined

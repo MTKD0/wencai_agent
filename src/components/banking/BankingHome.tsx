@@ -516,7 +516,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
               <strong>文财 Agent</strong>
               <small>
                 <i />
-                在线
+                在线 · AI 生成
               </small>
             </span>
           }

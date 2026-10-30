@@ -10,6 +10,7 @@ import { cancelActionAndPlan } from '#/server/executor/service'
 import { resolveChannelUser } from '#/server/session'
 import { audit } from '#/server/audit/log'
 import { bindLink, createBindCode } from '#/server/auth/bind'
+import { AGENT_PAUSED_MESSAGE, agentPauseState } from '#/server/agent/pause'
 import type { ToolOutcome } from '#/server/tools/define'
 
 /**
@@ -42,6 +43,10 @@ export function createLarkBot() {
       return
     }
     const ctx: AgentContext = { userId, sessionId: `lark:${thread.id}`, channel: 'lark' }
+    if ((await agentPauseState()).paused) {
+      await thread.post(AGENT_PAUSED_MESSAGE)
+      return
+    }
     const verdict = await screenInput(ctx, message.text)
     if (verdict.verdict === 'block') {
       await thread.post(BLOCKED_REPLY)

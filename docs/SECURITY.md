@@ -283,6 +283,7 @@
 | 机制 | 说明 | 状态 |
 |---|---|---|
 | 关键数据走固定组件 | 余额、银行卡、确认单、回执、理财建议卡由服务端数据渲染 | ✅ |
+| AI 生成内容标识 | 对话面板标题显示“在线 · AI 生成”，输入框下方注明“内容由 AI 生成，敏感操作须由你确认，请以银行数据为准”（对应《指导意见》第（二十一）条） | ✅ |
 | 回复先核验再发送 | `verify/response.ts`：模型正文缓存到段落结束，核验通过才发给前端；工具进度仍实时显示 | ✅ |
 | 金额与卡尾号出处 | `verify/numbers.ts`：回复中带"¥ / 元 / 万"的金额、中文数字金额（"五万二千元"）和"尾号 XXXX"必须出现在可信证据中；用户本次说出的办理金额可以复述。不通过时只删掉相关句子并注明，删后重新核验，内容太少才整段替换 | ✅ `chinese-amount.test.ts`、`tool-totals.test.ts` |
 | 服务端合计 | 总余额、持仓合计、订阅每月 / 每年费用由工具的 `totals` 在服务端按整数分计算，随结果进入证据；提示词要求引用合计、不自行计算。模型心算的数字即使正确也会被拦，因此汇总数必须来自代码（`tools/totals.ts`） | ✅ `tool-totals.test.ts` |
@@ -426,6 +427,7 @@
 | 项 | 说明 | 状态 |
 |---|---|---|
 | 访问控制 | `ADMIN_ENABLED` 总开关始终生效，生产环境默认关闭。2026-10-29 起演示模式**不再免登录**：工作人员用预置账号登录（`ADMIN_STAFF_ACCOUNTS`，密码 scrypt 哈希），会话为 HMAC 签名 Cookie（8 小时，`HttpOnly`、`SameSite=Strict`），登录失败 10 分钟超过 5 次限流；脚本可用 `ADMIN_TOKEN`（≥ 24 位，常数时间比较）；只有未配置 `ADMIN_TOKEN` 的本机开发环境可免登录。后台写接口统一校验请求来源 | ✅ `admin-access-mode.test.ts`、`admin-console.test.ts` |
+| 智能助手紧急停用 | 工作台“智能助手运行状态”：工作人员填写原因后可一键停用或恢复，状态存数据库，网页对话与飞书渠道立即不再调用模型、回固定提示；核对或取消已有确认单、首页转账、卡片、任务中心不依赖模型，照常办理（人工替代流程）。停用条件：出现异常输出、发现可被利用的注入绕过、上游模型服务故障或其他安全事件。停用与恢复写 `admin_command` 审计并记录处理人（对应《指导意见》第（十七）条） | ✅ `agent-pause.test.ts` |
 | 演示登录码 | 仅 `AUTH_DEMO_MODE=true` 时，后台运行日志可查看登录验证码、脱敏手机号及 5 分钟有效期；过期后日志接口隐藏验证码。日志只对登录的工作人员开放。登录页另外直接显示并自动填入两类号码的验证码：公开演示账号（`13800000000` / `13800000001`）、尚未注册的号码（只能开一个空账户），以及在演示模式下注册的号码（`settings` 表记 `demo_registered_phone:` 标记，评委退出后可再登录）；其他已注册号码不显示（`server/auth/demo-login.ts`）。非演示模式不采集、不返回登录码；交易验证码仍不进入日志 | ✅ `runtime-logs.test.ts`、`demo-login-code.test.ts` |
 | 性质 | 面向银行工作人员的全行后台，客户数据只读。工作人员唯一的写操作是冻结 / 解冻卡片（须填原因）与回访结论；代客户转账、申购等命令只在演示模式下接受（「演示控制」），正式配置下服务端拒绝。每条命令写 `admin_command` 审计并记录处理人 | ✅ |
 | 后台转账 | 请求认证后签发一次性授权（只存在于进程内存的 WeakMap，不可序列化），绑定用户、账户、收款对象、金额和备注，60 秒有效。**不受日累计复查约束**（这条复查是为用户确认单设计的，后台没有强验证入口）；卡片限额、余额、收款风险检查照常执行 | ✅ `admin-transfer-limit.test.ts` |
@@ -466,7 +468,7 @@
 | 注入 | `guard.test.ts`、`tool-output-isolation.test.ts`、`server-copy-guard.test.ts`、`redteam.test.ts`（语料基线与越权实测） |
 | 幻觉 | `verify.test.ts`、`transaction-verification.test.ts`、`genui.test.ts`、`wealth-advice.test.ts`、`interaction-template-contract.test.ts`、`chinese-amount.test.ts`、`tool-totals.test.ts`、`confirmation-claim.test.ts` |
 | 来源校验与限流 | `request-origin.test.ts`、`chat-rate.test.ts`、`chat-rate-route.test.ts` |
-| 管理后台与演示登录 | `admin-access-mode.test.ts`、`admin-console.test.ts`、`runtime-logs.test.ts`、`demo-login-code.test.ts` |
+| 管理后台与演示登录 | `admin-access-mode.test.ts`、`admin-console.test.ts`、`runtime-logs.test.ts`、`demo-login-code.test.ts`、`agent-pause.test.ts` |
 | 审计 | `audit-chain.test.ts`、`security-kernel.test.ts` |
 | 沙箱 | `sandbox.test.ts` |
 | 并发与事务 | `db-concurrency.test.ts`、`db-busy-recovery.test.ts`、`payments.test.ts` |

@@ -66,6 +66,7 @@ export function ConsoleApp({ search, go }: { search: ConsoleSearch; go: Go }) {
 function ConsoleShell({ session, search, go, onLogout }: { session: StaffSession; search: ConsoleSearch; go: Go; onLogout: () => void }) {
   const [navOpen, setNavOpen] = useState(false)
   const clock = useQuery({ queryKey: ['admin', 'console', 'dashboard'], queryFn: consoleApi.dashboard, refetchInterval: 15_000 })
+  const agent = useQuery({ queryKey: ['admin', 'agent'], queryFn: consoleApi.agent, refetchInterval: 15_000 })
   const openTickets = clock.data?.callbacks.open ?? 0
   const section = search.section === 'demo' && !session.demoMode ? 'dashboard' : search.section
   const heading = TITLES[section]
@@ -130,6 +131,7 @@ function ConsoleShell({ session, search, go, onLogout }: { session: StaffSession
           <div className="topbar-right">
             <CustomerSearch go={navigate} />
             <span className="console-clock" title="模拟业务时间（北京时间）"><i className="live-dot" />{clock.data ? dateTime(clock.data.now) : '—'}</span>
+            {agent.data?.paused && <button type="button" className="env-badge is-danger" onClick={() => navigate({ section: 'dashboard' })}><i />智能助手已暂停</button>}
             {session.demoMode && <span className="env-badge"><i />演示环境</span>}
           </div>
         </header>
