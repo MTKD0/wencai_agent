@@ -1,6 +1,6 @@
 # 文财 · 银行 AI 智能体 —— 系统架构
 
-> 版本 v1.1 · 2026-10-28，依据当日 `main` 源码整理。
+> 版本 v1.2 · 2026-10-30，依据提交前 `main` 源码整理。
 > 本文是参赛「技术文档」中的系统架构部分。安全机制的完整说明与已知缺陷见 [SECURITY.md](SECURITY.md)，核心算法见 [ALGORITHMS.md](ALGORITHMS.md)，赛题逐项对应见 [COMPETITION-COMPLIANCE.md](COMPETITION-COMPLIANCE.md)。内容与代码不一致时以代码为准。
 
 ## 0. 设计原则
@@ -67,7 +67,7 @@ flowchart TB
   end
 
   WORKER["后台 worker（每 10 秒）<br/>定时转账 · 常设授权 · 生日订单 · 订阅提醒<br/>基金净值刷新与份额确认 · 收款账户风险分析"]
-  ADMIN["管理后台 /admin<br/>人工直连通道 · 安全内核 · 风险复核"]
+  ADMIN["运营管理后台 /admin<br/>工作人员登录 · 客户数据只读<br/>反诈回访 · 冻结卡片 · 风险复核"]
 
   WEB & LARK & MCP --> AUTH --> GUARD --> LLM
   LLM --> PLAN --> EXEC --> RUNNER

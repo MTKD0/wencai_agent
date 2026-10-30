@@ -1,6 +1,6 @@
 # 文财 · 安全设计与自评报告
 
-> 版本：2026-10-23 初版；2026-10-28 依据当日 `main` 源码校对（日累计口径、注入规则与红队统计、后台转账边界）。
+> 版本：2026-10-23 初版；2026-10-28 依据当日 `main` 源码校对（日累计口径、注入规则与红队统计、后台转账边界）；2026-10-30 依据提交前代码（`3769c3e`）更新后台锁定、对话限流、来源校验与评测数字。
 >
 > 本文汇总项目中所有与安全相关的设计、实现、测试和已知缺陷。**以代码为准**：本文与代码不一致时，以代码为准并回来修正本文。
 >
@@ -467,8 +467,9 @@
 | 文档一致性 | `tool-catalog-docs.test.ts` |
 | 强验证与卡安全 | `per-card-security.test.ts`、`password-change.test.ts`、`onboarding-card-number.test.ts`、`security-repair.test.ts`、`security-parity.test.ts` |
 | 注入 | `guard.test.ts`、`tool-output-isolation.test.ts`、`server-copy-guard.test.ts`、`redteam.test.ts`（语料基线与越权实测） |
-| 幻觉 | `verify.test.ts`、`transaction-verification.test.ts`、`genui.test.ts`、`wealth-advice.test.ts`、`interaction-template-contract.test.ts` |
-| 来源校验 | `request-origin.test.ts` |
+| 幻觉 | `verify.test.ts`、`transaction-verification.test.ts`、`genui.test.ts`、`wealth-advice.test.ts`、`interaction-template-contract.test.ts`、`chinese-amount.test.ts`、`tool-totals.test.ts`、`confirmation-claim.test.ts` |
+| 来源校验与限流 | `request-origin.test.ts`、`chat-rate.test.ts`、`chat-rate-route.test.ts` |
+| 管理后台与演示登录 | `admin-access-mode.test.ts`、`admin-console.test.ts`、`runtime-logs.test.ts`、`demo-login-code.test.ts` |
 | 审计 | `audit-chain.test.ts`、`security-kernel.test.ts` |
 | 沙箱 | `sandbox.test.ts` |
 | 并发与事务 | `db-concurrency.test.ts`、`db-busy-recovery.test.ts`、`payments.test.ts` |
@@ -482,7 +483,7 @@
 
 ## 18. 未完成项与已知缺陷
 
-2026-10-23 代码审查确认。#1、#2、#5、#15 已于同日修复并通过测试，#14 于 2026-10-26 修复，#4 于 2026-10-28 修复，#12 部分修复；其余**尚未修复**。
+2026-10-23 代码审查确认。#1、#2、#5、#15 已于同日修复并通过测试，#14 于 2026-10-26 修复，#4 于 2026-10-28 修复，#7、#8 于 2026-10-29 修复，#12、#13 部分修复；其余（#3、#6、#9、#10、#11）**尚未修复**。
 
 | # | 严重度 | 问题 | 具体情形 | 建议修复 | 状态 |
 |---|---|---|---|---|---|
@@ -517,7 +518,7 @@
 
 ## 19. 规划中的安全增强
 
-以下方向**均未开始**，按"实现成本 × 对评审的价值"排序。
+以下方向按"实现成本 × 对评审的价值"排序；B 已于 2026-10-28 完成，其余尚未开始。
 
 | 编号 | 方向 | 做法 | 工期 | 状态 |
 |---|---|---|---|---|
