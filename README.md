@@ -48,7 +48,7 @@ Google VM 的 HTTPS 演示部署、生产启动与日志操作见 [部署说明]
 | `pnpm fraud-eval` | 诱导转账识别评测：55 条留出样本逐条经过关键词、行为画像、模型判断三层，输出识别率与误报率到 `eval/fraud/`（第三层需模型密钥；可加 `--repeat=3`） |
 | `pnpm typecheck` | 类型检查 |
 | `pnpm db:reset` | POSIX shell 下重建数据库并写入演示数据；Windows 见上方步骤 |
-| `pnpm bot:lark` | 启动飞书机器人（需 `LARK_APP_ID` / `LARK_APP_SECRET`） |
+| `pnpm bot:lark` | 启动飞书机器人（需 `LARK_APP_ID` / `LARK_APP_SECRET`；代码与单测完成，尚未用真实飞书应用联调） |
 | `pnpm mcp` | 以 stdio 启动 MCP Server（仅只读工具） |
 
 ## 用户首页与可复用动效
@@ -108,11 +108,11 @@ Agent 问卷使用服务端保存的题目与结构化选项编号提交，保�
 
 - **身份**：手机号 + 验证码登录（better-auth + phone-number 插件），会话存库。未登录调用 `/api/dashboard`、`/api/chat`、`/api/confirm` 一律 401。
 - **强验证**：在独立安全页面完成，模型不接触任何凭据。红色操作先验证付款卡交易密码（每卡独立，scrypt），再完成短信或模拟指纹 / 人脸；单笔超过 3000 元或收款账户可疑时第二步只接受指纹 / 人脸。连续失败 5 次锁定 30 分钟。
-- **渠道绑定**：飞书账号需在 `/bind` 完成一次强验证后才可代办业务，未绑定账号查不到任何数据。
+- **渠道绑定**：飞书账号需在 `/bind` 完成一次强验证后才可代办业务，未绑定账号查不到任何数据（飞书渠道代码与单测完成，尚未用真实飞书应用联调）。
 - **设备管理**：`/settings` 可查看并踢掉其他登录会话、解绑渠道、注册 Passkey。
 
 详见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 第 4 节与 [docs/SECURITY.md](docs/SECURITY.md) 第 3–5 节。
 
 ## 技术栈
 
-TanStack Start · Vercel AI SDK v7 · DeepSeek / OpenAI 兼容模型接口 · Qwen3Guard · json-render · Chat SDK（飞书） · MCP · SQLite + Drizzle · QuickJS 沙箱 · Vitest
+TanStack Start · Vercel AI SDK v7 · DeepSeek / OpenAI 兼容模型接口 · Qwen3Guard · json-render · Chat SDK（飞书，未实测） · MCP · SQLite + Drizzle · QuickJS 沙箱 · Vitest
