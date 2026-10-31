@@ -8,6 +8,7 @@ import { BEHAVIOR_SIGNAL_TEXT, BEHAVIOR_THRESHOLDS, type BehaviorSignal } from '
 import { FRAUD_REASON_PREFIX, UNUSUAL_REASON_PREFIX } from '#/lib/fraud'
 import { ensureHoldSchema } from '#/server/payments/holds'
 import { listAdminUsers } from '#/server/admin/users'
+import { simNow } from '#/server/tools/jobs'
 
 /**
  * 反诈识别事件（后台反诈中心的数据源）。
@@ -64,15 +65,18 @@ export async function recordFraudEvent(params: {
   if (!layers.length) return
   await ensureFraudEventSchema()
   const baseline = params.facts.transferBaseline
-  await db.insert(schema.bankFraudEvents).values({
-    id: `fe_${randomUUID()}`, userId: params.ctx.userId, actionId: params.actionId, tool: params.tool,
+  const live = {
+    userId: params.ctx.userId, actionId: params.actionId, tool: params.tool,
     amountCents: amountOf(params.args), payeeId: typeof params.args.payeeId === 'string' ? params.args.payeeId : null,
     payeeName: await payeeNameOf(params.ctx.userId, params.args, params.summary),
     layersJson: JSON.stringify(layers), signalsJson: JSON.stringify(signals), evidence: params.evidence?.slice(0, 200) ?? null,
     behaviorJson: JSON.stringify(params.behavior),
     baselineJson: baseline ? JSON.stringify({ medianOutCents: baseline.medianOutCents, sampleCount: baseline.sampleCount, liquidBalanceCents: baseline.liquidBalanceCents, monthlyIncomeCents: baseline.monthlyIncomeCents, payeePaidBefore: baseline.payeePaidBefore }) : null,
-    reasonsJson: JSON.stringify(params.reasons), createdAt: new Date(),
-  }).onConflictDoNothing()
+    reasonsJson: JSON.stringify(params.reasons), createdAt: await simNow(), // 后台统计按业务时钟算“今日”，这里也必须用业务时钟
+  }
+  // 进程内第一次写入时，ensureFraudEventSchema 的补记会先按这张确认单补一条（真实时间、没有证据原文），以本次实时记录覆盖
+  await db.insert(schema.bankFraudEvents).values({ id: `fe_${randomUUID()}`, ...live })
+    .onConflictDoUpdate({ target: schema.bankFraudEvents.actionId, set: live })
 }
 
 /** 上线前已有的确认单：按确认单上展示过的原因补记（分不清关键词还是模型时记为关键词） */

@@ -60,12 +60,20 @@ describe('工作人员登录', () => {
 describe('反诈识别事件', () => {
   it('命中话术的转账生成确认单时记录识别依据，结果为待用户确认', async () => {
     const ctx = { userId: uid, sessionId: 'console-session', channel: 'web' as const, requestText: '对方说我的账户涉嫌洗钱，让我转到安全账户核查', riskText: '对方说我的账户涉嫌洗钱，让我转到安全账户核查' }
-    const outcome = await runBankTool(transfer, { fromAccountId: source, payeeId, amount: 800 }, ctx)
+    // 演示环境的业务时钟拨在别的日期：识别时间必须跟业务时钟走，否则后台“今日”统计数不到这条
+    const [prevClock] = await db.select().from(schema.settings).where(eq(schema.settings.key, 'clock'))
+    const clock = '2026-10-11T02:00:00.000Z'
+    await db.insert(schema.settings).values({ key: 'clock', value: clock }).onConflictDoUpdate({ target: schema.settings.key, set: { value: clock } })
+    const outcome = await runBankTool(transfer, { fromAccountId: source, payeeId, amount: 800 }, ctx).finally(async () => {
+      if (prevClock) await db.update(schema.settings).set({ value: prevClock.value }).where(eq(schema.settings.key, 'clock'))
+      else await db.delete(schema.settings).where(eq(schema.settings.key, 'clock'))
+    })
     if (outcome.status !== 'needs_confirmation') throw new Error(JSON.stringify(outcome))
     const [event] = await listFraudEvents({ userId: uid })
     expect(event).toMatchObject({ actionId: outcome.actionId, amountCents: 80_000, payeeName: '陌生收款人', outcome: 'awaiting' })
     expect(event.layers).toContain('keyword')
     expect(event.signals.map((s) => s.id)).toContain('safe_account')
+    expect(event.createdAt).toBe(clock)
   })
   it('普通转账不记录', async () => {
     const before = (await listFraudEvents({ userId: uid })).length
