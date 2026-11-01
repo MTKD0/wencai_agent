@@ -17,6 +17,7 @@ import {
   Grid2X2,
   House,
   Loader2,
+  ListChecks,
   LogOut,
   Maximize2,
   Minimize2,
@@ -92,12 +93,12 @@ export default function BankingHome({ user }: { user: { id: string; name: string
   const [agentOpen, setAgentOpen] = useState(false)
   const [agentWide, setAgentWide] = useState(false)
   const [pendingActionId, setPendingActionId] = useState<string>()
-  useLayoutEffect(() => {
-    if (agentOpen && shell.current) return trackAgentKeyboard(shell.current)
-  }, [agentOpen])
   const [paymentView, setPaymentView] = useState<PaymentView | null>(null)
   const [request, setRequest] = useState<{ id: number; text: string }>()
   const [detail, setDetail] = useState<Detail>(null)
+  useLayoutEffect(() => {
+    if (agentOpen && detail !== 'tasks' && shell.current) return trackAgentKeyboard(shell.current)
+  }, [agentOpen, detail])
   const [signingOut, setSigningOut] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [selectedCardId, setSelectedCardId] = useState<string>()
@@ -133,7 +134,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
     pageScroll.current?.scrollTo({ top: 0, behavior: 'instant' })
   }
   const title =
-    detail === 'pending' ? '待确认转账' : detail === 'tasks' ? '任务与人工处理' : detail === 'assets'
+    detail === 'pending' ? '待确认转账' : detail === 'tasks' ? '任务中心' : detail === 'assets'
       ? '资产详情'
       : detail === 'bill'
         ? '智能账单分析'
@@ -422,7 +423,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
                 )}
                 {tab === 'life' && (
                   <LifeMarket data={data} userId={user.id} hidden={hidden} active={!agentOpen && !detail && !paymentView && !cardService}
-                    portalContainer={shell.current} onModalChange={setLifeDialogOpen} onAgent={openAgent} onTasks={() => setDetail('tasks')} />
+                    portalContainer={shell.current} onModalChange={setLifeDialogOpen} onAgent={openAgent} />
                 )}
                 {tab === 'wealth' && <WealthMarket dashboard={data} userId={user.id} onAgent={openAgent} portalContainer={shell.current} onModalChange={setLifeDialogOpen} />}
                 {tab === 'profile' && (
@@ -504,12 +505,12 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           <AgentAvatar small />
         </DraggableFloatingButton>
         <Sheet
-          open={agentOpen}
+          open={agentOpen && detail !== 'tasks'}
           onClose={closeAgent}
           title="文财 Agent"
           className="bank-agent-sheet"
           responsiveSide
-          headerActions={<Button className="bank-icon-button bank-agent-expand" aria-label={agentWide ? '还原对话窗口' : '展开对话窗口'} onClick={() => setAgentWide(!agentWide)}>{agentWide ? <Minimize2 size={19} /> : <Maximize2 size={19} />}</Button>}
+          headerActions={<div className="bank-agent-header-actions"><Button className="bank-icon-button bank-agent-tasks" aria-label="打开任务中心" title="任务中心" onClick={() => setDetail('tasks')}><ListChecks size={20} /></Button><Button className="bank-icon-button bank-agent-expand" aria-label={agentWide ? '还原对话窗口' : '展开对话窗口'} onClick={() => setAgentWide(!agentWide)}>{agentWide ? <Minimize2 size={19} /> : <Maximize2 size={19} />}</Button></div>}
           header={
             <span className="bank-agent-heading">
               <AgentAvatar small />
@@ -522,7 +523,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           }
         >
           <div id="bank-agent-conversation" className="bank-agent-conversation">
-            <ChatView request={request} active={agentOpen} userId={user.id} userName={user.name} />
+            <ChatView request={request} active={agentOpen && detail !== 'tasks'} userId={user.id} userName={user.name} />
           </div>
         </Sheet>
         <Sheet open={!!paymentView} onClose={closePayment} title="转账与收款" className="bank-payment-sheet">
@@ -535,7 +536,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
           open={!!detail}
           onClose={() => setDetail(null)}
           title={title}
-          className="bank-detail-sheet"
+          className={`bank-detail-sheet${detail === 'notifications' ? ' bank-notification-sheet' : detail === 'tasks' ? ' bank-task-sheet' : ''}`}
         >
           <div className="bank-detail-scroll">
             {data && detail === 'pending' && <>
@@ -592,7 +593,7 @@ export default function BankingHome({ user }: { user: { id: string; name: string
               <TransactionList transactions={data.transactions} hidden={hidden} />
             )}
             {data && detail === 'notifications' && <NotificationDetails notifications={data.notifications} subscriptions={data.subscriptions} hidden={hidden} onManage={() => openAgent('帮我查看订阅扣费时间和提醒设置')} />}
-            {detail === 'tasks' && <TaskCenter onFollowUp={openAgent} />}
+            {detail === 'tasks' && <><Button className="bank-task-back" onClick={() => setDetail(null)}>返回 Agent 对话<ChevronRight size={16} /></Button><TaskCenter onFollowUp={openAgent} /></>}
           </div>
         </Sheet>
       </Tabs>
@@ -625,13 +626,17 @@ export function AssetDetails({ data, hidden }: { data: DashboardData; hidden: bo
 export function NotificationDetails({ notifications, subscriptions, hidden, onManage }: {
   notifications: DashboardData['notifications']; subscriptions: DashboardData['subscriptions']; hidden: boolean; onManage: () => void
 }) {
-  return <>
-    {notifications?.map(notice => <article key={notice.id} className="bank-payment-address"><strong>{notice.title}</strong><p>{notice.body}</p>{notice.actionId && <a className="bank-text-button" href={`/confirm/${encodeURIComponent(notice.actionId)}`}>核对并确认</a>}</article>)}
+  return <section className="bank-notifications" aria-label="消息与订阅提醒">
+    <div className="bank-notification-list">
+    {notifications?.map(notice => <article key={notice.id} className="bank-payment-address bank-notification-card"><span className="bank-notification-icon" aria-hidden="true"><Bell size={20} /></span><div><h3>{notice.title}</h3><p>{notice.body}</p>{notice.actionId && <a className="bank-notification-action" href={`/confirm/${encodeURIComponent(notice.actionId)}`}>核对并确认<ChevronRight size={15} /></a>}</div></article>)}
     {!notifications?.length && <p className="bank-empty">暂无消息通知</p>}
+    </div>
+    <div className="bank-notification-subscriptions">
     <div className="bank-notice"><Bell size={20} /><span>订阅服务提醒<small>查看正在生效的订阅，提前安排支出。</small></span></div>
     <SubscriptionList subscriptions={subscriptions.filter(item => item.status === 'active')} hidden={hidden} />
     <Button className="bank-primary bank-lift bank-full-width" onClick={onManage} type="button">管理订阅提醒<ChevronRight size={17} /></Button>
-  </>
+    </div>
+  </section>
 }
 
 function TransactionList({

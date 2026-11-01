@@ -1,4 +1,39 @@
 /* Desktop authentication has its own art direction; mobile keeps the banking shell. */
+.bank-auth-stage {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.bank-auth-stage .bank-auth-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: none;
+  scroll-padding-block: 20px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bank-auth-layout .bank-auth-top {
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+.bank-auth-layout .bank-auth-hero {
+  padding: 22px 26px 24px;
+}
+.bank-auth-layout .bank-auth-hero > .bank-agent-avatar {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+}
+.bank-auth-layout .bank-auth-panel {
+  flex-shrink: 0;
+}
+.bank-auth-layout :is(.bank-auth-input, .ui-phone-input input) {
+  font-size: 16px;
+}
 .auth-brand,
 .auth-brand-scene,
 .auth-form-heading,
@@ -47,7 +82,9 @@ html.dark .bank-auth-demo-code {
     --auth-line: #353642;
     display: block;
     padding: 0;
+    height: auto;
     min-height: 100dvh;
+    overflow: visible;
     color: var(--auth-text);
     color-scheme: dark;
     background:
@@ -75,6 +112,7 @@ html.dark .bank-auth-demo-code {
     width: 100%;
     max-width: 1800px;
     min-height: 100dvh;
+    max-height: none;
     height: auto;
     margin: 0 auto;
     padding: 30px clamp(30px, 3.7vw, 70px) 18px;

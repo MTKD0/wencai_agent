@@ -3,6 +3,39 @@
 .bank-desktop-agent-greeting,.bank-desktop-chat-user,.bank-suggestion-desktop-label,.bank-desktop-send-icon { display:none; }
 .bank-agent-suggestions .bank-desktop-only { display:none; }
 
+@media (min-width:1024px), (min-width:768px) and (hover:hover) and (pointer:fine) {
+  .bank-stage.bank-responsive .bank-workspace .bank-agent-header-actions .bank-agent-tasks {
+    color:var(--pc-accent); background:var(--pc-secondary); border-color:var(--pc-line);
+  }
+  .bank-responsive .bank-workspace .bank-agent-header-actions .bank-agent-tasks:hover { background:var(--pc-hover); }
+  .bank-responsive .bank-workspace :is(.bank-notification-sheet,.bank-task-sheet) .bank-sheet-grip { display:none; }
+  .bank-stage.bank-responsive .bank-workspace .bank-sheet:is(.bank-notification-sheet,.bank-task-sheet) { background:var(--pc-panel); color:var(--pc-text); border-color:var(--pc-line); }
+  .bank-responsive .bank-workspace :is(.bank-notification-sheet,.bank-task-sheet) .bank-sheet-heading { padding:22px 24px; min-height:74px; border-bottom:1px solid var(--pc-line); }
+  .bank-responsive .bank-workspace :is(.bank-notification-sheet,.bank-task-sheet) .bank-detail-scroll { padding:22px 24px 26px; }
+  .bank-stage.bank-responsive .bank-workspace .bank-sheet.bank-notification-sheet { bottom:auto; max-height:calc(100% - 108px); }
+  .bank-responsive .bank-workspace .bank-notification-sheet .bank-detail-scroll { min-height:0; }
+  .bank-responsive .bank-workspace .bank-notification-card {
+    padding:20px; margin:0; border:1px solid var(--pc-line); border-radius:16px;
+    color:var(--pc-text); background:var(--pc-surface); gap:14px;
+  }
+  .bank-responsive .bank-workspace .bank-notification-card h3 { font-size:17px; font-weight:650; }
+  .bank-responsive .bank-workspace .bank-notification-card p { font-size:13px; line-height:1.8; color:var(--pc-muted); margin-top:7px; overflow-wrap:anywhere; }
+  .bank-responsive .bank-workspace .bank-notification-icon { width:40px; height:40px; color:var(--pc-accent); background:var(--pc-secondary); }
+  .bank-responsive .bank-workspace :is(.bank-notification-action,.bank-task-back) { color:var(--pc-accent); border-color:var(--pc-line); background:var(--pc-secondary); }
+  .bank-responsive .bank-workspace .bank-notification-action { min-height:36px; padding:8px 13px; font-size:13px; }
+  .bank-responsive .bank-workspace :is(.bank-notification-action,.bank-task-back):hover { background:var(--pc-hover); }
+  .bank-responsive .bank-workspace .bank-notification-action:focus-visible { outline:2px solid var(--pc-accent); outline-offset:3px; }
+  .bank-responsive .bank-workspace .bank-notification-subscriptions { border-top:1px solid var(--pc-line); padding-top:20px; margin-top:22px; }
+  .bank-responsive .bank-workspace .bank-notification-subscriptions .bank-notice { background:var(--pc-secondary); color:var(--pc-accent); border:1px solid var(--pc-line); border-radius:14px; padding:14px 16px; margin:0 0 12px; }
+  .bank-responsive .bank-workspace .bank-notification-subscriptions .bank-notice small { color:var(--pc-muted); line-height:1.7; }
+  .bank-responsive .bank-workspace .bank-notification-subscriptions .bank-subscription { background:var(--pc-surface); color:var(--pc-text); border:1px solid var(--pc-line); border-radius:14px; padding:16px; }
+  .bank-responsive .bank-workspace .bank-notification-subscriptions .bank-transaction-icon { color:var(--pc-accent); background:var(--pc-secondary); }
+  .bank-stage.bank-responsive .bank-workspace .bank-notification-subscriptions .bank-primary { min-height:48px; margin-top:18px; border-radius:12px; background:var(--pc-action); color:#fff; font-size:14px; border:1px solid transparent; }
+  .bank-responsive .bank-workspace .bank-task-sheet .bank-payment-address { background:var(--pc-surface); color:var(--pc-text); border:1px solid var(--pc-line); }
+  .bank-responsive .bank-workspace .bank-task-sheet .bank-payment-secondary { background:var(--pc-secondary); color:var(--pc-accent); border-color:var(--pc-line); }
+  .bank-stage.bank-responsive .bank-workspace .bank-task-sheet .bank-primary { background:var(--pc-action); color:#fff; }
+}
+
 /* Keep the media queries aligned with DESKTOP_QUERY in use-desktop-layout.ts. */
 
 @media (min-width:1024px), (min-width:768px) and (hover:hover) and (pointer:fine) {

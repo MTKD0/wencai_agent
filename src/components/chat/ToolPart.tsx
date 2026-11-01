@@ -392,7 +392,7 @@ export function PlanView({ state, placement = 'origin' }: { state: PlanState; pl
           const definition = latest.plan.nodes.find((item) => item.id === id)
           return outcome && <Outcome key={`${id}-${node.actionId}`} label={definition?.note ?? '核对操作'} tool={definition?.tool ?? ''} outcome={outcome} />
         })}
-      <p className="text-xs demo-muted">可在生活页的任务中心暂停、恢复或进行人工处理。</p>
+      <p className="text-xs demo-muted">可在 Agent 顶部的任务中心暂停、恢复或进行人工处理。</p>
     </div>
   )
 }

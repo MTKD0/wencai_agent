@@ -1,7 +1,9 @@
 .bank-chart {
   min-width: 0;
   color: var(--foreground);
+  -webkit-tap-highlight-color: transparent;
 }
+.bank-chart :is(svg, g, circle):focus { outline: none; }
 .bank-chart h3 {
   margin: 0 0 12px;
   font-size: 13px;
@@ -106,6 +108,10 @@
 .bank-chart circle:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
   outline-offset: 3px;
+}
+@media (max-width:767px), (max-width:1023px) and (hover:none), (max-width:1023px) and (pointer:coarse) {
+  .bank-chart-legend { scrollbar-width: none; }
+  .bank-chart-legend::-webkit-scrollbar { display: none; }
 }
 .bank-bars.is-compact svg {
   min-width: 0;

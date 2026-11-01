@@ -82,7 +82,7 @@ export default function ChatView({
       const data = (await res.json()) as { plans?: { status: string; updatedAt: string; state: { plan: { goal: string } } }[] }
       const paused = data.plans?.find((plan) => plan.status === 'paused' && Date.now() - new Date(plan.updatedAt).getTime() < 120_000)
       setStoppedNotice(paused
-        ? `已停止。计划「${paused.state.plan.goal}」已暂停在当前步骤，已完成的步骤不会撤销；可在生活页的任务中心恢复或取消。`
+        ? `已停止。计划「${paused.state.plan.goal}」已暂停在当前步骤，已完成的步骤不会撤销；可在 Agent 顶部的任务中心恢复或取消。`
         : '已停止回答。')
     } catch {
       setStoppedNotice('已停止回答。')

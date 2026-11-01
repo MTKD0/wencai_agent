@@ -698,6 +698,26 @@
 .bank-sheet-heading > .bank-icon-button {
   color: #7d8cad;
 }
+.bank-agent-sheet .bank-sheet-heading > div:first-child { flex: 1; min-width: 0; }
+.bank-agent-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.bank-agent-header-actions .bank-icon-button { width: 34px; height: 34px; flex-shrink: 0; }
+.bank-agent-header-actions .bank-agent-tasks { color: var(--lagoon); background: var(--chip-bg); border: 1px solid var(--line); border-radius: 10px; }
+.bank-task-back { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 16px; padding: 12px 14px; color: var(--lagoon); background: var(--chip-bg); border: 1px solid var(--line); border-radius: 12px; font-size: 13px; }
+/* Pointer focus on Base UI panels must not draw the browser's default black frame. */
+.bank-shell [role='tabpanel']:focus { outline: none; }
+.bank-shell [role='tabpanel']:focus-visible { outline: 2px solid var(--lagoon); outline-offset: -2px; border-radius: 12px; }
+.bank-notification-list { display: grid; gap: 12px; }
+.bank-notification-card { display: flex; gap: 12px; }
+.bank-notification-card > div { flex: 1; min-width: 0; }
+.bank-notification-card h3 { font-size: 16px; line-height: 1.5; }
+.bank-notification-icon { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 12px; color: var(--lagoon); background: var(--chip-bg); }
+.bank-notification-action { display: inline-flex; gap: 6px; align-items: center; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--chip-bg); color: var(--lagoon); font-size: 12px; font-weight: 600; text-decoration: none; }
+.bank-notification-subscriptions { margin-top: 22px; }
+@media (max-width: 519px) {
+  .bank-agent-heading { display: grid; grid-template-columns: 34px minmax(0,1fr); column-gap: 8px; row-gap: 3px; }
+  .bank-agent-heading > .bank-agent-avatar { grid-row: 1 / 3; width: 34px; height: 34px; }
+  .bank-agent-heading strong { font-size: 16px; white-space: nowrap; }
+}
 .bank-agent-heading {
   display: flex;
   align-items: center;

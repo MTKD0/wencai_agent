@@ -12,8 +12,13 @@ export function CardPasswordInput({ id, label, value, onChange, onActivate, disa
     <div className={`bank-secure-password-control${segmented ? ' is-segmented' : ''}`}>
       <LockKeyhole size={21} aria-hidden="true" />
       {segmented && <div className="bank-secure-password-slots" aria-hidden="true">{Array.from({ length: 6 }, (_, index) => <span key={index} className={index === Math.min(value.length, 5) ? 'is-current' : ''}>{value[index] ? visible ? value[index] : '•' : ''}</span>)}</div>}
-      <Input id={id} type={visible ? 'text' : 'password'} inputMode={segmented ? 'numeric' : 'none'} autoComplete={isNew ? 'new-password' : 'off'} maxLength={6}
+      <Input id={id} type={visible ? 'text' : 'password'} inputMode={segmented ? 'numeric' : 'none'} readOnly={!segmented} autoComplete={isNew ? 'new-password' : 'off'} maxLength={6}
         value={value} disabled={disabled} placeholder="6 位交易密码" onFocus={onActivate} onClick={onActivate}
+        onPointerDown={(event) => {
+          // Some mobile keyboards ignore inputMode="none". Keep the field read-only,
+          // and focus without panning; only the bank keypad changes the H5 value.
+          if (!segmented) { event.preventDefault(); event.currentTarget.focus({ preventScroll: true }); onActivate() }
+        }}
         onChange={(event) => onChange(event.target.value.replace(/\D/g, '').slice(0, 6))} />
       <Button animated={false} className="bank-secure-eye" disabled={disabled} aria-label={visible ? '隐藏交易密码' : '显示交易密码'} aria-pressed={visible}
         onPointerDown={(event) => event.preventDefault()} onClick={() => setVisible(!visible)}>{visible ? <Eye size={21} /> : <EyeOff size={21} />}</Button>
