@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, like } from 'drizzle-orm'
 import { auth, db, schema } from '#/server/db/client'
 import { ensureFundData, syncFund } from '#/server/funds/store'
 import { FixtureProvider } from '#/server/funds/fixture'
@@ -189,11 +189,27 @@ describe('unknown NAV fund orders and existing red confirmation chain', () => {
     await db.insert(schema.transactions).values(['2026-07-10', '2026-08-10', '2026-09-10'].map((d, i) => ({ id: `fund_expense_${i}`, accountId: account, amountCents: -100000, category: '生活缴费', counterparty: '测试账单', occurredAt: new Date(d + 'T02:00:00Z') })))
     const before = await balance(), rows = (await db.select().from(schema.transactions).where(eq(schema.transactions.accountId, account))).length
     const result = await getWealthAdvice({ ...ctx, requestText: '我想投资20000元，目标收益18%' }, AdviceInput.parse({ amountYuan: 20000, targetReturnPct: 18, horizon: 'within_3m', liquidity: 'anytime', preference: 'growth' }), now, async () => { throw new Error('offline') })
-    expect(result).toMatchObject({ status: 'advice', source: 'rule', budget: { monthlyExpenseCents: 100000, reserveCents: 600000, investableCents: 1400000, amountCents: 1400000 } })
+    expect(result).toMatchObject({ status: 'advice', source: 'rule', budget: { monthlyExpenseCents: 100000, reserveCents: 600000, investableCents: 1400000, amountCents: 2000000 } })
+    // 超过建议额度不截断：按用户说的 20000 元筛选，只提示动用备用金的风险
     expect('conflicts' in result && result.conflicts).toContain('amount_exceeds_investable')
+    expect('conflicts' in result && result.conflicts).not.toContain('amount_exceeds_balance')
     expect(result.picks.length).toBeLessThanOrEqual(3)
     expect(await balance()).toBe(before)
     expect((await db.select().from(schema.transactions).where(eq(schema.transactions.accountId, account))).length).toBe(rows)
     expect((await db.select().from(schema.pendingActions).where(eq(schema.pendingActions.userId, userId))).length).toBe(0)
+  })
+  it('建议额度为 0 时不阻断：没说金额就请用户给出金额，说了金额照常按它筛选并提示动用备用金', async () => {
+    // 再加三个月各 5000 元支出：月均 6000 元，备用金 36000 元，超过储蓄卡余额
+    await db.insert(schema.transactions).values(['2026-07-12', '2026-08-12', '2026-09-12'].map((d, i) => ({ id: `fund_big_expense_${i}`, accountId: account, amountCents: -500000, category: '生活缴费', counterparty: '测试大额', occurredAt: new Date(d + 'T02:00:00Z') })))
+    const offline = async () => { throw new Error('offline') }
+    const asked = await getWealthAdvice({ ...ctx, requestText: '帮我推荐理财' }, AdviceInput.parse({ horizon: '1_3y', liquidity: 'locked_ok', preference: 'preserve' }), now, offline)
+    expect(asked).toMatchObject({ status: 'needs_amount', picks: [] })
+    if ('message' in asked) expect(asked.message).toContain('系统建议的可投资额度为 0 元')
+    const result = await getWealthAdvice({ ...ctx, requestText: '5000' }, AdviceInput.parse({ amountYuan: 5000, horizon: '1_3y', liquidity: 'locked_ok', preference: 'preserve' }), now, offline)
+    if (!('budget' in result) || !result.budget) throw new Error('no budget')
+    expect(result.budget).toMatchObject({ investableCents: 0, amountCents: 500000 })
+    expect(result.conflicts).toContain('amount_exceeds_investable')
+    expect(result.conflicts).not.toContain('amount_exceeds_balance')
+    await db.delete(schema.transactions).where(like(schema.transactions.id, 'fund_big_expense_%'))
   })
 })

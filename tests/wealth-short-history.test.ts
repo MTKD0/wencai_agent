@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db, schema } from '#/server/db/client'
 import { AdviceInput, expertTextViolations, getWealthAdvice, modelAdviceInput } from '#/server/funds/advice'
 import { ensureFundData } from '#/server/funds/store'
-import { requestedAmounts, requestedTransferMatches, transferClauseAmounts } from '#/lib/requested-amounts'
+import { requestedAmounts, requestedTransferMatches, statedAmounts, transferClauseAmounts } from '#/lib/requested-amounts'
 import { collectEvidence, verifyNumbers } from '#/server/verify/numbers'
 
 describe('金额里的“万”', () => {
@@ -13,6 +13,13 @@ describe('金额里的“万”', () => {
     expect(requestedAmounts('2万块')).toEqual([20000])
     // “万一”不是金额；“一万元”是中文数字金额（chinese-amount.ts）
     expect(requestedAmounts('万一需要用钱，一万元也行')).toEqual([10000])
+  })
+  it('追问金额后只回一个数（“20000”“2万”）也算用户说出的金额；转账与选择组件用的解析仍不接受裸数字', () => {
+    expect(statedAmounts('20000')).toEqual([20000])
+    expect(statedAmounts(' 2万 ')).toEqual([20000])
+    expect(statedAmounts('¥20,000元。')).toEqual([20000])
+    expect(statedAmounts('尾号 8823 那张')).toEqual([])
+    expect(requestedAmounts('20000')).toEqual([])
   })
   it('转账子句同样识别：给妈妈转 1 万是 10000 元，不是 1 元', () => {
     expect(transferClauseAmounts('给妈妈转 1 万')).toMatchObject([{ recipient: '妈妈', amount: 10000 }])
@@ -62,6 +69,19 @@ describe('收支记录不足三个月的理财建议', () => {
     expect(result.conflicts).toContain('reserve_unchecked')
     expect(result.conflicts).not.toContain('amount_exceeds_investable')
     expect(result.picks.length).toBeGreaterThan(0)
+  })
+  it('被追问金额后只回“20000”：照常按 2 万元筛选，不再报“投资金额必须来自当前用户请求”', async () => {
+    const result = await getWealthAdvice(ctx('20000'), AdviceInput.parse({ amountYuan: 20000, horizon: '1_3y', liquidity: 'locked_ok', preference: 'preserve' }), now, offline)
+    expect(result.status).toBe('advice')
+    if (!('budget' in result) || !result.budget) throw new Error('no budget')
+    expect(result.budget.amountCents).toBe(2_000_000)
+    await expect(getWealthAdvice(ctx('20000'), AdviceInput.parse({ amountYuan: 30000, horizon: '1_3y', liquidity: 'locked_ok', preference: 'preserve' }), now, offline)).rejects.toThrow('不能由模型猜测')
+  })
+  it('超过可用余额只提示、不截断：按用户金额筛选并标出余额不足', async () => {
+    const result = await getWealthAdvice(ctx('我想投 10 万'), AdviceInput.parse({ amountYuan: 100000, horizon: '1_3y', liquidity: 'locked_ok', preference: 'preserve' }), now, offline)
+    if (!('budget' in result) || !result.budget) throw new Error('no budget')
+    expect(result.budget.amountCents).toBe(10_000_000)
+    expect(result.conflicts).toEqual(expect.arrayContaining(['reserve_unchecked', 'amount_exceeds_balance']))
   })
   it('备用金未核对时，交给说明模型的只有用户金额，说明里也不能出现不可靠的月均支出或可投资额度', () => {
     const budget = { monthlyExpenseCents: 300_000, reserveCents: 1_800_000, investableCents: 6_200_000, amountCents: 5_000_000, monthsObserved: 1, reserveUnchecked: true as const }

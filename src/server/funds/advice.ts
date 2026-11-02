@@ -7,7 +7,7 @@ import { computeProfile } from '#/server/profile/profile'
 import { userCards } from '#/server/cards/service'
 import { agentModel } from '#/server/llm/models'
 import { audit } from '#/server/audit/log'
-import { requestedAmounts } from '#/lib/requested-amounts'
+import { statedAmounts } from '#/lib/requested-amounts'
 import { fundNavs, listFunds } from './store'
 import { fundMetrics } from './metrics'
 import { ASSET_CLASSES, FUND_STYLES, STYLE_LABELS, type InvestmentProfile } from '#/lib/fund-preferences'
@@ -147,12 +147,13 @@ export async function describeAdvice(candidates: AdviceCandidate[], budget: Advi
     return fallback(error instanceof z.ZodError ? `format:${error.issues.map((i) => `${i.path.join('.')}/${i.code}`).slice(0, 3).join(',')}` : error instanceof SyntaxError ? 'json' : error instanceof Error && /^(?:summary|note):/.test(error.message) ? error.message : 'unavailable')
   }
 }
+const yuanText = (cents: number) => `${(cents / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 元`
 /** 开放申购，或限大额且公布的单日上限够买下本次预算 */
 function purchasable(fund: { enabled: boolean; stale: boolean; purchaseStatus: string; purchaseLimitCents: number | null }, amountCents: number) {
   return fund.enabled && !fund.stale && (fund.purchaseStatus === 'open' || (fund.purchaseStatus === 'limited' && (fund.purchaseLimitCents ?? 0) >= amountCents))
 }
 export async function getWealthAdvice(ctx: AgentContext, input: AdviceRequest, now: Date, writer?: Writer) {
-  if (input.amountYuan !== undefined && !requestedAmounts(ctx.requestText ?? '').some((n) => Math.round(n * 100) === Math.round(input.amountYuan! * 100))) throw new Error('投资金额必须来自当前用户请求，不能由模型猜测')
+  if (input.amountYuan !== undefined && !statedAmounts(ctx.requestText ?? '').some((n) => Math.round(n * 100) === Math.round(input.amountYuan! * 100))) throw new Error('投资金额必须来自当前用户请求，不能由模型猜测')
   if (input.targetReturnPct !== undefined && !percentageTokens(ctx.requestText ?? '').includes(input.targetReturnPct)) throw new Error('目标收益必须来自当前用户请求')
   if (input.maxDrawdownPct !== undefined && !percentageTokens(ctx.requestText ?? '').includes(input.maxDrawdownPct)) throw new Error('最大回撤偏好必须来自当前用户请求')
   const [user] = await db.select().from(schema.users).where(eq(schema.users.id, ctx.userId))
@@ -170,12 +171,15 @@ export async function getWealthAdvice(ctx: AgentContext, input: AdviceRequest, n
   const shortHistory = metrics.monthsObserved < 3
   const conflicts: string[] = []
   if (shortHistory && input.amountYuan === undefined) return { status: 'insufficient_history', message: '完整月份收支数据不足三个月，无法自动估算可投资额度。请直接告诉我打算投入多少，我按这个金额筛选。', conflicts, picks: [] }
-  const budget: AdviceBudget = shortHistory
-    ? { monthlyExpenseCents: metrics.monthlyExpenseCents, reserveCents, investableCents, amountCents: Math.round(input.amountYuan! * 100), monthsObserved: metrics.monthsObserved, reserveUnchecked: true }
-    : { monthlyExpenseCents: metrics.monthlyExpenseCents, reserveCents, investableCents,
-      amountCents: Math.min(investableCents, input.amountYuan === undefined ? investableCents : Math.round(input.amountYuan * 100)), monthsObserved: metrics.monthsObserved }
+  // 可投资额度是系统建议，不是上限：没说金额且建议额度为 0 时请用户给出金额；用户说了金额就按它筛选，
+  // 超过建议额度或可用余额只提示风险，是否投入由用户决定（申购本身仍要确认与强验证，余额不足时扣款失败）
+  if (!shortHistory && input.amountYuan === undefined && investableCents <= 0) return { status: 'needs_amount', message: `预留 6 个月生活备用金（${yuanText(reserveCents)}）${debtCents ? `并扣除信用卡欠款（${yuanText(debtCents)}）` : ''}后，系统建议的可投资额度为 0 元（储蓄卡余额 ${yuanText(cashCents)}）。如果仍想投资，请告诉我打算投入多少，我按这个金额筛选，并提示动用备用金的风险。`, conflicts, picks: [] }
+  const statedCents = input.amountYuan === undefined ? undefined : Math.round(input.amountYuan * 100)
+  const budget: AdviceBudget = { monthlyExpenseCents: metrics.monthlyExpenseCents, reserveCents, investableCents,
+    amountCents: statedCents ?? investableCents, monthsObserved: metrics.monthsObserved, ...(shortHistory ? { reserveUnchecked: true as const } : {}) }
   if (shortHistory) conflicts.push('reserve_unchecked')
-  else if (input.amountYuan !== undefined && Math.round(input.amountYuan * 100) > investableCents) conflicts.push('amount_exceeds_investable')
+  else if (statedCents !== undefined && statedCents > investableCents) conflicts.push('amount_exceeds_investable')
+  if (statedCents !== undefined && statedCents > cashCents - debtCents) conflicts.push('amount_exceeds_balance')
   if (input.horizon === 'within_3m' && input.preference === 'growth') conflicts.push('short_horizon_growth')
   if (input.liquidity === 'anytime' && input.preference === 'growth') conflicts.push('liquidity_growth')
   if (input.preference === 'growth' && Number(user!.riskRating.slice(1)) <= 2) conflicts.push('growth_risk_mismatch')

@@ -40,6 +40,20 @@ export function requestedAmounts(text: string): number[] {
   })]
 }
 
+const BARE_AMOUNT = /^[¥￥]?\s*(\d+(?:,\d{3})*)(?:\.(\d+))?\s*(万)?\s*(?:元|块)?\s*[。.!！]?$/
+
+/**
+ * 回答“打算投多少”这类追问时，用户常只回一个数（“20000”“2万”）：整条消息就是金额。
+ * 只用于理财金额与回复核验；转账金额绑定和选择组件仍用 requestedAmounts，避免把单独回复的卡尾号当金额。
+ */
+export function statedAmounts(text: string): number[] {
+  const found = requestedAmounts(text)
+  if (found.length) return found
+  const bare = text.normalize('NFKC').trim().match(BARE_AMOUNT)
+  const amount = bare ? yuanOf(bare[1], bare[2], bare[3]) : undefined
+  return amount !== undefined && amount > 0 && amount <= 1_000_000 ? [amount] : []
+}
+
 /** Bind an amount to this named recipient, so two steps cannot silently swap amounts. */
 export function requestedTransferMatches(text: string, query: string, amount: number): number[] {
   text = text.split(QUESTIONNAIRE_ANSWERS_MARKER)[0]
